@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/themecontext";
-import { ThemeHeader } from "@/components/theme-header";
 import YapProvider  from "@/context/yapcontext"; // Assuming you have YapContextProvider exported
 import EventProvider from "@/context/eventcontext";
 import MarketplaceProvider from "@/context/marketplacecontext";
@@ -39,7 +38,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider>
-          <ThemeHeader />
           <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
             <AuthProvider>
               <Toaster

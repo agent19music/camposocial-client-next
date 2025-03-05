@@ -62,7 +62,7 @@ console.log(product.reviews?.length);
         ({product.reviews?.length > 0 ? product.reviews.length : 'no reviews yet'})
       </span>
         </div>
-        <Button className="w-full mt-2 text-white  hover:bg-blue-700 dark:bg-foreground/10 dark:hover:bg-foreground/20 dark:text-white rounded-md">
+        <Button className="w-full mt-2 text-white   dark:bg-foreground/10 dark:hover:bg-foreground/20 dark:text-white rounded-md">
         View
         </Button>
       </CardContent>

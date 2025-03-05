@@ -48,7 +48,7 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
 import {toast} from "react-hot-toast";
 import { useRouter } from "next/navigation";
-
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 const Header: FC = () => {
   const pathname = usePathname(); // Use usePathname to get the current route
   const [activePage, setActivePage] = useState<string>("");
@@ -117,6 +117,9 @@ const Header: FC = () => {
               </Link>
               {/* Add more links as needed */}
             </nav>
+            <div className="mt-auto">
+              <ThemeToggle />
+            </div>
           </SheetContent>
         </Sheet>
         <div className="hidden lg:flex items-center justify-center space-x-4 mx-auto text-center">
@@ -192,9 +195,11 @@ const Header: FC = () => {
           </Button>
         </Link>
       </div>
+      <div className="mt-auto hidden lg:flex items-center space-x-4">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="rounded-full absolute top-0 right-6">
+            <Button variant="secondary" size="icon" className="rounded-full">
               <CircleUser className="h-5 w-5" />
               <span className="sr-only">Toggle user menu</span>
             </Button>
@@ -214,6 +219,7 @@ Login
             <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
       </header>
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t flex justify-around items-center h-14 z-50">

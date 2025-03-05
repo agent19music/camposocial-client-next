@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select"
 import { useContext } from "react"
 import { YapContext } from "@/context/yapcontext"
+import { AuthContext } from "@/context/authcontext"
 
 export default function AddYap() {
   const [open, setOpen] = useState(false)
@@ -64,6 +65,8 @@ export default function AddYap() {
       setMediaFiles(Array.from(event.target.files))
     }
   }
+
+  const {currentUser} = useContext(AuthContext)
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -139,15 +142,15 @@ export default function AddYap() {
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="flex items-start gap-4">
             <Avatar>
-              <AvatarImage src="/placeholder-avatar.jpg" alt="@username" />
-              <AvatarFallback>UN</AvatarFallback>
+              <AvatarImage src={currentUser?.avatarUrl || "/placeholder-avatar.jpg"} alt={`@${currentUser?.username || "username"}`} />
+              <AvatarFallback>{currentUser?.username ? currentUser.username[0].toUpperCase() : "UN"}</AvatarFallback>
             </Avatar>
             <Textarea
               id="yap"
               value={yapContent}
               onChange={(e) => setYapContent(e.target.value)}
               placeholder={isPollMode ? "Ask a question..." : "What's happening?"}
-              className="flex-1 resize-none"
+              className="flex-1 resize-none dark:bg-foreground/10"
             />
           </div>
           {isPollMode ? (

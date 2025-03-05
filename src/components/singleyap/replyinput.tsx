@@ -28,7 +28,7 @@ export const ReplyInput = ({ onReply }) => {
           placeholder="Post your reply"
           value={replyText}
           onChange={(e) => setReplyText(e.target.value.slice(0, maxLength))}
-          className="min-h-[120px] resize-none border-none focus-visible:ring-0 p-0 text-[17px] dark:text-white dark:bg-gray-800 dark:placeholder:text-gray-400 placeholder:text-muted-foreground"
+          className="min-h-[120px] resize-none border-none focus-visible:ring-0 p-2 text-[17px] dark:text-white dark:bg-foreground/10 dark:placeholder:text-gray-400 placeholder:text-muted-foreground"
         />
         <div className="flex justify-between items-center mt-2">
           <div className="text-sm text-muted-foreground dark:text-gray-400">

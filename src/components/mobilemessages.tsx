@@ -123,6 +123,9 @@ export default function IMessageWeb() {
   const [replyingTo, setReplyingTo] = useState<number | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [isTyping, setIsTyping] = useState(false)
+  const [isInputVisible, setIsInputVisible] = useState(true)
+  const [lastScrollTop, setLastScrollTop] = useState(0)
+  const [isScrollingDown, setIsScrollingDown] = useState(false)
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -196,6 +199,7 @@ export default function IMessageWeb() {
 
   const touchStartY = useRef(0)
   const scrolling = useRef(false)
+  const scrollThreshold = 15 // Minimum scroll distance to trigger hide/show
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY
@@ -205,10 +209,28 @@ export default function IMessageWeb() {
     if (scrollAreaRef.current) {
       const touchY = e.touches[0].clientY
       const deltaY = touchStartY.current - touchY
+      const currentScrollTop = scrollAreaRef.current.scrollTop
 
       if (Math.abs(deltaY) > 5) {
         scrolling.current = true
         scrollAreaRef.current.scrollTop += deltaY
+        
+        // Detect scroll direction and manage input visibility
+        if (currentScrollTop > lastScrollTop + scrollThreshold) {
+          // Scrolling down
+          if (!isScrollingDown) {
+            setIsScrollingDown(true)
+            setIsInputVisible(false)
+          }
+        } else if (currentScrollTop < lastScrollTop - scrollThreshold) {
+          // Scrolling up
+          if (isScrollingDown) {
+            setIsScrollingDown(false)
+            setIsInputVisible(true)
+          }
+        }
+        
+        setLastScrollTop(currentScrollTop)
         touchStartY.current = touchY
       }
     }
@@ -219,6 +241,42 @@ export default function IMessageWeb() {
       scrolling.current = false
     }
   }
+
+  // Add scroll event listener for mouse wheel scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollAreaRef.current) {
+        const currentScrollTop = scrollAreaRef.current.scrollTop
+        
+        if (currentScrollTop > lastScrollTop + scrollThreshold) {
+          // Scrolling down
+          if (!isScrollingDown) {
+            setIsScrollingDown(true)
+            setIsInputVisible(false)
+          }
+        } else if (currentScrollTop < lastScrollTop - scrollThreshold) {
+          // Scrolling up
+          if (isScrollingDown) {
+            setIsScrollingDown(false)
+            setIsInputVisible(true)
+          }
+        }
+        
+        setLastScrollTop(currentScrollTop)
+      }
+    }
+
+    const scrollRef = scrollAreaRef.current
+    if (scrollRef) {
+      scrollRef.addEventListener('scroll', handleScroll)
+    }
+
+    return () => {
+      if (scrollRef) {
+        scrollRef.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [lastScrollTop, isScrollingDown])
 
 
   return (
@@ -365,7 +423,12 @@ export default function IMessageWeb() {
       </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-lg border-t p-4">
+      <motion.div 
+        className="absolute bottom-0 left-0 right-0 z-10 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-lg border-t p-4"
+        initial={{ y: 0 }}
+        animate={{ y: isInputVisible ? 0 : '100%' }}
+        transition={{ duration: 0.3 }}
+      >
         {replyingTo && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
@@ -399,7 +462,7 @@ export default function IMessageWeb() {
             <Send className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+      </motion.div>
     </Card>
   </div>
   )
