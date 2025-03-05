@@ -32,7 +32,9 @@ const {products} = useContext(MarketplaceContext)
       <div className="flex flex-col md:flex-row">
         {/* Left SideNav */}
       
-        <SideNav links={marketplaceLinks} />
+        <div className="md:w-64 flex-shrink-0">
+          <SideNav links = {marketplaceLinks} />
+        </div>
  
         
         {/* Right Content */}

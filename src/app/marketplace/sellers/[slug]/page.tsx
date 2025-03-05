@@ -89,11 +89,15 @@ export default function SellerProfile() {
 
   const sellerInfo = sellerData || selectedSeller;
 
+  console.log(sellerInfo)
+
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <div className="flex flex-col md:flex-row">
-        <SideNav links={marketplaceLinks} />
+       <div className="md:w-64 flex-shrink-0">
+                      <SideNav links = {marketplaceLinks} />
+                    </div>
         <div className="container mx-auto px-4 py-8 max-w-7xl min-h-screen">
           <Card className="mb-8 overflow-hidden">
             <CardHeader className="flex flex-col sm:flex-row items-center gap-4 p-4 sm:p-6">
@@ -222,7 +226,7 @@ export default function SellerProfile() {
                   <CardTitle>Customer Reviews</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {isLoading ? (
+                  {isLoading &&
                     Array(3).fill(0).map((_, index) => (
                       <div key={index}>
                         {index > 0 && <Separator className="my-4" />}
@@ -236,7 +240,9 @@ export default function SellerProfile() {
                         <Skeleton className="h-16 w-full mt-2" />
                       </div>
                     ))
-                  ) : (
+                   } 
+                   
+                   {!isLoading && sellerInfo?.reviews >1 && (
                     sellerInfo?.reviews?.map((review, index) => (
                       <div key={review.id}>
                         {index > 0 && <Separator className="my-4" />}
@@ -256,6 +262,10 @@ export default function SellerProfile() {
                         <p className="text-sm sm:text-base text-muted-foreground mt-2">{review.comment}</p>
                       </div>
                     ))
+                  )}
+
+                  {!isLoading && sellerInfo?.reviews === 0 && (
+                    <p className="text-muted-foreground text-center">No reviews yet</p>
                   )}
                 </CardContent>
               </Card>

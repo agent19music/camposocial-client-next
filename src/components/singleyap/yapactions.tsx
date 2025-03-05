@@ -10,7 +10,7 @@ export const YapActions = () => {
   const [isBookmarked, setIsBookmarked] = React.useState(false)
 
   return (
-    <div className="flex justify-around py-2">
+    <div className="flex  gap-4  py-2">
       <Button 
         variant="ghost" 
         size="sm" 

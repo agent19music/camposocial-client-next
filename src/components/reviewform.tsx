@@ -60,7 +60,7 @@ export default function ReviewForm({ productId }: { productId: string }) {
   }
 
   return (
-    <Card className="mt-8 bg-gray-50">
+    <Card className="mt-8">
       <CardContent className="p-6">
         <h2 className="text-xl md:text-2xl font-bold mb-4">Leave a Review</h2>
         <div className="flex items-center space-x-2 mb-4">
@@ -78,7 +78,7 @@ export default function ReviewForm({ productId }: { productId: string }) {
           placeholder="Write your review here..."
           value={review}
           onChange={(e) => setReview(e.target.value)}
-          className="mb-4"
+          className="mb-4 dark:bg-foreground/10"
         />
         <Button onClick={handleSubmitReview} disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Submitting..." : "Submit Review"}

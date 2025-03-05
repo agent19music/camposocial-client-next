@@ -36,14 +36,15 @@ import EventCard from '@/components/event';
 import { MouseEvent } from "react";
 import SideNav from "@/components/sidenav"
 import Header from "@/components/header"
-import { Calendar, PartyPopper } from "lucide-react";
+import { Calendar, PartyPopper, Plus, List} from "lucide-react";
+import { toast } from "react-hot-toast"
 
 export default function Dashboard() {
   const eventLinks = [
-    { href: "/comingsoon", label: "Coming Soon", icon: <Home className="h-4 w-4" /> },
-    { href: "/social-events", label: "Social Events", icon: <Calendar className="h-4 w-4" /> },
-    { href: "/fun-events", label: "Fun Events", icon: <PartyPopper className="h-4 w-4" /> },
-  ];
+    { label: "Calendar", icon: <Calendar className="h-4 w-4" />, onClick: () => toast.success("calendar") },
+    { label: "Create Event", icon: <Plus className="h-4 w-4" />, onClick: () => toast.success("create") },
+    { label: "My Events", icon: <List className="h-4 w-4" />, onClick: () => toast.success("myEvents") },
+  ]
 
     const comments = [
         {
@@ -157,13 +158,13 @@ export default function Dashboard() {
         }
       };
   return (
-   <div className="w-screen h-screen flex flex-col lg:container  p-4">
-  <Header />
-
-  {/* Main content with the two side navs and center content */}
-  <div className="flex  flex-col md:flex-row">
-    {/* Left SideNav */}
-    <SideNav links={eventLinks} />
+    <div className="w-screen h-screen lg:container mx-auto p-4">
+    <Header />
+    <div className="flex flex-col md:flex-row ">
+      {/* Left SideNav */}
+      <div className="md:w-64 flex-shrink-0">
+          <SideNav links = {eventLinks} />
+        </div>
 
     {/* Center content */}
     <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center ">
@@ -182,7 +183,7 @@ export default function Dashboard() {
         </form>
       </div>
       
-      <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[800px] md:max-h-[537.6px]">
+      <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px] ">
   {events.map((event, index) => (
     <EventCard
       key={index}
@@ -194,7 +195,6 @@ export default function Dashboard() {
 
     </div>
 
-    {/* Right SideNav */}
 
   </div>
 </div>

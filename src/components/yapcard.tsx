@@ -11,14 +11,14 @@ import { YapContext } from '@/context/yapcontext'
 import { cn } from '@/lib/utils'
 import { MediaGrid } from './yapmediagrid'
 
-const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count }) => {
+const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets }) => {
   const router = useRouter();
   const [isLiked, setIsLiked] = React.useState(false)
   const { navigateToSingleYapView } = useContext(YapContext)
 
   return (
     <Card 
-      className="border-b border-x-0 rounded-none first:border-t-0 hover:bg-gray-50 transition-colors duration-200 hover:cursor-pointer" 
+      className="border-b border-x-0 rounded-none first:border-t-0 hover:bg-gray-50 dark:hover:bg-foreground/10 transition-colors duration-200 hover:cursor-pointer" 
       onClick={() => navigateToSingleYapView(yap, 'spc')}
     >
       <CardHeader className="flex flex-row items-start space-y-0 pb-2 px-4 pt-3">
@@ -49,15 +49,15 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
           <MessageCircle className="w-[18px] h-[18px] mr-2 group-hover:text-primary" />
           <span className="text-sm group-hover:text-primary">{replies_count}</span>
         </Button>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-muted-foreground hover:text-green-500 group p-2 h-8"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Repeat2 className="w-[18px] h-[18px] mr-2 group-hover:text-green-500" />
-          <span className="text-sm group-hover:text-green-500">3.1K</span>
-        </Button>
+        <Button
+  variant="ghost"
+  size="sm"
+  className="text-muted-foreground hover:text-green-500 group p-2 h-8"
+  onClick={(e) => e.stopPropagation()}
+>
+  <Repeat2 className="w-[18px] h-[18px] mr-2 group-hover:text-green-500" />
+  <span className="text-sm group-hover:text-green-500">{retweets ? retweets : 0}</span>
+</Button>
         <Button 
           variant="ghost" 
           size="sm" 

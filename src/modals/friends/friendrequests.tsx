@@ -15,10 +15,6 @@ interface FriendRequest {
 export function ReceivedRequestsModal() {
   const { receivedRequests, addFriend, rejectFriendRequest } = useContext(UserContext)
 
-  console.log('====================================');
-  console.log(receivedRequests);
-  console.log('====================================');
-
   const handleAccept = async (id: number, name: string) => {
     try {
       addFriend(id)

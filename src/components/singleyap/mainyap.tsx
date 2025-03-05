@@ -15,12 +15,12 @@ export const MainYap = ({ yap }) => {
       <div className="flex gap-3">
         <Avatar className="w-10 h-10 flex-shrink-0">
           <AvatarImage src={yap.avatar} />
-          <AvatarFallback>{yap.handle}</AvatarFallback>
+          <AvatarFallback>{yap.username[0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex flex-col">
             <span className="font-bold text-[15px] leading-5">{yap.display_name}</span>
-            <span className="text-muted-foreground text-[15px] leading-5">@{yap.handle}</span>
+            <span className="text-muted-foreground text-[15px] leading-5">@{yap.username}</span>
           </div>
         </div>
       </div>
@@ -39,12 +39,14 @@ export const MainYap = ({ yap }) => {
         {(yap.timestamp)} · Twitter Web App
       </div>
 
-      <YapStats 
-        replies={yap.replies_count}
-        retweets={yap.retweets_count}
-        likes={yap.likes_count}
-        bookmarks={yap.bookmarks_count}
-      />
+      {!(yap.replies_count === 0 && yap.retweets_count === 0 && yap.likes_count === 0 && yap.bookmarks_count === 0) && (
+  <YapStats 
+    replies={yap.replies_count}
+    retweets={yap.retweets_count}
+    likes={yap.likes_count}
+    bookmarks={yap.bookmarks_count}
+  />
+)}
 
       <Separator className="my-1" />
 

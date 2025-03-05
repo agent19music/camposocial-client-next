@@ -143,7 +143,6 @@ export default function UserProvider({ children }: UserProviderProps) {
       }
   
       const responseData = await response.json();
-      console.log("Friend request response:", responseData);
   
       toast.success("Friend request sent successfully!");
     } catch (error) {
@@ -280,13 +279,7 @@ export default function UserProvider({ children }: UserProviderProps) {
   }
   
   
-console.log('====================================');
-console.log('received requests', receivedRequests);
-console.log('====================================');
 
-console.log('====================================');
-console.log('friends', friends);
-console.log('====================================');
 
   
     const contextData = {

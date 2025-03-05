@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/context/themecontext";
+import { ThemeHeader } from "@/components/theme-header";
 import YapProvider  from "@/context/yapcontext"; // Assuming you have YapContextProvider exported
 import EventProvider from "@/context/eventcontext";
 import MarketplaceProvider from "@/context/marketplacecontext";
@@ -8,6 +10,16 @@ import UserProvider from "@/context/usercontext";
 import AuthProvider from "@/context/authcontext";
 import { Toaster } from "react-hot-toast";
 import ChatProvider from "@/context/chatcontext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs';
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,44 +33,56 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-        <Toaster
-  position="top-center"
-  reverseOrder={false}
-  gutter={8}
-  containerClassName=""
-  containerStyle={{}}
-  toastOptions={{
-    // Define default options
-    className: '',
-    duration: 5000,
-    style: {
-      background: '#363636',
-      color: '#fff',
-    },
+        <ThemeProvider>
+          <ThemeHeader />
+          <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+            <AuthProvider>
+              <Toaster
+                position="top-center"
+                reverseOrder={false}
+                gutter={8}
+                containerClassName=""
+                containerStyle={{}}
+                toastOptions={{
+                  // Define default options
+                  className: '',
+                  duration: 5000,
+                  style: {
+                    background: '#363636',
+                    color: '#fff',
+                  },
 
-    // Default options for specific types
-    success: {
-      duration: 3000,
-      theme: {
-        primary: 'green',
-        secondary: 'black',
-      },
-    },
-  }}
-/>        <UserProvider>
-        <MarketplaceProvider>
-        <EventProvider>
-        <YapProvider>
-          <ChatProvider>
-          {children}
-          </ChatProvider>
-          </YapProvider>
-        </EventProvider>
-        </MarketplaceProvider></UserProvider></AuthProvider>
+                  // Default options for specific types
+                  success: {
+                    duration: 3000,
+                    theme: {
+                      primary: 'green',
+                      secondary: 'black',
+                    },
+                  },
+                }}
+              />
+              <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+                <UserProvider>
+                  <MarketplaceProvider>
+                    <EventProvider>
+                      <YapProvider>
+                        <ChatProvider>
+                          {children}
+                        </ChatProvider>
+                      </YapProvider>
+                    </EventProvider>
+                  </MarketplaceProvider>
+                </UserProvider>
+              </GoogleOAuthProvider>
+            </AuthProvider>
+          </ClerkProvider>
+        </ThemeProvider>
       </body>  
     </html>
   );

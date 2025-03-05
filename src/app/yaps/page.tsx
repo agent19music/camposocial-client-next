@@ -49,26 +49,31 @@ export default function Component() {
 
 
   return (
-    <div className="container mx-auto p-4">
-            <Header/>
-            <div className="flex  flex-col md:flex-row">
-    {/* Left SideNav */}
-    <SideNav links={eventLinks} />
-    <div className='flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center'>
+    <div className="w-screen h-screen lg:container mx-auto p-4">
+    <Header />
+    <div className="flex flex-col md:flex-row">
+      {/* Left SideNav */}
+      <div className="md:w-64 flex-shrink-0">
+          <SideNav links = {eventLinks} />
+        </div>
+    {/* Center content */}
+    <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center ">
+      
+      {/* Green area with centered input */}
       <div className="w-full flex-1   flex justify-center items-center">
         <form>
-          <div className="relative mx-auto">  
-
+          <div className="relative mx-auto">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search yaps ..."
+              placeholder="Search yaps..."
               className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-full"
             />
           </div>
         </form>
       </div>
-      <Tabs defaultValue="for-you" className="w-full">
+      <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px] ">
+      <Tabs defaultValue="for-you" className="w-full ">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="for-you">For You</TabsTrigger>
           <TabsTrigger value="following">Following</TabsTrigger>
@@ -96,6 +101,7 @@ export default function Component() {
           </p>
         </TabsContent>
       </Tabs>
+      </div>
       </div>
 
       </div>

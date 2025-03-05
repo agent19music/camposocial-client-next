@@ -45,20 +45,20 @@ const CommentList: FC<CommentListProps> = ({ comments }) => {
         comments.map(({ image, username, text, dateCreated }) => {
           const timeAgo = timeDifference(new Date(), new Date(dateCreated));
           return (
-            <Card key={dateCreated} className="my-2 p-4 bg-white shadow-md rounded-lg flex gap-4">
+            <Card key={dateCreated} className="my-2 p-4 shadow-md rounded-lg flex gap-4 dark:border-gray-700">
               <Avatar className="w-8 h-8 rounded-full">
                 {image ? (
                   <AvatarImage src={`${image}`} alt={`${username}'s avatar`} />
                 ) : (
-                  <AvatarFallback className="bg-gray-300 text-white">
+                  <AvatarFallback className="bg-gray-300 dark:bg-gray-700 text-white">
                     <i className="fas fa-user"></i>
                   </AvatarFallback>
                 )}
               </Avatar>
               <div className="flex flex-col justify-between">
-                <small className="text-gray-500">{username}</small>
-                <p className="text-black text-sm">{text}</p>
-                <small className="text-gray-400">{timeAgo}</small>
+                <small className="text-gray-500 dark:text-gray-300">{username}</small>
+                <p className="text-black dark:text-white text-sm">{text}</p>
+                <small className="text-gray-400 dark:text-gray-400">{timeAgo}</small>
               </div>
             </Card>
           );

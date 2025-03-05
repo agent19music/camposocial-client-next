@@ -91,7 +91,7 @@ const ProductVariations = ({
         <div>
           <p className="font-semibold">Selected: {selectedVariation.value}</p>
           <p className="font-semibold">Price: ${selectedVariation.price.toFixed(2)}</p>
-          <p className="text-sm text-gray-500">Stock: {selectedVariation.stock}</p>
+          <p className="text-sm text-muted-foreground">Stock: {selectedVariation.stock}</p>
         </div>
       )}
     </div>
@@ -109,6 +109,9 @@ export default function SingleProductPage() {
   const {authToken} = useContext(AuthContext)
 
   const params = useParams()
+
+  console.log(selectedProduct);
+  
 
   useEffect(() => {
     let isMounted = true;
@@ -190,7 +193,9 @@ export default function SingleProductPage() {
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <div className="flex flex-col md:flex-row">
-        <SideNav links={marketplaceLinks} />
+       <div className="md:w-64 flex-shrink-0">
+                <SideNav links = {marketplaceLinks} />
+              </div>
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Image Gallery */}
@@ -284,15 +289,15 @@ export default function SingleProductPage() {
               ) : (
                 <div
                   className="flex items-center space-x-4 hover:cursor-pointer"
-                  onClick={() => navigateToSingleSellerView(selectedProduct?.seller_id)}
+                  onClick={() => navigateToSingleSellerView(selectedProduct?.seller)}
                 >
                   <Avatar className="w-12 h-12">
-                    <AvatarImage src={selectedProduct?.sellerAvatar} alt={selectedProduct?.sellerName} />
-                    <AvatarFallback>{selectedProduct?.sellerName ? selectedProduct.sellerName[0] : "?"}</AvatarFallback>
+                    <AvatarImage src={selectedProduct?.seller.avatar} alt={selectedProduct?.seller.name} />
+                    <AvatarFallback>{selectedProduct?.seller.name ? selectedProduct.seller.name[0] : "?"}</AvatarFallback>
                   </Avatar>
                   <div className="flex items-center">
-                    <p className="font-semibold">{selectedProduct?.sellerName}</p>
-                    {selectedProduct?.sellerIsVerified && (
+                    <p className="font-semibold">{selectedProduct?.seller.name}</p>
+                    {selectedProduct?.seller.is_verified && (
                       <CheckCircle className="w-4 h-4 text-green-500 ml-1" />
                     )}
                   </div>
@@ -378,7 +383,7 @@ export default function SingleProductPage() {
                             </div>
                             <StarRating rating={review?.rating} />
                           </div>
-                          <p className="mt-2 text-gray-600">{review.text}</p>
+                          <p className="mt-2 ">{review.text}</p>
                         </CardContent>
                       </Card>
                     ))

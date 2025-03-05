@@ -52,7 +52,7 @@ interface Seller {
   id: string;
   sales: number;
   rating: number;
-  isVerified: boolean;
+  is_verified: boolean;
 
 
 }
@@ -68,6 +68,7 @@ interface MarketplaceContextProps {
   selectedProduct: Product | null; // Null when no product is selected
   setSelectedProduct: (product: Product | null) => void; // Setter function for selectedProduct
   navigateToSingleProductView: (product: Product) => void; // Add this to the interface
+  navigateToSingleSellerView: (seller: Seller) => void; // Add this to the interface
   setSelectedSeller : (seller: Seller | null) => void;
   selectedSeller: Seller | null;
   updateCart: boolean;
@@ -90,7 +91,8 @@ const defaultValue: MarketplaceContextProps = {
   setSelectedSeller: () =>{},
   setIsPayed: ()=> {},
   setOnchange: () => {},
-  navigateToSingleProductView: () => {}, // No-op function for default
+  navigateToSingleProductView: () => {},
+  navigateToSingleSellerView: () => {}, // No-op function for default
   setUpdateCart: () => {},
   updateCart: false,
   navigationToSingleSellerView: () => {},

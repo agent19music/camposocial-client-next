@@ -30,7 +30,7 @@ console.log(product.reviews?.length);
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 text-gray-600 hover:text-pink-500"
+            className="absolute top-2 right-2 text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400"
           >
             <Heart className="h-5 w-5" />
           </Button>
@@ -54,15 +54,15 @@ console.log(product.reviews?.length);
             <Star
               key={i}
               className={`h-4 w-4 ${
-                i < Math.floor(product.average_rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                i < Math.floor(product.average_rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-500'
               }`}
             />
           ))}
-      <span className="ml-1 text-xs text-gray-600">
+      <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">
         ({product.reviews?.length > 0 ? product.reviews.length : 'no reviews yet'})
       </span>
         </div>
-        <Button className="w-full mt-2 text-white rounded-md">
+        <Button className="w-full mt-2 text-white  hover:bg-blue-700 dark:bg-foreground/10 dark:hover:bg-foreground/20 dark:text-white rounded-md">
         View
         </Button>
       </CardContent>

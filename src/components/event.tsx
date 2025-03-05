@@ -42,7 +42,7 @@ const EventCard= ({ poster, title, description, date, entry_fee, comments, event
               </AvatarFallback>
             )}
           </Avatar>
-          <span className="text-gray-500">{username}</span>
+          <span className="">{username}</span>
         </div>
 
     <div className="flex flex-col md:flex-row gap-6 ">
@@ -66,8 +66,8 @@ const EventCard= ({ poster, title, description, date, entry_fee, comments, event
       <div className="flex flex-col justify-between md:w-2/3">
         <div>
           <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="mt-4 text-gray-700">{description}</p>
-          <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
+          <p className="mt-4 ">{description}</p>
+          <div className="flex justify-between items-center mt-4 text-sm ">
             <span>
               <i className="far fa-calendar"></i> Date: {date}
             </span>
