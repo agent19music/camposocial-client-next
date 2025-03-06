@@ -1,6 +1,7 @@
 "use client"
 
 import { useContext, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -62,6 +63,7 @@ interface FriendRequest {
 
 const FriendCard = ({ friend, removeFriend, blockFriend }: { friend: Friend, removeFriend: (id: number) => void, blockFriend: (id: number) => void }) => {
   const [showAlert, setShowAlert] = useState<"unfriend" | "block" | null>(null)
+  const router = useRouter()
 
   const handleBlock = (friendId: number) => {
     // Handle block action here
@@ -82,7 +84,12 @@ const FriendCard = ({ friend, removeFriend, blockFriend }: { friend: Friend, rem
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="hover:text-green-500"
+            onClick={() => router.push(`/messages/${friend.id}`)}
+          >
             <MessageCircle className="h-5 w-5" />
           </Button>
           <DropdownMenu>
