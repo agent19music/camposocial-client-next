@@ -4,7 +4,7 @@ import { useContext, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,16 +20,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { MoreHorizontal, MessageCircle, UserPlus, Search } from 'lucide-react'
-import { Home, Calendar, PartyPopper, Users, UserPlus2, Bell } from 'lucide-react'
+import { MoreHorizontal, MessageCircle, UserPlus, Search, Users, Bell } from 'lucide-react'
 import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
 import { UserContext } from "@/context/usercontext"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ReceivedRequestsModal } from "@/modals/friends/friendrequests"
 
 interface Friend {
@@ -46,8 +44,6 @@ interface Suggestion {
   mutualFriends: number
   friendshipStatus: 'none' | 'friend' | 'request_sent' | 'request_received'
 }
-
-
 
 interface User {
   id: number
@@ -66,7 +62,6 @@ const FriendCard = ({ friend, removeFriend, blockFriend }: { friend: Friend, rem
   const router = useRouter()
 
   const handleBlock = (friendId: number) => {
-    // Handle block action here
     blockFriend(friendId);
   };
 
@@ -199,7 +194,6 @@ const SuggestionCard = ({
   );
 };
 
-
 const SearchResultCard = ({ user, onAddFriend }: { user: User; onAddFriend: () => void }) => {
   return (
     <div className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
@@ -222,36 +216,34 @@ export default function Component() {
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [activeModal, setActiveModal] = useState<string | null>(null)
   
-  const {users, sendFriendRequest, friends, removeFriend, blockUser} = useContext(UserContext);
+  const {users, sendFriendRequest: sendFriendRequestContext, friends, removeFriend, blockUser: blockUserContext, addFriend, receivedRequests} = useContext(UserContext);
+  
+  const sendFriendRequest = (id: number) => {
+    sendFriendRequestContext(id.toString());
+  };
+  
+  const blockUser = (id: number) => {
+    blockUserContext(id.toString(), "block");
+  };
 
-
-  const transformedUsers: Suggestion[] = users?.users?.map(user => ({
+  const transformedUsers: Suggestion[] = users?.map(user => ({
     id: user.id,
     username: user.username,
-    photoUrl: user.photoUrl || "/placeholder.svg?height=40&width=40", // Use a default image if none is provided
-    mutualFriends: user.mutual_friends || 0, // Default to 0 if mutualFriends is not provided
-    friendshipStatus: user.friendship_status || 'none', // Default to 'none' if friendshipStatus is not provided
+    photoUrl: user.photoUrl || "/placeholder.svg?height=40&width=40",
+    mutualFriends: user.mutual_friends || 0,
+    friendshipStatus: user.friendship_status || 'none',
   }));
-
 
   const suggestions: Suggestion[] = [
     ...(Array.isArray(transformedUsers) && transformedUsers.length > 0 ? transformedUsers : [])
-    
   ]
-
-  const receivedRequests: FriendRequest[] = [
-    { id: 1, username: "Grace", photoUrl: "/placeholder.svg?height=40&width=40" },
-    { id: 2, username: "Henry", photoUrl: "/placeholder.svg?height=40&width=40" },
-  ]
-
-
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
     if (query.trim() === "") {
       setSearchResults([])
     } else {
-      const results = allUsers.filter(user =>
+      const results = users.filter(user =>
         user.username.toLowerCase().includes(query.toLowerCase())
       )
       setSearchResults(results)
@@ -260,20 +252,19 @@ export default function Component() {
 
   const handleAddFriend = (user: User) => {
     console.log(`Added ${user.username} as a friend`)
-    // Here you would typically update the friends list and remove from suggestions
+    addFriend(user.id.toString())
   }
 
   const handleAcceptRequest = (id: number) => {
-    console.log(`Accepted friend request from user with id ${id}`)
-    // Implement the logic to accept the friend request
+    addFriend(id.toString());
+    console.log(`Accepted friend request from user with id ${id}`);
   }
 
   const handleRejectRequest = (id: number) => {
     console.log(`Rejected friend request from user with id ${id}`)
-    // Implement the logic to reject the friend request
   }
 
-  const eventLinks = [
+  const friendsLinks = [
     { label: "Friends", icon: <Users className="h-4 w-4" />, onClick: () => setActiveModal("friends") },
     { label: "Suggestions", icon: <UserPlus className="h-4 w-4" />, onClick: () => setActiveModal("suggestions") },
     { label: "Requests", icon: <Bell className="h-4 w-4" />, onClick: () => setActiveModal("requests") },
@@ -281,83 +272,82 @@ export default function Component() {
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
-    <Header />
-    <div className="flex flex-col md:flex-row">
-      {/* Left SideNav */}
-      <SideNav links={eventLinks} />
-    <div className="container mx-auto p-4">
-      <div className="mb-6">
-        <Popover>
-          <PopoverTrigger asChild>
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                type="text"
-                placeholder="Search users"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0">
-            {searchResults.length > 0 ? (
-              <div className="max-h-[300px] overflow-auto">
-                {searchResults.map((user) => (
-                  <SearchResultCard
-                    key={user.id}
-                    user={user}
-                    onAddFriend={() => handleAddFriend(user)}
+      <Header />
+      <div className="flex flex-col md:flex-row">
+        <SideNav links={friendsLinks} />
+        <div className="container mx-auto p-4">
+          <div className="mb-6">
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="text"
+                    placeholder="Search users"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-8"
                   />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                {searchResults.length > 0 ? (
+                  <div className="max-h-[300px] overflow-auto">
+                    {searchResults.map((user) => (
+                      <SearchResultCard
+                        key={user.id}
+                        user={user}
+                        onAddFriend={() => handleAddFriend(user)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="p-2 text-sm text-gray-500">No users found</p>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <Dialog open={activeModal === "friends"} onOpenChange={() => setActiveModal(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Friends</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {friends?.map((friend) => (
+                  <FriendCard key={friend.id} friend={friend} removeFriend={removeFriend} blockFriend={blockUser} />
                 ))}
               </div>
-            ) : (
-              <p className="p-2 text-sm text-gray-500">No users found</p>
-            )}
-          </PopoverContent>
-        </Popover>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={activeModal === "suggestions"} onOpenChange={() => setActiveModal(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>People You May Know</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {suggestions?.map((suggestion) => (
+                  <SuggestionCard key={suggestion.id} suggestion={suggestion} sendFriendRequest={sendFriendRequest} acceptFriendRequest={handleAcceptRequest} />
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={activeModal === "requests"} onOpenChange={() => setActiveModal(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Friend Requests</DialogTitle>
+              </DialogHeader>
+              <ReceivedRequestsModal
+                {...receivedRequests}
+                onAccept={handleAcceptRequest}
+                onReject={handleRejectRequest}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-
-      <Dialog open={activeModal === "friends"} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Friends</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {friends?.map((friend) => (
-              <FriendCard key={friend.id} friend={friend} removeFriend={removeFriend} blockFriend={blockUser} />
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={activeModal === "suggestions"} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>People You May Know</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {suggestions?.map((suggestion) => (
-              <SuggestionCard key={suggestion.id} suggestion={suggestion} sendFriendRequest={sendFriendRequest} />
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={activeModal === "requests"} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Friend Requests</DialogTitle>
-          </DialogHeader>
-          <ReceivedRequestsModal
-            requests={receivedRequests}
-            onAccept={handleAcceptRequest}
-            onReject={handleRejectRequest}
-          />
-        </DialogContent>
-      </Dialog>
-    </div>
-    </div>
     </div>
   )
 }

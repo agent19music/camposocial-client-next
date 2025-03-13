@@ -16,6 +16,7 @@ type currentUser = {
   address: string
   phone: string
   email: string
+  avatar: string
 } | null
 
 
@@ -25,7 +26,7 @@ interface AuthContextType {
   sellerlogin: (email:string, password:string) => void; 
 
   logout: () => void; 
-  currentUser: [] | null;
+  currentUser: currentUser | null;
   authToken : string | null;
   updateUserContext: () => void; 
   onAuthChange: boolean;
@@ -37,7 +38,7 @@ export const AuthContext = createContext<AuthContextType>({
 
   login: () => {},
   logout: () => {},
-  currentUser : [],
+  currentUser : null,
   authToken: null,
   updateUserContext: () => {},
   sellerlogin: ()=> {},
@@ -51,7 +52,7 @@ interface AuthProviderProps {
 export default function AuthProvider({ children }: AuthProviderProps) {
   const apiEndpoint = "http://127.0.0.1:5000"; 
 //   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentUser, setCurrentUser] = useState(null)
+  const [currentUser, setCurrentUser] = useState <currentUser| null>(null)
   const [isLoading, setIsLoading] = useState(false);
   const [onAuthChange, setOnAuthChange] = useState(false)
   const [authToken, setAuthToken] = useState(() => {

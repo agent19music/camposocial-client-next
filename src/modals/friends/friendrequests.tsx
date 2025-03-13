@@ -12,12 +12,12 @@ interface FriendRequest {
   photoUrl: string
 }
 
-export function ReceivedRequestsModal() {
+export function ReceivedRequestsModal(requests: FriendRequest[]) {
   const { receivedRequests, addFriend, rejectFriendRequest } = useContext(UserContext)
 
   const handleAccept = async (id: number, name: string) => {
     try {
-      addFriend(id)
+      addFriend(id.toString())
       toast.success(`${name} is now your friend !`)
     } catch (error) {
       toast.error(`Failed to add ${name} as a friend`)
@@ -27,8 +27,8 @@ export function ReceivedRequestsModal() {
 
   const handleReject = async (id: number, name: string) => {
     try {
-       rejectFriendRequest(id)
-      toast.success(`Rejected friend request from ${name}`)
+       rejectFriendRequest(id.toString())
+      toast.success(`Rejecte.d friend request from ${name}`)
     } catch (error) {
       toast.error(`Oops Failed to reject friend request`)
       console.error(error)

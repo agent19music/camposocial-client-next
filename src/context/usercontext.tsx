@@ -87,8 +87,8 @@ export default function UserProvider({ children }: UserProviderProps) {
     )
       .then((res) => res.json())
       .then((data) => {
-        setUsers(data);
-        setFilteredUsers(data); // Initially set filteredUsers to all users
+        setUsers(data.users);
+        setFilteredUsers(data.users); // Initially set filteredUsers to all users
         setIsLoading(false);
       })
       .catch((error) => {
@@ -277,6 +277,10 @@ export default function UserProvider({ children }: UserProviderProps) {
       return 'Error occurred while processing the request.';
     }
   }
+
+  console.log('====================================');
+  console.log('users', users);
+  console.log('====================================');
   
   
 

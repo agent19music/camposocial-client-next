@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useContext, Suspense } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChatContext } from "@/context/chatcontext";
 import { generateConversationId } from "@/lib/utils";
@@ -13,9 +13,11 @@ import SideNav from "@/components/sidenav";
 import { Users, UserPlus, MessageSquare, Bell, Home } from "lucide-react";
 
 const MessageChatPage = () => {
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://127.0.0.1:5000";
+  const router = useRouter();
   const params = useParams();
   const conversationId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, authToken } = useContext(AuthContext);
   
   const {
     messages,
@@ -24,7 +26,9 @@ const MessageChatPage = () => {
     getMessages,
     addReaction,
     setFriendId,
-    chatList
+    chatList,
+    getFriendDetails,
+    generateConversationId
   } = useContext(ChatContext);
 
   // Extract friend ID from the conversation ID
@@ -71,51 +75,25 @@ const MessageChatPage = () => {
     };
   }, [friendId]);
 
-  // Fetch friend details from the chat list or from API
+  // Fetch friend details using the ChatContext's getFriendDetails function
   const fetchFriendDetails = async () => {
     if (!friendId) return;
     
     setErrorMessage(null);
     
-    // Try to get friend details from chat list first
-    if (chatList && chatList.length > 0) {
-      const foundFriend = chatList.find(chat => chat.id === friendId);
-      if (foundFriend) {
-        setFriend({
-          name: `${foundFriend.firstName} ${foundFriend.lastName}`,
-          avatar: foundFriend.avatar || "/placeholder.svg",
-          isOnline: false // We'll need to implement a webhook or polling to update this
-        });
-        return;
-      }
-    }
-    
-    // If not in chat list, fetch from API
     try {
-      const response = await fetch(`http://127.0.0.1:5000/users/${friendId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
+      // Use the getFriendDetails function from ChatContext
+      const friendDetails = await getFriendDetails(friendId);
       
-      if (response.ok) {
-        const userData = await response.json();
-        setFriend({
-          name: `${userData.first_name} ${userData.last_name}`,
-          avatar: userData.avatar || "/placeholder.svg",
-          isOnline: userData.is_online || false
-        });
-      } else if (response.status === 404) {
-        // User not found
-        setErrorMessage("User not found");
+      if (friendDetails) {
+        setFriend(friendDetails);
+      } else {
+        // If no details were found, set default values
         setFriend({
           name: "Unknown User",
           avatar: "/placeholder.svg",
           isOnline: false
         });
-      } else {
-        // Other error
-        throw new Error(`Error fetching user: ${response.status}`);
       }
     } catch (error) {
       console.error("Failed to fetch friend details:", error);
@@ -134,9 +112,9 @@ const MessageChatPage = () => {
     
     try {
       // Try to use the conversation-exists endpoint if available
-      const response = await fetch(`http://127.0.0.1:5000/conversation-exists/${friendId}`, {
+      const response = await fetch(`${apiEndpoint}/conversation-exists/${friendId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          Authorization: `Bearer ${authToken || localStorage.getItem('authToken')}`,
         },
       });
       
@@ -183,8 +161,14 @@ const MessageChatPage = () => {
         setCanLoadMore(false);
       }
     } catch (error) {
-      console.error("Failed to load messages:", error);
-      setErrorMessage("Failed to load messages. Please try again.");
+      // Don't show error for new conversations with no messages
+      if (typeof error === 'object' && error !== null && 'message' in error && 
+          (error.message as string).includes('Failed to fetch messages')) {
+        console.log("No messages found, this is likely a new conversation");
+      } else {
+        console.error("Failed to load messages:", error);
+        setErrorMessage("Failed to load messages. Please try again.");
+      }
       setCanLoadMore(false);
     } finally {
       setLoading(false);
@@ -269,19 +253,21 @@ const MessageChatPage = () => {
   };
 
   // Prepare messages for the ChatMessages component
+  // Prepare messages for the ChatMessages component
   const formattedMessages = messages.map(message => ({
     id: message.id,
     sender: message.senderId,
     content: message.content,
     timestamp: message.timestamp,
-    avatar: "/placeholder.svg",
+    avatar: message.senderId === currentUser?.id 
+          ? (currentUser?.avatar || "/placeholder.svg") 
+          : (friend?.avatar || "/placeholder.svg"),
     reactions: message.reactions.map(r => r.reactionType),
     replyTo: message.replyTo,
-    isSent: message.isSent,
+    isSent: message.senderId === currentUser?.id,
     isRead: message.isRead,
-    media: message.media
+    media: message.media || undefined
   }));
-
   // Define navigation links for the sidenav
   const navLinks = [
     {
@@ -312,7 +298,14 @@ const MessageChatPage = () => {
           <SideNav links={navLinks} />
         </div>
         <div className="flex-1 flex flex-col">
-          <ChatHeader friend={friend || undefined} />
+          <ChatHeader 
+            friend={friend ? {
+              name: friend.name,
+              avatar: friend.avatar,
+              isOnline: friend.isOnline
+            } : undefined} 
+            isTyping={false}
+          />
       
       {/* Error message display */}
       {errorMessage && (
