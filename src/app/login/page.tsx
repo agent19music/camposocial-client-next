@@ -21,6 +21,8 @@ export default function LoginForm() {
   const router = useRouter()
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
+  console.log("API Endpoint:", apiEndpoint);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [authToken, setAuthToken] = useState(() =>
@@ -34,7 +36,7 @@ export default function LoginForm() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    login(username, password, apiEndpoint);
+    login(username, password, apiEndpoint || "");
   };
 
   return (

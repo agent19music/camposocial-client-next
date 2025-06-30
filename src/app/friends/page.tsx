@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext, useState } from "react"
+import { useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,7 @@ import { MoreHorizontal, MessageCircle, UserPlus, Search, Users, Bell } from 'lu
 import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
 import { UserContext } from "@/context/usercontext"
+import { FriendshipContext } from "@/context/friendshipcontext"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ReceivedRequestsModal } from "@/modals/friends/friendrequests"
 
@@ -216,14 +217,42 @@ export default function Component() {
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [activeModal, setActiveModal] = useState<string | null>(null)
   
-  const {users, sendFriendRequest: sendFriendRequestContext, friends, removeFriend, blockUser: blockUserContext, addFriend, receivedRequests} = useContext(UserContext);
-  
-  const sendFriendRequest = (id: number) => {
-    sendFriendRequestContext(id.toString());
+  const {
+    sendFriendRequest,
+    acceptFriendRequest,
+    blockUser,
+    unfriend,
+    getFriendRequests,
+    pendingRequests,
+    friends,
+  } = useContext(FriendshipContext);
+
+  useEffect(() => {
+    getFriendRequests();
+  }, []);
+
+  const handleSendRequest = async (id: string) => {
+    try {
+      await sendFriendRequest(id);
+    } catch (error) {
+      console.error(error);
+    }
   };
-  
-  const blockUser = (id: number) => {
-    blockUserContext(id.toString(), "block");
+
+  const handleUnfriend = async (id: string) => {
+    try {
+      await unfriend(id);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleBlock = async (id: string) => {
+    try {
+      await blockUser(id);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const transformedUsers: Suggestion[] = users?.map(user => ({
@@ -351,4 +380,5 @@ export default function Component() {
     </div>
   )
 }
+
 

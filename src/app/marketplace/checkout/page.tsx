@@ -21,7 +21,6 @@ export default function page() {
     <div className="flex flex-col md:flex-row">
       {/* Left SideNav */}
     
-      <SideNav links={marketplaceLinks} />
 
       
       {/* Right Content */}

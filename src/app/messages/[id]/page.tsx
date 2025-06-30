@@ -25,14 +25,14 @@ const MessageChatPage = () => {
     sendMessage,
     getMessages,
     addReaction,
-    setFriendId,
     chatList,
     getFriendDetails,
-    generateConversationId
+    generateConversationId,
+    friendDetails,
+    friendId
   } = useContext(ChatContext);
 
   // Extract friend ID from the conversation ID
-  const [friendId, setLocalFriendId] = useState<string | null>(null);
   // Friend details state
   const [friend, setFriend] = useState<{ name: string; avatar: string; isOnline: boolean } | null>(null);
   
@@ -44,26 +44,14 @@ const MessageChatPage = () => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [selectedMedia, setSelectedMedia] = useState<FileList | null>(null);
 
-  // Extract the friend ID from the conversation ID
-  useEffect(() => {
-    if (conversationId && currentUser) {
-      // If the conversation ID contains an underscore, it's in the format user1_user2
-      if (conversationId.includes('_')) {
-        const userIds = conversationId.split('_');
-        // Find which ID is not the current user's ID
-        const extractedFriendId = userIds[0] === currentUser.id ? userIds[1] : userIds[0];
-        setLocalFriendId(extractedFriendId);
-      } else {
-        // For backward compatibility or if using raw IDs
-        setLocalFriendId(conversationId);
-      }
-    }
-  }, [conversationId, currentUser]);
+  console.log("friendId", friendId);
+  console.log("conversationId", conversationId);
+  console.log("friendDetails", friendDetails);
+
 
   // Set the friend ID in the chat context and fetch friend details
   useEffect(() => {
     if (friendId) {
-      setFriendId(friendId);
       loadInitialMessages();
       fetchFriendDetails();
     }
@@ -71,19 +59,18 @@ const MessageChatPage = () => {
     return () => {
       // Clear the messages and friendId when unmounting
       setMessages([]);
-      setFriendId(null);
     };
   }, [friendId]);
 
   // Fetch friend details using the ChatContext's getFriendDetails function
   const fetchFriendDetails = async () => {
-    if (!friendId) return;
+    if (!conversationId) return;
     
     setErrorMessage(null);
     
     try {
       // Use the getFriendDetails function from ChatContext
-      const friendDetails = await getFriendDetails(friendId);
+      const friendDetails = await getFriendDetails(conversationId);
       
       if (friendDetails) {
         setFriend(friendDetails);
@@ -91,7 +78,7 @@ const MessageChatPage = () => {
         // If no details were found, set default values
         setFriend({
           name: "Unknown User",
-          avatar: "/placeholder.svg",
+          avatar: "/wkndpfp.jpg",
           isOnline: false
         });
       }
@@ -100,7 +87,7 @@ const MessageChatPage = () => {
       // Set default values if fetch fails
       setFriend({
         name: "User",
-        avatar: "/placeholder.svg",
+        avatar: "/wkndpfp.jpg",
         isOnline: false
       });
     }
@@ -108,11 +95,11 @@ const MessageChatPage = () => {
 
   // Check if conversation exists before loading messages
   const checkConversationExists = async (): Promise<boolean> => {
-    if (!friendId) return false;
+    if (!conversationId) return false;
     
     try {
       // Try to use the conversation-exists endpoint if available
-      const response = await fetch(`${apiEndpoint}/conversation-exists/${friendId}`, {
+      const response = await fetch(`${apiEndpoint}/conversation-exists/${conversationId}`, {
         headers: {
           Authorization: `Bearer ${authToken || localStorage.getItem('authToken')}`,
         },
@@ -137,7 +124,7 @@ const MessageChatPage = () => {
   };
 
   const loadInitialMessages = async () => {
-    if (!friendId) return;
+    if (!conversationId) return;
     
     setLoading(true);
     setErrorMessage(null);
@@ -154,10 +141,13 @@ const MessageChatPage = () => {
       }
       
       // Proceed to load messages
-      const fetchedMessages = await getMessages(friendId, 20);
+      if (friendId) {
+        const fetchedMessages = await getMessages(friendId, 20);
+        setMessages(fetchedMessages);
+      }
       
       // Check if this is a new conversation (no messages)
-      if (fetchedMessages.length === 0) {
+      if (messages.length === 0) {
         setCanLoadMore(false);
       }
     } catch (error) {
@@ -260,8 +250,8 @@ const MessageChatPage = () => {
     content: message.content,
     timestamp: message.timestamp,
     avatar: message.senderId === currentUser?.id 
-          ? (currentUser?.avatar || "/placeholder.svg") 
-          : (friend?.avatar || "/placeholder.svg"),
+          ? (currentUser?.avatar || "/wkndpfp.jpg") 
+          : (friend?.avatar || "/wkndpfp.jpg"),
     reactions: message.reactions.map(r => r.reactionType),
     replyTo: message.replyTo,
     isSent: message.senderId === currentUser?.id,

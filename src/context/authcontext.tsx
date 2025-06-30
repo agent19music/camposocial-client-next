@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, ReactNode, useState, useEffect, useContext } from "react";
+import { createContext, ReactNode, useState, useEffect, useContext, use } from "react";
 import { useRouter } from "next/navigation";
+import { MarketplaceContext } from "./marketplacecontext";
 import {toast} from 'react-hot-toast'
 
 interface User {
@@ -14,35 +15,40 @@ type currentUser = {
   first_name: string
   last_name: string
   address: string
-  phone: string
+  phone_no: string
   email: string
   avatar: string
+  is_seller: boolean
+  bio: string
+  category: string
+  username: string
 } | null
 
 
 // Define the AuthContext interface
 interface AuthContextType {
-  login: (username:string, password:string, apiEndpoint:string) => void; 
-  sellerlogin: (email:string, password:string) => void; 
-
-  logout: () => void; 
+  login: (username: string, password: string, apiEndpoint: string) => void;
+  socialLogin: (provider: string, data: any) => Promise<void>;
+  completeProfile: (profileData: any) => Promise<void>;
+  logout: () => void;
   currentUser: currentUser | null;
-  authToken : string | null;
-  updateUserContext: () => void; 
+  authToken: string | null;
+  updateUserContext: () => void;
   onAuthChange: boolean;
-
+  isProfileComplete: boolean;
 }
 
 // Create the AuthContext with a default value (null user initially)
 export const AuthContext = createContext<AuthContextType>({
-
   login: () => {},
+  socialLogin: async () => {},
+  completeProfile: async () => {},
   logout: () => {},
-  currentUser : null,
+  currentUser: null,
   authToken: null,
   updateUserContext: () => {},
-  sellerlogin: ()=> {},
-  onAuthChange: false
+  onAuthChange: false,
+  isProfileComplete: false
 });
 
 interface AuthProviderProps {
@@ -50,11 +56,12 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const apiEndpoint = "http://127.0.0.1:5000"; 
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
 //   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState <currentUser| null>(null)
   const [isLoading, setIsLoading] = useState(false);
   const [onAuthChange, setOnAuthChange] = useState(false)
+  const {sellerStatusChange} = useContext(MarketplaceContext)
   const [authToken, setAuthToken] = useState(() => {
     if (typeof window !== 'undefined') {
       return sessionStorage.getItem('authToken');
@@ -62,6 +69,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     return null;
   });
   const router = useRouter();
+  const [isProfileComplete, setIsProfileComplete] = useState(true);
 
   async function login(username: string, password: string, apiEndpoint: string) {
     try {
@@ -90,31 +98,61 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  function sellerlogin(email:string, password:string) {
-    fetch(`${apiEndpoint}/seller/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    })
-      .then((res) => res.json())
-      .then((response) => {
-        console.log('Server response:', response); // Log the server response
-        if (response.access_token) {
-          sessionStorage.setItem('authToken', response.access_token);
-          setAuthToken(response.access_token);
-          toast.success("You are now logged in."); // Success toast
-          setOnAuthChange(!onAuthChange);
-          router.push('/products');
-        } else {
-          toast.error("Incorrect username or password"); // Error toast
-        }
-      })
-      .catch((error) => {
-        console.error('Error logging in:', error);
-        toast.error('Error logging in'); // Error toast
+  async function socialLogin(provider: string, data: any) {
+    try {
+      const response = await fetch(`${apiEndpoint}/oauth/${provider}/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
       });
+
+      const result = await response.json();
+
+      if (result.access_token) {
+        sessionStorage.setItem('authToken', result.access_token);
+        setAuthToken(result.access_token);
+        setIsProfileComplete(result.is_profile_complete);
+        setOnAuthChange(!onAuthChange);
+        
+        if (!result.is_profile_complete) {
+          router.push('/complete-profile');
+        } else {
+          router.push('/yaps');
+        }
+      }
+    } catch (error) {
+      console.error('Social login error:', error);
+      toast.error('Authentication failed');
+    }
+  }
+
+  async function completeProfile(profileData: any) {
+    try {
+      const response = await fetch(`${apiEndpoint}/user/complete-profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setIsProfileComplete(true);
+        updateUserContext();
+        router.push('/yaps');
+        toast.success('Profile completed successfully');
+      } else {
+        toast.error(result.message || 'Failed to complete profile');
+      }
+    } catch (error) {
+      console.error('Profile completion error:', error);
+      toast.error('Failed to complete profile');
+    }
   }
 
   
@@ -145,7 +183,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
               }
             })
         }
-      }, [authToken, onAuthChange])
+      }, [authToken, onAuthChange,sellerStatusChange])
     
       const updateUserContext = () => {
         fetch(`${apiEndpoint}/authenticated_user`, {
@@ -175,8 +213,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     updateUserContext,
     login,
     logout,
-    sellerlogin,
-    onAuthChange
+    socialLogin,
+    completeProfile,
+    onAuthChange,
+    isProfileComplete
   };
 
   return (

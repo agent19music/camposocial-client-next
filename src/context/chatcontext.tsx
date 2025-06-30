@@ -4,6 +4,7 @@ import { createContext, ReactNode, useState, useEffect, useContext, useRef } fro
 import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
+import { set } from "date-fns";
 
 interface Media {
     url: string;
@@ -28,6 +29,13 @@ interface User {
     firstName: string;
     lastName: string;
     email: string;
+}
+
+interface Friend {
+    username: string;
+    avatar: string;
+    isOnline: boolean;
+    id: string;
 }
 
 interface Conversation {
@@ -64,6 +72,8 @@ interface ChatContextType {
     checkIfConversationExists: (friendId: string) => Promise<boolean>;
     conversations: Conversation[];
     getFriendDetails: (friendId: string) => Promise<{name: string; avatar: string; isOnline: boolean} | null>;
+    friendDetails: Friend | null;
+    currentUser: User | null;
 }
 
 interface ChatListUser {
@@ -95,6 +105,8 @@ export const ChatContext = createContext<ChatContextType>({
     checkIfConversationExists: async () => false,
     conversations: [],
     getFriendDetails: async () => null,
+    friendDetails: null,
+    currentUser: null,
 });
 
 interface ChatProviderProps {
@@ -102,10 +114,21 @@ interface ChatProviderProps {
 }
 
 export default function ChatProvider({ children }: ChatProviderProps) {
-    const apiEndpoint = "http://127.0.0.1:5000";
-    const { currentUser, authToken } = useContext(AuthContext);
+    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+    const { currentUser: rawCurrentUser, authToken } = useContext(AuthContext);
+    
+    const currentUser = rawCurrentUser
+        ? {
+            id: rawCurrentUser.id,
+            firstName: rawCurrentUser.first_name,
+            lastName: rawCurrentUser.last_name,
+            email: rawCurrentUser.email,
+        }
+        : null;
     const [messages, setMessages] = useState<Message[]>([]);
     const [friendId, setFriendId] = useState<string | null>(null); 
+    const [friendDetails, setFriendDetails] = useState<Friend | null>(null);
+
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -176,6 +199,13 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             if (convResponse.ok) {
                 const convData = await convResponse.json();
+                const friendDetails = {
+                    username: `${convData.first_name} ${convData.last_name}`,
+                    avatar: convData.avatar || '',
+                    isOnline: convData.is_online || false,
+                    id: convData.friend_id
+                };
+                setFriendDetails(friendDetails);
                 return {
                     name: `${convData.first_name} ${convData.last_name}`,
                     avatar: convData.avatar || '',
@@ -253,54 +283,20 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             });
 
             if (!response.ok) {
-                // If the endpoint doesn't exist, fall back to the chat-list endpoint
-                const chatUsers = await getChatList();
-                
-                // Convert chat list to conversations
-                const conversationsPromises = chatUsers.map(async (user: ChatListUser) => {
-                    const conversationId = currentUser ? generateConversationId(currentUser.id, user.id) : '';
-                    const exists = await checkIfConversationExists(user.id);
-                    
-                    // Get the last message if the conversation exists
-                    let lastMessage = null;
-                    let lastMessageTime = null;
-                    if (exists) {
-                        const messages = await getMessages(user.id, 1);
-                        if (messages.length > 0) {
-                            lastMessage = messages[0].content;
-                            lastMessageTime = messages[0].timestamp;
-                        }
-                    }
-                    
-                    return {
-                        id: conversationId,
-                        friendId: user.id,
-                        friendName: `${user.firstName} ${user.lastName}`,
-                        friendAvatar: user.avatar,
-                        lastMessage,
-                        lastMessageTime,
-                        unreadCount: 0, // Would need an API endpoint to get unread count
-                        isEmpty: !exists,
-                        isOnline: false // Would need an API endpoint to get online status
-                    };
-                });
-                
-                const conversationsData = await Promise.all(conversationsPromises);
-                setConversations(conversationsData);
-                return conversationsData;
+                throw new Error('Failed to fetch conversations');
             }
 
             const data = await response.json();
             const conversationsData = data.conversations.map((conv: any) => ({
-                id: generateConversationId(currentUser.id, conv.friend_id),
-                friendId: conv.friend_id,
-                friendName: conv.friend_name,
-                friendAvatar: conv.friend_avatar || '',
-                lastMessage: conv.last_message,
-                lastMessageTime: conv.last_message_time ? new Date(conv.last_message_time) : null,
-                unreadCount: conv.unread_count || 0,
-                isEmpty: !conv.has_messages,
-                isOnline: conv.is_online || false
+                id: conv.conversation_id,
+                friendId: conv.friend.id,
+                friendName: conv.friend.username,
+                friendAvatar: conv.friend.avatar || '',
+                lastMessage: conv.last_message ? conv.last_message.content : null,
+                lastMessageTime: conv.last_message ? new Date(conv.last_message.timestamp) : new Date(conv.updated_at),
+                unreadCount: 0, // You might want to add this to your API response
+                isEmpty: !conv.last_message,
+                isOnline: conv.friend.is_online
             }));
             
             setConversations(conversationsData);
@@ -322,9 +318,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             toast.loading("Generating encryption keys...");
 
             const { privateKey, publicKey } = await openpgp.generateKey({
-                type: 'ecc',
-                curve: 'curve25519Legacy',
-                userIDs: [{ name: currentUser.first_name, email: currentUser.email }],
+                type: 'rsa',
+                rsaBits: 4096,  // Match server's RSA key size
+                userIDs: [{ name: currentUser.firstName, email: currentUser.email }],
                 passphrase: '',
                 format: 'armored'
             });
@@ -810,6 +806,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     };
 
+    console.log("FriendDetails", friendDetails);
+
     const contextData: ChatContextType = {
         sendMessage,
         getMessages,
@@ -832,6 +830,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         checkIfConversationExists,
         conversations,
         getFriendDetails,
+        friendDetails,
+        currentUser
     };
 
     return (

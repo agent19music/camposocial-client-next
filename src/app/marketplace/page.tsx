@@ -8,18 +8,25 @@ import { Input } from '@/components/ui/input'
 import { Warehouse } from 'lucide-react';
 import { useContext } from 'react';
 import { MarketplaceContext } from '@/context/marketplacecontext';
+import { AuthContext } from '@/context/authcontext'
 import CartComponent from '@/components/cart'
+import { useRouter } from 'next/navigation';
 export default function Marketplace() {
  
 
-  const marketplaceLinks = [
-    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" /> },
-    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" /> },
-    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" /> },
-    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" /> },
-    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" /> },
-    { href: "/sellerdashboard/sellersignup", label: "Become a seller", icon: <Warehouse className="h-4 w-4" /> },
+  const router = useRouter();
 
+  const { currentUser } = useContext(AuthContext);
+
+  const marketplaceLinks = [
+    { label: "Art", icon: <Paintbrush className="h-4 w-4" />, onClick: () => router.push("/art") },
+    { label: "Food", icon: <Cookie className="h-4 w-4" />, onClick: () => router.push("/food") },
+    { label: "Books", icon: <Book className="h-4 w-4" />, onClick: () => router.push("/books") },
+    { label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => router.push("/clothing") },
+    { label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => router.push("/tech") },
+    currentUser?.is_seller
+      ? { label: "My Dashboard", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/sellerdashboard") }
+      : { label: "Become a seller", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/sellerdashboard/sellersignup") },
   ];
 const {products} = useContext(MarketplaceContext)
   // Array to simulate 21 products

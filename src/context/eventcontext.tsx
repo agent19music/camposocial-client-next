@@ -43,7 +43,7 @@ interface EventProviderProps {
 }
 
 export default function EventProvider({ children }: EventProviderProps) {
-    const apiEndpoint = "http://127.0.0.1:5000"; 
+    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   const [isLoading, setIsLoading] = useState(false);
   const [events, setEvents] = useState<any[]>([]);

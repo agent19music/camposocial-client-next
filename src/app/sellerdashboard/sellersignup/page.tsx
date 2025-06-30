@@ -12,7 +12,8 @@ import { useContext } from 'react';
 import { AuthContext } from '@/context/authcontext';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
-import { Pencil } from 'lucide-react';
+import { Pencil, Loader2 } from 'lucide-react';
+import { MarketplaceContext } from '@/context/marketplacecontext';
 
 export default function SellerSignup() {
   const [email, setEmail] = useState('');
@@ -20,89 +21,143 @@ export default function SellerSignup() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [avatar, setAvatar] = useState('');
-  const [avatarFile, setAvatarFile] = useState<File | null>(null); // Avatar file for upload
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [about, setAbout] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const router = useRouter();
   const { currentUser, authToken } = useContext(AuthContext);
-  const fileInputRef = useRef<HTMLInputElement | null>(null); // Reference for file input
-
-  console.log(currentUser);
-  
+  const {setSellerStausChange, sellerStatusChange} = useContext(MarketplaceContext)
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (currentUser) {
-      setEmail(currentUser.email);
-      setName(currentUser.first_name + " " + currentUser.last_name);
-      setPhone(currentUser.phone_no);
-      setAvatar(currentUser.avatar);
+      setEmail(currentUser.email || '');
+      setName(
+        currentUser.first_name && currentUser.last_name
+          ? `${currentUser.first_name} ${currentUser.last_name}`
+          : ''
+      );
+      setPhone(currentUser.phone_no || '');
+      setAvatar(currentUser.avatar || '');
     }
   }, [currentUser]);
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const fileURL = URL.createObjectURL(file);
-      setAvatar(fileURL); // Update preview
+    try {
+      const file = e.target.files?.[0];
+      if (file) {
+        // Validate file size (e.g., max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('File size should be less than 5MB');
+          return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          toast.error('Only image files are allowed');
+          return;
+        }
+        
+        setAvatarFile(file);
+        const fileURL = URL.createObjectURL(file);
+        setAvatar(fileURL);
+      }
+    } catch (error) {
+      console.error('Error selecting file:', error);
+      toast.error('Failed to select file');
     }
   };
 
   const handleFileUploadClick = () => {
-    fileInputRef.current?.click(); // Trigger file input click
+    fileInputRef.current?.click();
   };
 
+  const validateForm = () => {
+    if (!displayName.trim()) {
+      toast.error('Business display name is required');
+      return false;
+    }
 
+    if (!about.trim()) {
+      toast.error('About section is required');
+      return false;
+    }
+
+    // Phone validation if needed (optional field)
+    if (phone && !/^\d{10}$/.test(phone)) {
+      toast.error('Phone number must be 10 digits');
+      return false;
+    }
+
+    return true;
+  };
 
   const addUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!displayName || !about) {
-      toast.error('Kindly fill in all fields');
+    setError('');
+    
+    if (!validateForm()) {
       return;
     }
 
-    const formData = new FormData();
+    setLoading(true);
 
-    // Append relevant form data
-    formData.append('display_name', displayName);
-    formData.append('about', about);
-    formData.append('phone', phone);
-
-    if (avatarFile) {
-      // If a new avatar is selected, append the file
-      formData.append('avatar_file', avatarFile);
-    } else {
-      // If no new avatar, use the existing URL
-      formData.append('avatar_url', avatar);
-    }
-
-
-    console.log(authToken);
-    for (const pair of formData.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }    
-    
     try {
+      const formData = new FormData();
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/seller`, {
+      // Append form data
+      formData.append('display_name', displayName.trim());
+      formData.append('about', about.trim());
+      
+      if (phone) {
+        formData.append('phone', phone);
+      }
+
+      // Handle avatar
+      if (avatarFile) {
+        formData.append('avatar_file', avatarFile);
+      } else if (avatar) {
+        formData.append('avatar_url', avatar);
+      }
+
+      // Check if authToken exists before making the request
+      if (!authToken) {
+        throw new Error('Authentication token is missing');
+      }
+
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+      if (!apiEndpoint) {
+        throw new Error('API endpoint configuration is missing');
+      }
+
+      const response = await fetch(`${apiEndpoint}/seller_signup`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
-        body: formData, // Send formData instead of JSON
+        body: formData,
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        toast.success('Your account has been created successfully!');
-        router.push('/dashboard');
+        setSellerStausChange(!sellerStatusChange)
+        toast.success('Your seller account has been created successfully!');
+        console.log('Seller account created:', result);
+        // Redirect after a short delay to ensure toast is visible
       } else {
-        toast.error(result.message || 'An error occurred');
+        setError(result.error || 'Failed to create seller account');
+        toast.error(result.error || 'Failed to create seller account');
       }
     } catch (error: any) {
-      toast.error(`A network error occurred: ${error.message}`);
+      console.error('Seller registration error:', error);
+      const errorMessage = error.message || 'An unexpected error occurred';
+      setError(errorMessage);
+      toast.error(`Registration failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,18 +187,27 @@ export default function SellerSignup() {
               Complete your seller profile to start selling on our marketplace
             </p>
           </div>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="space-y-4">
             <div className="flex justify-center">
               <div className="relative">
                 <Avatar className="w-24 h-24">
                   <AvatarImage src={avatar} alt="User's profile picture" />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarFallback>{displayName.slice(0, 2).toUpperCase() || 'DP'}</AvatarFallback>
                 </Avatar>
                 <Button
                   variant="secondary"
                   size="icon"
                   className="absolute bottom-0 right-0 rounded-full"
-                  onClick={handleFileUploadClick} // Trigger file selection
+                  onClick={handleFileUploadClick}
+                  type="button"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -152,7 +216,7 @@ export default function SellerSignup() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={onSelectFile} // Handle file selection
+                  onChange={onSelectFile}
                 />
               </div>
             </div>
@@ -185,11 +249,12 @@ export default function SellerSignup() {
                 type="tel"
                 maxLength={10}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                placeholder="10-digit phone number"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="displayName">Business Display Name</Label>
+              <Label htmlFor="displayName">Business Display Name<span className="text-red-500">*</span></Label>
               <Input
                 id="displayName"
                 type="text"
@@ -200,16 +265,26 @@ export default function SellerSignup() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="about">About</Label>
+              <Label htmlFor="about">About<span className="text-red-500">*</span></Label>
               <Textarea
                 id="about"
                 placeholder="A brief description of your business"
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
+                required
               />
             </div>
-            <Button type="submit" className="w-full">
-              Submit Seller Application
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : "Submit Seller Application"}
             </Button>
           </div>
         </form>

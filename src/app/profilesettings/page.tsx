@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from "react"
-import { Bell, ChevronRight, Eye, UserX, VolumeX, Trash2, ArrowLeft } from "lucide-react"
+import { Bell, ChevronRight, Eye, UserX, VolumeX, Trash2, ArrowLeft,Plus, List } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Header from "@/components/header"
 import { Calendar, PartyPopper, Home } from "lucide-react";
 import SideNav from "@/components/sidenav"
+import toast from "react-hot-toast"
 
 
 
@@ -20,10 +21,10 @@ export default function ProfileSettings() {
   const [isMobile, setIsMobile] = useState(false)
 
   const eventLinks = [
-    { href: "/comingsoon", label: "Coming Soon", icon: <Home className="h-4 w-4" /> },
-    { href: "/social-events", label: "Social Events", icon: <Calendar className="h-4 w-4" /> },
-    { href: "/fun-events", label: "Fun Events", icon: <PartyPopper className="h-4 w-4" /> },
-  ];
+    { label: "Calendar", icon: <Calendar className="h-4 w-4" />, onClick: () => toast.success("calendar") },
+    { label: "Create Event", icon: <Plus className="h-4 w-4" />, onClick: () => toast.success("create") },
+    { label: "My Events", icon: <List className="h-4 w-4" />, onClick: () => toast.success("myEvents") },
+  ]
 
 
   useEffect(() => {
@@ -198,7 +199,9 @@ export default function ProfileSettings() {
     {/* Main content with the two side navs and center content */}
     <div className="flex  flex-col md:flex-row">
       {/* Left SideNav */}
-      <SideNav links={eventLinks} />
+        <div className="md:w-64 flex-shrink-0">
+                <SideNav links = {eventLinks} />
+              </div>
     <Card className="w-full max-w-3xl mx-auto mt-5">
       <CardHeader>
         <CardTitle>Profile Settings</CardTitle>

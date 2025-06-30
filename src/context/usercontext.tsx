@@ -58,7 +58,7 @@ interface UserProviderProps {
 }
 
 export default function UserProvider({ children }: UserProviderProps) {
-  const apiEndpoint = "http://127.0.0.1:5000"; 
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   const [isLoading, setIsLoading] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);

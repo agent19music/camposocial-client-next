@@ -15,7 +15,15 @@ const nextConfig = {
             pathname: '/**', // This allows all paths under this hostname
           },
         ],
-        domains: ['m.media-amazon.com', 'ke.jumia.is'], 
+        domains: ['m.media-amazon.com', 'ke.jumia.is',  'www.maccosmetics.com',
+          'blushbox.store',
+          'm.cremedelamer.com',
+          'bluemercury.com',
+          'www.cultbeauty.com',
+          'www.eve.co.ke',
+          'beautinow.com',
+          'cdn.cosmostore.org',
+          'static.thcdn.com'], 
       },
 };
 

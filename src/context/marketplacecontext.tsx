@@ -73,10 +73,12 @@ interface MarketplaceContextProps {
   selectedSeller: Seller | null;
   updateCart: boolean;
   setUpdateCart: (value: boolean) => void;
-  navigationToSingleSellerView: (seller: Seller) => void;
   getLatestOrderId: () => Promise<number | null>;
   setOrderId: (value: string | null) => void;
   orderId: string | null;
+  sellerStatusChange: boolean;
+  setSellerStausChange: (value: boolean) => void;
+
 }
 
 // Default values for the context
@@ -95,10 +97,11 @@ const defaultValue: MarketplaceContextProps = {
   navigateToSingleSellerView: () => {}, // No-op function for default
   setUpdateCart: () => {},
   updateCart: false,
-  navigationToSingleSellerView: () => {},
   getLatestOrderId: async () => null,
   setOrderId: () => {},
-  orderId: null
+  orderId: null,
+  sellerStatusChange: false,
+  setSellerStausChange: () => {},
 };
 
 // Create the MarketplaceContext with default values
@@ -111,7 +114,7 @@ interface MarketplaceProviderProps {
 
 // MarketplaceProvider component to wrap the application
 export default function MarketplaceProvider({ children }: MarketplaceProviderProps) {
-  const apiEndpoint = "http://127.0.0.1:5000"; 
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // Get the API endpoint from environment variables
   const {authToken} = useContext(AuthContext); // Get the authToken from the AuthContext
 
   // State declarations
@@ -125,6 +128,7 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null); // Initially no yap is selected
   const [updateCart, setUpdateCart] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [sellerStatusChange, setSellerStausChange] = useState(false);   
 
 
 
@@ -212,7 +216,9 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     setSelectedSeller,
     getLatestOrderId,
     setOrderId,
-    orderId
+    orderId,
+    sellerStatusChange,
+    setSellerStausChange
     
     // Include this in the context data
   };

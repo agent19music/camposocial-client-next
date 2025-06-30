@@ -60,7 +60,7 @@ interface YapProviderProps {
 
 // YapProvider component to wrap the application
 export default function YapProvider({ children }: YapProviderProps) {
-  const apiEndpoint = "http://127.0.0.1:5000"; 
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // API endpoint from environment variables
   const authToken = useContext(AuthContext)
 
   // State declarations

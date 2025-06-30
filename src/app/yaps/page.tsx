@@ -32,6 +32,7 @@ import YapCard from '@/components/yapcard'
 import { useContext } from 'react'
 import { YapContext } from '@/context/yapcontext'
 import YapCardSkeleton from '@/components/yapskeleton'
+import { useRouter } from 'next/navigation';
 
 
 
@@ -40,12 +41,15 @@ import YapCardSkeleton from '@/components/yapskeleton'
 export default function Component() {
   
   const {yaps} = useContext(YapContext)
+  const router = useRouter();
 
   const eventLinks = [
-    { href: "/comingsoon", label: "Coming Soon", icon: <Home className="h-4 w-4" /> },
-    { href: "/social-events", label: "Social Events", icon: <Calendar className="h-4 w-4" /> },
-    { href: "/fun-events", label: "Fun Events", icon: <PartyPopper className="h-4 w-4" /> },
+    { label: "Coming Soon", icon: <Home className="h-4 w-4" />, onClick: () => router.push("/comingsoon") },
+    { label: "Social Events", icon: <Calendar className="h-4 w-4" />, onClick: () => router.push("/social-events") },
+    { label: "Fun Events", icon: <PartyPopper className="h-4 w-4" />, onClick: () => router.push("/fun-events") },
   ];
+
+  
 
 
   return (
