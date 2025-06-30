@@ -33,12 +33,23 @@ interface FriendRequest {
 export const FriendshipContext = createContext<FriendshipContextType>({} as FriendshipContextType);
 
 export function FriendshipProvider({ children }: { children: ReactNode }) {
-  const { authToken } = useContext(AuthContext);
+  const { authToken, isAuthenticated } = useContext(AuthContext);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
+  // Helper function to check authentication
+  const checkAuth = (): boolean => {
+    if (!isAuthenticated || !authToken) {
+      toast.error("Please log in to perform this action");
+      return false;
+    }
+    return true;
+  };
+
   const sendFriendRequest = async (recipientId: string) => {
+    if (!checkAuth()) return;
+
     try {
       const response = await fetch(`${apiEndpoint}/friends/send-request`, {
         method: "POST",
@@ -59,6 +70,8 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
   };
 
   const acceptFriendRequest = async (requesterId: string) => {
+    if (!checkAuth()) return;
+
     try {
       const response = await fetch(`${apiEndpoint}/friends/accept`, {
         method: "POST",
@@ -85,6 +98,8 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
   };
 
   const rejectFriendRequest = async (requesterId: string) => {
+    if (!checkAuth()) return;
+
     try {
       const response = await fetch(`${apiEndpoint}/friends/reject`, {
         method: "POST",
@@ -109,6 +124,8 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
   };
 
   const blockUser = async (userId: string) => {
+    if (!checkAuth()) return;
+
     try {
       const response = await fetch(`${apiEndpoint}/friends/block`, {
         method: "POST",
@@ -133,6 +150,8 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
   };
 
   const unfriend = async (friendId: string) => {
+    if (!checkAuth()) return;
+
     try {
       const response = await fetch(`${apiEndpoint}/friends/unfriend`, {
         method: "POST",
@@ -157,6 +176,8 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
   };
 
   const getFriendRequests = async () => {
+    if (!checkAuth()) return;
+
     try {
       const response = await fetch(`${apiEndpoint}/friends/requests`, {
         headers: {
@@ -167,10 +188,10 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error("Failed to fetch friend requests");
 
       const data = await response.json();
-      setPendingRequests(data.requests);
+      setPendingRequests(data.requests || []);
     } catch (error) {
-      toast.error("Failed to fetch friend requests");
-      throw error;
+      console.error("Error fetching friend requests:", error);
+      // Don't show toast error for this as it might be called frequently
     }
   };
 

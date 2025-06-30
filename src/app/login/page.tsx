@@ -9,93 +9,86 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
-import { toast } from "react-hot-toast";
-import { useRouter } from "next/navigation"
-import { useContext } from "react";
-import { AuthContext } from "@/context/authcontext";
+import { motion } from "framer-motion";
+import { SocialLoginModal } from "@/modals/signup/socialsbuttons";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { FloatingBackground } from "@/components/ui/floating-background";
 
 export default function LoginForm() {
-  const router = useRouter()
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-
-  console.log("API Endpoint:", apiEndpoint);
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [authToken, setAuthToken] = useState(() =>
-    sessionStorage.getItem("authToken")
-      ? sessionStorage.getItem("authToken")
-      : null
-  );
-
-  const {login} = useContext(AuthContext)
- 
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    login(username, password, apiEndpoint || "");
-  };
-
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="h-screen flex justify-center items-center">
-        <Card className="mx-auto max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>
-              Enter your username below to login to your account
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 dark:from-purple-900 dark:via-gray-900 dark:to-indigo-900 transition-colors duration-500 flex items-center justify-center p-4">
+      {/* Theme toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
+      {/* Floating icons background */}
+      <FloatingBackground iconCount={30} opacity={8} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <Card className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 shadow-2xl">
+          <CardHeader className="text-center space-y-2">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            >
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Welcome Back
+              </CardTitle>
+            </motion.div>
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              Sign in to your account to continue connecting with your campus community
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="m@example.com"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/reset-password"
-                    className="ml-auto inline-block text-sm underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
-              <Button variant="outline" className="w-full">
-                Login with Google
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don't have an account?{" "}
-              <Link href="/signup" className="underline">
-                Sign up
+          
+          <CardContent className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <SocialLoginModal />
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center"
+            >
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Don't have an account?{" "}
+                <Link 
+                  href="/signup" 
+                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold transition-colors duration-200 hover:underline"
+                >
+                  Sign up here
+                </Link>
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="text-center pt-2"
+            >
+              <Link 
+                href="/reset-password" 
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200 hover:underline"
+              >
+                Need help accessing your account?
               </Link>
-            </div>
+            </motion.div>
           </CardContent>
         </Card>
-      </div>
-    </form>
+      </motion.div>
+    </div>
   );
 }

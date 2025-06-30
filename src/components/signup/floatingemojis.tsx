@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,64 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import CreateAccount from "@/components/signup/manualsignup"
 import { SocialLoginModal } from "@/modals/signup/socialsbuttons"
+import { Icons } from "@/components/icons"
+import { FloatingBackground } from "@/components/ui/floating-background"
 import Link from "next/link"
-
-const socialEmojis = ["🔥", "💯", "💬", "📅", "📸", "👍", "🎉", "🌟", "📱", "🤳", "👋", "🗓️", "📢", "🔔", "💖"]
-
-function FloatingEmoji({ x, y, emoji }: { x: number; y: number; emoji: string }) {
-  return (
-    <motion.text
-      x={x}
-      y={y}
-      fontSize="24"
-      textAnchor="middle"
-      dominantBaseline="central"
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{
-        opacity: [0.7, 0.3, 0.7],
-        scale: [1, 1.2, 1],
-        x: x + Math.random() * 100 - 50,
-        y: y + Math.random() * 100 - 50,
-      }}
-      transition={{
-        duration: 5 + Math.random() * 10,
-        repeat: Number.POSITIVE_INFINITY,
-        repeatType: "reverse",
-      }}
-    >
-      {emoji}
-    </motion.text>
-  )
-}
-
-function FloatingEmojis() {
-  const [emojis, setEmojis] = useState<Array<{ id: number; x: number; y: number; emoji: string }>>([])
-
-  useEffect(() => {
-    const newEmojis = Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      emoji: socialEmojis[Math.floor(Math.random() * socialEmojis.length)],
-    }))
-    setEmojis(newEmojis)
-  }, [])
-
-  
-
-  return (
-    <div className="absolute inset-0 pointer-events-none">
-      <svg className="w-full h-full">
-        <title>Floating Social Emojis</title>
-        {emojis.map((emojiObj) => (
-          <FloatingEmoji key={emojiObj.id} {...emojiObj} />
-        ))}
-      </svg>
-    </div>
-  )
-}
 
 export default function FloatingEmojisBackground({
   title = "Welcome to camposocial",
@@ -76,22 +22,32 @@ export default function FloatingEmojisBackground({
   title?: string
 }) {
   const words = title.split(" ")
-  const [isManualOpen, setIsManualOpen] = useState(false)
   const [isSocialOpen, setIsSocialOpen] = useState(false)
 
-
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900">
-      <FloatingEmojis />
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 dark:from-purple-900 dark:via-gray-900 dark:to-indigo-900 transition-colors duration-500">
+      <FloatingBackground iconCount={60} opacity={10} />
+
+      {/* Subtle grid pattern overlay */}
+      <div className="absolute inset-0 opacity-20 dark:opacity-10" 
+           style={{
+             backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)`,
+             backgroundSize: '50px 50px'
+           }} />
 
       <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 2 }}
-          className="max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="max-w-5xl mx-auto"
         >
-          <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold mb-8 tracking-tighter">
+          <motion.h1 
+            className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold mb-12 tracking-tighter leading-none"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          >
             {words.map((word, wordIndex) => (
               <span key={wordIndex} className="inline-block mr-4 last:mr-0">
                 {word.split("").map((letter, letterIndex) => (
@@ -102,63 +58,75 @@ export default function FloatingEmojisBackground({
                     transition={{
                       delay: wordIndex * 0.1 + letterIndex * 0.03,
                       type: "spring",
-                      stiffness: 150,
-                      damping: 25,
+                      stiffness: 200,
+                      damping: 20,
                     }}
                     className="inline-block text-transparent bg-clip-text 
-                               bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 
-                               dark:from-purple-300 dark:via-pink-200 dark:to-red-300
-                               animate-text-shimmer"
-                    style={{
-                      backgroundSize: "200% auto",
-                      animation: "textShimmer 2s linear infinite",
-                    }}
+                               bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 
+                               dark:from-purple-300 dark:via-pink-200 dark:to-indigo-300
+                               hover:from-pink-600 hover:via-purple-500 hover:to-indigo-600
+                               transition-all duration-300"
                   >
                     {letter}
                   </motion.span>
                 ))}
               </span>
             ))}
-          </h1>
+          </motion.h1>
 
-          {/* Your existing buttons and content go here */}
-          <div className="space-y-4 bg-white/35 dark:bg-black/80 p-8 rounded-2xl backdrop-blur-lg shadow-xl">
-          <Dialog open={isManualOpen} onOpenChange={setIsManualOpen}>
-            <DialogTrigger asChild>
-              <Button variant="default" className="w-full">
-                Sign Up Manually
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Create an Account</DialogTitle>
-                <DialogDescription>Enter your details to create a new account.</DialogDescription>
-              </DialogHeader>
-              <CreateAccount onClose={() => setIsManualOpen(false)} />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isSocialOpen} onOpenChange={setIsSocialOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full">
-                Sign Up with Socials
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Social Sign Up</DialogTitle>
-                <DialogDescription>Choose a social platform to create your account.</DialogDescription>
-              </DialogHeader>
-              <SocialLoginModal />
-            </DialogContent>
-          </Dialog>
-          <div className="text-center mt-4">
-            Already have an account?{" "}
-            <Link href="/login" className="text-purple-600 hover:underline">
-              Log in here
-            </Link>
-          </div>
-        </div>
+          {/* OAuth only authentication */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+            className="max-w-md mx-auto"
+          >
+            <div className="bg-white/80 dark:bg-black/60 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50">
+              <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
+                Join our community
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Connect with your campus community through seamless social authentication.
+              </p>
+              
+              <Dialog open={isSocialOpen} onOpenChange={setIsSocialOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    <Icons.globe className="mr-2 h-5 w-5" />
+                    Sign Up with Social
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-0 shadow-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-center text-gray-800 dark:text-gray-200">
+                      Choose your platform
+                    </DialogTitle>
+                    <DialogDescription className="text-center text-gray-600 dark:text-gray-400">
+                      Sign up quickly and securely with your preferred social platform.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-6">
+                    <SocialLoginModal />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              <div className="text-center mt-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Already have an account?{" "}
+                  <Link 
+                    href="/login" 
+                    className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold transition-colors duration-200 hover:underline"
+                  >
+                    Sign in here
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </div>
     </div>

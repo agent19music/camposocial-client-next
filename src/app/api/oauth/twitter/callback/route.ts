@@ -12,12 +12,17 @@ export async function GET(request: NextRequest) {
     try {
         const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
         
-        // Call the backend OAuth endpoint with the code
-        const response = await fetch(`${apiEndpoint}/oauth/github/callback?code=${code}`, {
-            method: 'GET',
+        // For Twitter OAuth 2.0, we need to exchange the code for an access token
+        // This should be handled by the backend
+        const response = await fetch(`${apiEndpoint}/oauth/twitter/callback`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify({ 
+                code,
+                state 
+            })
         });
 
         const data = await response.json();
@@ -40,7 +45,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(new URL('/login?error=authentication_failed', request.url));
         }
     } catch (error) {
-        console.error('GitHub callback error:', error);
+        console.error('Twitter callback error:', error);
         return NextResponse.redirect(new URL('/login?error=server_error', request.url));
     }
-}
+} 

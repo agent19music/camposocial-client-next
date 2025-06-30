@@ -61,7 +61,7 @@ interface YapProviderProps {
 // YapProvider component to wrap the application
 export default function YapProvider({ children }: YapProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // API endpoint from environment variables
-  const authToken = useContext(AuthContext)
+  const { authToken, isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -73,23 +73,39 @@ export default function YapProvider({ children }: YapProviderProps) {
 
   const router = useRouter(); // Initialize the router
 
-  // Fetch yaps when the component mounts or when `onchange` changes
+  // Fetch yaps only when authenticated and not loading
   useEffect(() => {
+    if (authLoading || !isAuthenticated || !authToken) {
+      setYaps([]);
+      setFilteredYaps([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
-    fetch(`${apiEndpoint}/yaps`)
-      .then((res) => res.json())
+    fetch(`${apiEndpoint}/yaps`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to fetch yaps');
+        }
+        return res.json();
+      })
       .then((data) => {
-        setYaps(data.yaps);
-        setFilteredYaps(data.yaps); // Initially set filteredYaps to all yaps
+        setYaps(data.yaps || []);
+        setFilteredYaps(data.yaps || []); // Initially set filteredYaps to all yaps
         setIsLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching yaps:", error);
         setYaps([]);
         setFilteredYaps([]);
         setIsLoading(false);
       });
-  }, [onchange]);
+  }, [onchange, isAuthenticated, authToken, authLoading]);
 
   // Function to create a slug from yap id
   function slugify(int: string) {
@@ -113,6 +129,11 @@ export default function YapProvider({ children }: YapProviderProps) {
   }
   
    const postYap = async (yapPayload: YapPayload): Promise<Response | void> => {
+    if (!isAuthenticated || !authToken) {
+      toast.error('Please log in to post a yap');
+      return;
+    }
+
     const { content, location, originalYapId, mediaFiles } = yapPayload;
 
     
@@ -146,7 +167,7 @@ export default function YapProvider({ children }: YapProviderProps) {
         method: 'POST',
         headers: {
           // Do not set 'Content-Type' header; fetch will automatically set it with multipart boundary for FormData
-          'Authorization': `Bearer ${authToken.authToken}` // Assuming JWT is stored in localStorage
+          'Authorization': `Bearer ${authToken}` // Using the authToken from context
         },
         body: formData // The FormData object that contains the Yap payload
       });

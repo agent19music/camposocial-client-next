@@ -36,6 +36,8 @@ interface AuthContextType {
   updateUserContext: () => void;
   onAuthChange: boolean;
   isProfileComplete: boolean;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 // Create the AuthContext with a default value (null user initially)
@@ -48,7 +50,9 @@ export const AuthContext = createContext<AuthContextType>({
   authToken: null,
   updateUserContext: () => {},
   onAuthChange: false,
-  isProfileComplete: false
+  isProfileComplete: false,
+  isAuthenticated: false,
+  isLoading: true
 });
 
 interface AuthProviderProps {
@@ -59,17 +63,36 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
 //   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState <currentUser| null>(null)
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [onAuthChange, setOnAuthChange] = useState(false)
   const {sellerStatusChange} = useContext(MarketplaceContext)
-  const [authToken, setAuthToken] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('authToken');
-    }
-    return null;
-  });
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
   const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Initialize auth token from cookies on mount
+  useEffect(() => {
+    const getAuthToken = async () => {
+      try {
+        // Check for token in cookies via API
+        const response = await fetch('/api/auth/get-token');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            setAuthToken(data.token);
+            setIsAuthenticated(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error getting auth token:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getAuthToken();
+  }, []);
 
   async function login(username: string, password: string, apiEndpoint: string) {
     try {
@@ -84,8 +107,17 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       const data = await response.json();
   
       if (data.access_token) {
-        sessionStorage.setItem('authToken', data.access_token);
+        // Set token via API route to set HTTP-only cookie
+        await fetch('/api/auth/set-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: data.access_token }),
+        });
+
         setAuthToken(data.access_token);
+        setIsAuthenticated(true);
         toast.success('Welcome back');
         setOnAuthChange(!onAuthChange)
         router.push('/yaps')
@@ -100,6 +132,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   async function socialLogin(provider: string, data: any) {
     try {
+      console.log(`Attempting ${provider} OAuth with data:`, data);
+      
+      if (!apiEndpoint) {
+        throw new Error('API endpoint not configured');
+      }
+      
       const response = await fetch(`${apiEndpoint}/oauth/${provider}/callback`, {
         method: 'POST',
         headers: {
@@ -109,22 +147,39 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       });
 
       const result = await response.json();
+      console.log(`${provider} OAuth response:`, result);
 
       if (result.access_token) {
-        sessionStorage.setItem('authToken', result.access_token);
+        // Set token via API route to set HTTP-only cookie
+        await fetch('/api/auth/set-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: result.access_token }),
+        });
+
         setAuthToken(result.access_token);
+        setIsAuthenticated(true);
         setIsProfileComplete(result.is_profile_complete);
         setOnAuthChange(!onAuthChange);
+        
+        toast.success(`Successfully signed in with ${provider}`);
         
         if (!result.is_profile_complete) {
           router.push('/complete-profile');
         } else {
           router.push('/yaps');
         }
+      } else {
+        const errorMessage = result.error || `${provider} authentication failed`;
+        console.error(`${provider} OAuth error:`, result);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Social login error:', error);
-      toast.error('Authentication failed');
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      toast.error(`${provider} login failed: ${errorMessage}`);
     }
   }
 
@@ -157,16 +212,26 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   
   // Logout user
-  function logout() {
-    sessionStorage.removeItem('authToken')
+  async function logout() {
+    try {
+      // Clear token via API route
+      await fetch('/api/auth/clear-token', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Error clearing token:', error);
+    }
+    
     setCurrentUser(null)
     setAuthToken(null)
+    setIsAuthenticated(false)
     router.push('/login')
   }
 
     // Get Authenticated user
     useEffect(() => {
-        if (authToken) {
+        if (authToken && isAuthenticated) {
+          setIsLoading(true);
           fetch(`${apiEndpoint}/authenticated_user`, {
             method: 'GET',
             headers: {
@@ -180,12 +245,25 @@ export default function AuthProvider({ children }: AuthProviderProps) {
                 setCurrentUser(response)
               } else {
                 setCurrentUser(null)
+                setIsAuthenticated(false)
               }
             })
+            .catch((error) => {
+              console.error('Error fetching user:', error);
+              setCurrentUser(null)
+              setIsAuthenticated(false)
+            })
+            .finally(() => {
+              setIsLoading(false);
+            })
+        } else {
+          setIsLoading(false);
         }
-      }, [authToken, onAuthChange,sellerStatusChange])
+      }, [authToken, onAuthChange, sellerStatusChange, isAuthenticated])
     
       const updateUserContext = () => {
+        if (!authToken || !isAuthenticated) return;
+        
         fetch(`${apiEndpoint}/authenticated_user`, {
           method: 'GET',
           headers: {
@@ -199,26 +277,32 @@ export default function AuthProvider({ children }: AuthProviderProps) {
               setCurrentUser(response)
             } else {
               setCurrentUser(null)
+              setIsAuthenticated(false)
             }
           })
           .catch((error) => {
-            console.error('Error fetching user data:', error);
-          });
-      };
-    
+            console.error('Error updating user context:', error);
+            setCurrentUser(null)
+            setIsAuthenticated(false)
+          })
+      }
 
-  const contextData: AuthContextType = {
+  // The context data that will be passed down to components
+  const contextData = {
+    login,
+    socialLogin,
+    completeProfile,
+    logout,
     currentUser,
     authToken,
     updateUserContext,
-    login,
-    logout,
-    socialLogin,
-    completeProfile,
     onAuthChange,
-    isProfileComplete
+    isProfileComplete,
+    isAuthenticated,
+    isLoading
   };
 
+  // Render the provider and pass the context data
   return (
     <AuthContext.Provider value={contextData}>
       {children}
@@ -226,4 +310,5 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
+// Custom hook to use the AuthContext
 export const useAuthContext = () => useContext(AuthContext);
