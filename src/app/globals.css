@@ -36,6 +36,7 @@
     /* Custom brand colors */
     --blush: 325 47% 96%; /* #FDF1F5 */
     --mocha: 20 14% 51%; /* #92736C */
+    --golden: 290 71% 73%; /* #D29DF6 */
     --brand-primary: var(--mocha);
     --brand-secondary: var(--blush);
   }
@@ -74,6 +75,7 @@
     --mocha: 20 14% 51%; /* Keep same mocha */
     --brand-primary: var(--mocha);
     --brand-secondary: var(--blush);
+    --golden: 290 71% 73%; /* #D29DF6 */
   }
 }
 
@@ -212,4 +214,147 @@ body{
 }
 .ts6 {
   @apply text-[10px] md:text-xs leading-tight;
+}
+
+/* Grain texture background */
+.grain-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.grain-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(210, 157, 246, 0.2) 0%, transparent 25%),
+    radial-gradient(circle at 75% 75%, rgba(210, 157, 246, 0.15) 0%, transparent 25%),
+    radial-gradient(circle at 50% 0%, rgba(210, 157, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 0% 50%, rgba(210, 157, 246, 0.1) 0%, transparent 50%);
+  background-size: 400px 400px, 600px 600px, 800px 800px, 500px 500px;
+  background-position: 0 0, 200px 200px, 0 100px, 50px 0;
+  animation: grain-move 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grain-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(210, 157, 246, 0.03) 2px,
+      rgba(210, 157, 246, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(210, 157, 246, 0.03) 2px,
+      rgba(210, 157, 246, 0.03) 4px
+    );
+  animation: grain-shift 15s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes grain-move {
+  0%, 100% { 
+    background-position: 0 0, 200px 200px, 0 100px, 50px 0; 
+  }
+  25% { 
+    background-position: 100px 50px, 300px 150px, 50px 200px, 100px 25px; 
+  }
+  50% { 
+    background-position: 200px 100px, 100px 300px, 100px 50px, 150px 50px; 
+  }
+  75% { 
+    background-position: 50px 150px, 250px 100px, 150px 150px, 25px 75px; 
+  }
+}
+
+@keyframes grain-shift {
+  0% { 
+    transform: translate(0, 0); 
+  }
+  100% { 
+    transform: translate(4px, 4px); 
+  }
+}
+
+/* Glassmorphism utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-golden {
+  background: rgba(210, 157, 246, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(210, 157, 246, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(210, 157, 246, 0.2),
+    inset 0 1px 0 rgba(210, 157, 246, 0.2);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(210, 157, 246, 0.4);
+  box-shadow: 
+    0 8px 32px rgba(210, 157, 246, 0.15),
+    inset 0 1px 0 rgba(210, 157, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.dark .glass-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-card:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(210, 157, 246, 0.5);
+  box-shadow: 
+    0 8px 32px rgba(210, 157, 246, 0.2),
+    inset 0 1px 0 rgba(210, 157, 246, 0.3);
 }

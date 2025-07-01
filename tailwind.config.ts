@@ -52,10 +52,18 @@ const config = {
           DEFAULT: "hsl(var(--third))",
           foreground: "hsl(var(--third-foreground))",
         },
+        golden: {
+          DEFAULT: "hsl(var(--golden))",
+          foreground: "hsl(var(--golden-foreground))",
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+      },
+      fontFamily: {
+        inter: ["var(--font-inter)", "sans-serif"],
+        playfair: ["var(--font-playfair)", "serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

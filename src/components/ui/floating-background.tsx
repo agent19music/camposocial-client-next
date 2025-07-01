@@ -28,7 +28,7 @@ function FloatingIcon({ x, y, icon, delay }: FloatingIconProps) {
       style={{ left: x, top: y }}
       initial={{ opacity: 0, scale: 0, rotate: 0 }}
       animate={{
-        opacity: [0, 0.15, 0.08, 0.12],
+        opacity: [0, 0.08, 0.04, 0.06],
         scale: [0.3, 0.5, 0.4, 0.45],
         rotate: [0, 5, -3, 8],
         x: [0, Math.random() * 60 - 30, Math.random() * 40 - 20, Math.random() * 30 - 15],
@@ -42,7 +42,7 @@ function FloatingIcon({ x, y, icon, delay }: FloatingIconProps) {
         ease: "easeInOut"
       }}
     >
-      <IconComponent className="opacity-60 filter blur-[0.5px]" />
+      <IconComponent className="text-[#D29DF6] opacity-30 filter blur-[0.5px]" />
     </motion.div>
   )
 }

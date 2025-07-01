@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/themecontext";
 import AuthProvider from "@/context/authcontext";
@@ -7,7 +7,40 @@ import AuthenticatedWrapper from "@/components/AuthenticatedWrapper";
 import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-inter"
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair"
+});
+
+export const metadata: Metadata = {
+  title: "Campo Social - Your Campus Connected",
+  description: "The social platform designed for university life",
+  authors: [{ name: "Campo Social" }],
+  openGraph: {
+    title: "Campo Social - Your Campus Connected",
+    description: "The social platform designed for university life",
+    type: "website",
+    images: [
+      {
+        url: "https://lovable.dev/opengraph-image-p98pqg.png",
+        width: 1200,
+        height: 630,
+        alt: "Campo Social - Your Campus Connected"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@camposocial",
+    images: ["https://lovable.dev/opengraph-image-p98pqg.png"]
+  }
+};
 
 export default function RootLayout({
   children,
@@ -18,7 +51,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${playfair.variable} ${inter.className}`}>
         <ThemeProvider>   
           <AuthProvider>
             <Toaster
