@@ -21,31 +21,31 @@ import { FloatingBackground } from "@/components/ui/floating-background";
 const features = [
   {
     icon: Users,
-    title: "Connect",
-    description: "Build authentic relationships with your campus community"
+    title: "Find Your Tribe",
+    description: "Connect with people who actually get you and share your vibe"
   },
   {
     icon: Calendar,
-    title: "Events",
-    description: "Discover and create memorable campus experiences"
+    title: "Epic Experiences",
+    description: "Discover parties, study sessions, and adventures you won't forget"
   },
   {
     icon: ShoppingBag,
-    title: "Marketplace",
-    description: "Buy and sell with confidence within your university"
+    title: "Campus Marketplace",
+    description: "Buy, sell, and trade everything from textbooks to concert tickets"
   },
   {
     icon: MessageSquare,
-    title: "Chat",
-    description: "Stay connected with real-time messaging"
+    title: "Real Conversations",
+    description: "Chat, share memes, and stay connected with your campus crew"
   }
 ];
 
 const stats = [
-  { value: "50K+", label: "Students Connected" },
-  { value: "200+", label: "Universities" },
-  { value: "10K+", label: "Events Created" },
-  { value: "99.9%", label: "Uptime" }
+  { value: "50K+", label: "Squad Members" },
+  { value: "200+", label: "Campus Takeovers" },
+  { value: "10K+", label: "Epic Hangouts" },
+  { value: "24/7", label: "Good Vibes Only" }
 ];
 
 export default function Home() {
@@ -80,61 +80,150 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto">
+      <section className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Dynamic gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#D29DF6]/10 via-background to-[#D29DF6]/5 animate-pulse" style={{ animationDuration: '4s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#D29DF6]/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '6s' }}></div>
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-[#D29DF6]/15 rounded-full blur-2xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '1s' }}></div>
+        
+        {/* Floating emojis for extra personality */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div 
+            className="absolute top-20 left-20 text-4xl opacity-40"
+            animate={{ y: [-10, 10, -10], rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          >
+            🎉
+          </motion.div>
+          <motion.div 
+            className="absolute top-40 right-32 text-3xl opacity-30"
+            animate={{ y: [10, -10, 10], rotate: [0, -5, 5, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          >
+            🚀
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-40 left-32 text-5xl opacity-20"
+            animate={{ y: [-5, 15, -5], rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          >
+            ⚡
+          </motion.div>
+          <motion.div 
+            className="absolute top-60 right-20 text-3xl opacity-35"
+            animate={{ y: [5, -15, 5], rotate: [0, -10, 10, 0] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          >
+            💫
+          </motion.div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.8 }}
             >
-              <div className="inline-flex items-center px-4 py-2 rounded-full glass-golden text-foreground text-sm font-medium mb-6 shadow-lg">
-                <Globe className="h-4 w-4 mr-2 text-[#D29DF6]" />
-                Trusted by students worldwide
+              {/* Badge with animation */}
+              <motion.div 
+                className="inline-flex items-center px-6 py-3 rounded-full glass-golden text-foreground text-sm font-medium mb-8 shadow-xl border border-[#D29DF6]/20"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <Zap className="h-4 w-4 mr-2 text-[#D29DF6] animate-pulse" />
+                <span className="bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/80 bg-clip-text text-transparent font-semibold">
+                  Join 50K+ students already vibing
+                </span>
+              </motion.div>
+              
+              {/* Main headline with staggered animation */}
+              <div className="space-y-4 mb-10">
+                <motion.h1 
+                  className="text-6xl sm:text-7xl lg:text-8xl font-inter font-black text-foreground leading-tight"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
+                >
+                  <span className="block">Where Campus</span>
+                  <span className="block bg-gradient-to-r from-[#D29DF6] via-[#D29DF6]/90 to-[#D29DF6]/70 bg-clip-text text-transparent animate-gradient-x">
+                    Legends
+                  </span>
+                  <span className="block">Are Born</span>
+                </motion.h1>
+                
+                <motion.div
+                  className="text-2xl sm:text-3xl lg:text-4xl font-playfair italic text-foreground/70 font-light"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.8, delay: 0.6 }}
+                >
+                  Your social universe awaits ✨
+                </motion.div>
               </div>
               
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-inter font-bold text-foreground mb-4 leading-tight">
-            Hey! This is Campo Social,
-          </h1>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-playfair italic text-foreground/80 mb-8 leading-tight">
-            Your Friendly Campus Community.
-          </h2>
-          
+              {/* Enhanced description */}
+              <motion.p 
+                className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+              >
+                Stop doom-scrolling and start <span className="text-[#D29DF6] font-semibold">actually connecting</span>. 
+                Find your tribe, discover epic events, trade like a pro, and turn your campus into your playground.
+              </motion.p>
               
-              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-                The social platform designed for university life. Connect with classmates, 
-                discover events, trade safely, and build your campus community.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              {/* Enhanced CTA buttons */}
+              <motion.div 
+                className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1.0 }}
+              >
                 <Link href="/signup">
-                  <Button size="lg" className="bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/90 hover:from-[#D29DF6]/90 hover:to-[#D29DF6]/80 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl group">
-                    Start connecting today
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  <Button size="lg" className="relative bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/90 hover:from-[#D29DF6]/90 hover:to-[#D29DF6]/80 text-white font-bold px-10 py-4 rounded-2xl transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-[#D29DF6]/25 group text-lg overflow-hidden">
+                    <span className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></span>
+                    <span className="relative">Start Your Journey</span>
+                    <Sparkles className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="lg" variant="outline" className="glass-card border-0 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
-                    Sign in to continue
+                  <Button size="lg" variant="outline" className="glass-card border-2 border-[#D29DF6]/30 hover:border-[#D29DF6] font-semibold px-10 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg group">
+                    <span className="group-hover:text-[#D29DF6] transition-colors">I&apos;m Already Cool</span>
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 group-hover:text-[#D29DF6] transition-all" />
                   </Button>
                 </Link>
-              </div>
+              </motion.div>
               
-              {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 pt-8 border-t border-white/10">
+              {/* Enhanced Stats with better visual appeal */}
+              <motion.div 
+                className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-12 border-t border-white/20"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1.2 }}
+              >
                 {stats.map((stat, index) => (
                   <motion.div
                     key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 * (index + 1) }}
-                    className="text-center glass-card p-4 rounded-xl"
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 1.3 + (0.1 * index) }}
+                    whileHover={{ scale: 1.1, y: -5 }}
+                    className="text-center glass-card p-6 rounded-2xl border border-[#D29DF6]/20 hover:border-[#D29DF6]/40 transition-all duration-300 group cursor-pointer"
                   >
-                    <div className="text-3xl font-bold text-[#D29DF6] mb-1">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                    <div className="text-4xl font-black bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/70 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm font-medium text-muted-foreground group-hover:text-[#D29DF6]/80 transition-colors">
+                      {stat.label}
+                    </div>
+                    {/* Add subtle glow effect */}
+                    <div className="absolute inset-0 bg-[#D29DF6]/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
