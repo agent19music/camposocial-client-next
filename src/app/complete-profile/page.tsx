@@ -48,37 +48,37 @@ export default function CompleteProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 dark:from-purple-900 dark:via-gray-900 dark:to-indigo-900 flex items-center justify-center p-4">
-      <FloatingBackground iconCount={25} opacity={8} />
-      
+    <div className="min-h-screen bg-gradient-to-br from-[#FDF1F5] via-[#FDF1F5]/70 to-[#92736C]/20 dark:from-gray-900 dark:via-gray-800 dark:to-[#92736C]/20 flex items-center justify-center p-4">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
+      
+      <FloatingBackground iconCount={30} opacity={8} />
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-10"
       >
-        <Card className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 shadow-2xl">
+        <Card className="bg-white/90 dark:bg-black/70 backdrop-blur-xl border border-[#92736C]/20 dark:border-gray-700/50 shadow-2xl">
           <CardHeader className="text-center space-y-2">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#92736C] to-[#92736C]/80 bg-clip-text text-transparent">
                 Complete Your Profile
               </CardTitle>
             </motion.div>
                          <CardDescription className="text-gray-600 dark:text-gray-400">
-               Let&apos;s finish setting up your account to get the best experience
+               Help us personalize your campus experience
              </CardDescription>
           </CardHeader>
           
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -169,17 +169,10 @@ export default function CompleteProfile() {
               >
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="w-full bg-gradient-to-r from-[#92736C] to-[#92736C]/90 hover:from-[#92736C]/90 hover:to-[#92736C]/80 text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Completing...</span>
-                    </div>
-                  ) : (
-                    'Complete Profile'
-                  )}
+                  {isLoading ? 'Completing...' : 'Complete Profile'}
                 </Button>
               </motion.div>
             </form>

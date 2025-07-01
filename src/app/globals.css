@@ -32,6 +32,12 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Custom brand colors */
+    --blush: 325 47% 96%; /* #FDF1F5 */
+    --mocha: 20 14% 51%; /* #92736C */
+    --brand-primary: var(--mocha);
+    --brand-secondary: var(--blush);
   }
 
   .dark {
@@ -62,9 +68,14 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Custom brand colors for dark mode */
+    --blush: 325 47% 96%; /* Keep same blush */
+    --mocha: 20 14% 51%; /* Keep same mocha */
+    --brand-primary: var(--mocha);
+    --brand-secondary: var(--blush);
   }
 }
-
 
 @layer base {
   * {
@@ -72,6 +83,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
@@ -79,7 +91,6 @@ body{
   max-width: 100vw;
   overflow-x: hidden;
 }
-
 
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
@@ -98,10 +109,30 @@ body{
   }
 }
 
+@keyframes fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
 .animate-text-shimmer {
   animation: textShimmer 2s linear infinite;
 }
 
+.animate-fall {
+  animation: fall linear infinite;
+}
 
 /* Add smooth transitions for theme changes */
 @layer base {
@@ -133,6 +164,20 @@ body{
   .no-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
+  }
+
+  .falling-icon {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  
+  .falling-icon:nth-child(odd) {
+    animation-delay: -2s;
+  }
+  
+  .falling-icon:nth-child(even) {
+    animation-delay: -4s;
   }
 }
 

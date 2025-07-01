@@ -54,7 +54,10 @@ export function SocialLoginModal() {
         const transformedData = {
           access_token: credentialResponse.access_token,
           code: credentialResponse.code,
-          redirect_uri: 'postmessage'
+          redirect_uri: 'postmessage',
+          token_type: credentialResponse.token_type,
+          expires_in: credentialResponse.expires_in,
+          scope: credentialResponse.scope
         };
         
         console.log('Sending to backend:', transformedData);
@@ -68,6 +71,8 @@ export function SocialLoginModal() {
       console.error('Google login error:', error);
       toast.error(`Google login failed: ${error?.error_description || 'Unknown error'}`);
     },
+    scope: 'email profile',
+    flow: 'implicit'
   });
 
   const handleGithubLogin = async () => {

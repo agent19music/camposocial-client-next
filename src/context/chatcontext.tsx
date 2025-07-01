@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useState, useEffect, useContext, useRef } from "react";
+import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
 import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
@@ -115,7 +115,7 @@ interface ChatProviderProps {
 
 export default function ChatProvider({ children }: ChatProviderProps) {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-    const { currentUser: rawCurrentUser, authToken } = useContext(AuthContext);
+    const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
     
     const currentUser = rawCurrentUser
         ? {
@@ -138,6 +138,79 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const [publicKey, setPublicKey] = useState<openpgp.PublicKey | null>(null);
     const [keyStatus, setKeyStatus] = useState<'generating' | 'available' | 'unavailable'>('unavailable');
     const [friendPublicKeys, setFriendPublicKeys] = useState<Record<string, openpgp.PublicKey>>({});
+
+    // Rate limiting and debouncing refs
+    const lastRequestTimeRef = useRef(0);
+    const requestCountRef = useRef(0);
+    const rateLimitWindowRef = useRef(0);
+    const fetchingConversationsRef = useRef(false);
+    const fetchingMessagesRef = useRef(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const activeRequestsRef = useRef(new Set<string>());
+    const endpointAvailabilityRef = useRef(new Map<string, boolean>());
+
+    // Rate limiting configuration
+    const RATE_LIMIT_WINDOW = 60000; // 1 minute
+    const MAX_REQUESTS_PER_WINDOW = 20;
+    const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between requests
+    const DEBOUNCE_DELAY = 1000; // 1 second debounce for UI changes
+
+    // Rate limiting function
+    const canMakeRequest = useCallback((requestType: string): boolean => {
+        const now = Date.now();
+        
+        // Check if endpoint is known to be unavailable
+        const endpointKey = requestType.split('_')[0]; // Extract base endpoint name
+        if (endpointAvailabilityRef.current.get(endpointKey) === false) {
+            console.warn(`Endpoint ${endpointKey} is known to be unavailable. Skipping request.`);
+            return false;
+        }
+        
+        // Check if we're within the rate limit window
+        if (now - rateLimitWindowRef.current > RATE_LIMIT_WINDOW) {
+            // Reset rate limit window
+            rateLimitWindowRef.current = now;
+            requestCountRef.current = 0;
+        }
+        
+        // Check request count
+        if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
+            console.warn(`Rate limit exceeded for ${requestType}. Please try again later.`);
+            return false;
+        }
+        
+        // Check minimum interval between requests
+        if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
+            console.warn(`Request too frequent for ${requestType}. Debouncing...`);
+            return false;
+        }
+        
+        // Check if this request type is already active
+        if (activeRequestsRef.current.has(requestType)) {
+            console.warn(`Request ${requestType} already in progress. Skipping duplicate.`);
+            return false;
+        }
+        
+        return true;
+    }, []);
+
+    // Mark request as started
+    const markRequestStart = useCallback((requestType: string) => {
+        const now = Date.now();
+        lastRequestTimeRef.current = now;
+        requestCountRef.current += 1;
+        activeRequestsRef.current.add(requestType);
+    }, []);
+
+    // Mark request as completed
+    const markRequestEnd = useCallback((requestType: string) => {
+        activeRequestsRef.current.delete(requestType);
+    }, []);
+
+    // Mark endpoint availability
+    const markEndpointAvailability = useCallback((endpoint: string, available: boolean) => {
+        endpointAvailabilityRef.current.set(endpoint, available);
+    }, []);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -168,12 +241,28 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [currentUser]);
 
-    // Load conversations when component mounts
+    // Load conversations when component mounts with debouncing
     useEffect(() => {
-        if (currentUser && authToken) {
-            fetchConversations();
+        if (currentUser && authToken && isAuthenticated) {
+            const timeoutId = setTimeout(() => {
+                fetchConversations();
+            }, DEBOUNCE_DELAY);
+
+            return () => {
+                clearTimeout(timeoutId);
+            };
         }
-    }, [currentUser, authToken]);
+    }, [currentUser, authToken, isAuthenticated]);
+
+    // Cleanup effect
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            activeRequestsRef.current.clear();
+        };
+    }, []);
 
     // Generate a unique conversation ID from two user IDs
     const generateConversationId = (userId1: string, userId2: string): string => {
@@ -184,9 +273,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
     // Fetch friend details including online status
     const getFriendDetails = async (conversationId: string): Promise<{ name: string; avatar: string; isOnline: boolean } | null> => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('friend_details')) {
             return null;
         }
+
+        markRequestStart('friend_details');
 
         try {
             // First try to get conversation data which includes friend details
@@ -196,6 +287,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
+
+            if (convResponse.status === 404) {
+                markEndpointAvailability('conversations', false);
+                console.warn('Conversation details endpoint not available');
+                return null;
+            }
 
             if (convResponse.ok) {
                 const convData = await convResponse.json();
@@ -214,15 +311,19 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }
         } catch (error) {
             console.error("Error fetching friend details:", error);
+        } finally {
+            markRequestEnd('friend_details');
         }
         return null;
     };
 
     // Check if a conversation with a friend exists (has any messages)
     const checkIfConversationExists = async (friendId: string): Promise<boolean> => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('conversation_exists')) {
             return false;
         }
+
+        markRequestStart('conversation_exists');
 
         try {
             // First try the dedicated endpoint
@@ -235,6 +336,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             // Handle 404 errors specifically - this means the endpoint doesn't exist
             if (response.status === 404) {
+                markEndpointAvailability('conversation-exists', false);
                 // Fallback: check for messages directly
                 return await checkMessagesExistFallback(friendId);
             }
@@ -250,40 +352,89 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             return data.exists;
         } catch (error) {
             console.error("Error checking if conversation exists:", error);
-            return false;
+            return await checkMessagesExistFallback(friendId);
+        } finally {
+            markRequestEnd('conversation_exists');
         }
     };
 
-    // Helper function for checkIfConversationExists to avoid duplicated code
+    // Fallback method to check if messages exist
     const checkMessagesExistFallback = async (friendId: string): Promise<boolean> => {
+        if (!canMakeRequest('messages_exist_fallback')) {
+            return false;
+        }
+
+        markRequestStart('messages_exist_fallback');
+
         try {
-            // Try to fetch just one message to see if any exist
             const messages = await getMessages(friendId, 1);
             return messages.length > 0;
-        } catch (fallbackError) {
-            console.error("Error in fallback conversation check:", fallbackError);
-            // Check if we have a cached conversation
-            const existingConv = conversations.find(conv => conv.friendId === friendId);
-            return existingConv ? !existingConv.isEmpty : false;
+        } catch (error) {
+            console.error("Error in fallback message check:", error);
+            return false;
+        } finally {
+            markRequestEnd('messages_exist_fallback');
         }
     };
 
     // Fetch all conversations with conversation IDs
     const fetchConversations = async (): Promise<Conversation[]> => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !isAuthenticated || fetchingConversationsRef.current) {
             return [];
         }
+
+        if (!canMakeRequest('fetch_conversations')) {
+            return [];
+        }
+
+        // Check if conversations endpoint is known to be unavailable
+        if (endpointAvailabilityRef.current.get('conversations') === false) {
+            console.warn('Conversations endpoint is not available. Skipping fetch.');
+            return [];
+        }
+
+        fetchingConversationsRef.current = true;
+        markRequestStart('fetch_conversations');
+
+        // Abort previous request if it exists
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
 
         try {
             const response = await fetch(`${apiEndpoint}/conversations`, {
                 method: 'GET',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${authToken}`,
                 },
+                signal: controller.signal,
             });
 
+            if (response.status === 404) {
+                // Mark endpoint as unavailable and stop making requests to it
+                markEndpointAvailability('conversations', false);
+                console.warn('Conversations endpoint not found (404). Marking as unavailable.');
+                setConversations([]);
+                return [];
+            }
+
+            if (response.status === 401) {
+                console.warn('Unauthorized access to conversations');
+                setConversations([]);
+                return [];
+            }
+
+            if (response.status === 429) {
+                console.warn('Rate limited on conversations endpoint');
+                return [];
+            }
+
             if (!response.ok) {
-                throw new Error('Failed to fetch conversations');
+                throw new Error(`HTTP ${response.status}: Failed to fetch conversations`);
             }
 
             const data = await response.json();
@@ -300,10 +451,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }));
             
             setConversations(conversationsData);
+            markEndpointAvailability('conversations', true);
             return conversationsData;
-        } catch (error) {
-            console.error("Error fetching conversations:", error);
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error("Error fetching conversations:", error);
+                // Don't show user-facing error for conversations as it might be optional
+            }
             return [];
+        } finally {
+            fetchingConversationsRef.current = false;
+            markRequestEnd('fetch_conversations');
         }
     };
 
@@ -312,6 +470,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             toast.error("You must be logged in to generate keys");
             return;
         }
+
+        if (!canMakeRequest('generate_keys')) {
+            return;
+        }
+
+        markRequestStart('generate_keys');
 
         try {
             setKeyStatus('generating');
@@ -346,6 +510,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             setKeyStatus('unavailable');
             toast.dismiss();
             toast.error("Failed to generate encryption keys");
+        } finally {
+            markRequestEnd('generate_keys');
         }
     };
 
@@ -393,25 +559,41 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             throw new Error('Authentication required');
         }
 
-        const response = await fetch(`${apiEndpoint}/keys`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken}`,
-            },
-            body: JSON.stringify({ public_key: armoredPublicKey }),
-        });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Failed to upload public key: ${error}`);
+        if (!canMakeRequest('upload_public_key')) {
+            throw new Error('Rate limited');
         }
 
-        return response.json();
+        markRequestStart('upload_public_key');
+
+        try {
+            const response = await fetch(`${apiEndpoint}/keys`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify({ public_key: armoredPublicKey }),
+            });
+
+            if (response.status === 404) {
+                markEndpointAvailability('keys', false);
+                throw new Error('Keys endpoint not available');
+            }
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Failed to upload public key: ${error}`);
+            }
+
+            markEndpointAvailability('keys', true);
+            return response.json();
+        } finally {
+            markRequestEnd('upload_public_key');
+        }
     };
 
     const fetchFriendPublicKey = async (userId: string): Promise<openpgp.PublicKey | null> => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('fetch_friend_public_key')) {
             return null;
         }
 
@@ -419,6 +601,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         if (friendPublicKeys[userId]) {
             return friendPublicKeys[userId];
         }
+
+        markRequestStart('fetch_friend_public_key');
 
         try {
             const response = await fetch(`${apiEndpoint}/keys/${userId}`, {
@@ -430,6 +614,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             // Handle 404 errors (endpoint doesn't exist or user has no key)
             if (response.status === 404) {
+                markEndpointAvailability('keys', false);
                 console.warn(`No public key found for user ${userId} or endpoint not available`);
                 return null;
             }
@@ -448,6 +633,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         ...prevKeys,
                         [userId]: friendKey
                     }));
+                    markEndpointAvailability('keys', true);
                     return friendKey;
                 } catch (pgpError) {
                     console.error("Error parsing PGP key:", pgpError);
@@ -458,6 +644,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } catch (error) {
             console.error("Error fetching friend public key:", error);
             return null;
+        } finally {
+            markRequestEnd('fetch_friend_public_key');
         }
     };
 
@@ -469,234 +657,222 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         try {
             const encrypted = await openpgp.encrypt({
                 message: await openpgp.createMessage({ text: content }),
-                encryptionKeys: [friendPublicKeys[recipientId]],
-                signingKeys: privateKey ? [privateKey] : undefined
+                encryptionKeys: [publicKey, friendPublicKeys[recipientId]]
             });
 
-            return { encrypted: encrypted as string, isEncrypted: true };
+            return { encrypted: encrypted, isEncrypted: true };
         } catch (error) {
             console.error("Error encrypting message:", error);
-            toast.error("Failed to encrypt message, sending unencrypted");
             return { encrypted: content, isEncrypted: false };
         }
     };
 
     const decryptMessage = async (content: string, senderId: string): Promise<string> => {
-        if (!privateKey || !content.includes('-----BEGIN PGP MESSAGE-----')) {
+        if (!privateKey) {
             return content;
         }
 
         try {
             const message = await openpgp.readMessage({ armoredMessage: content });
-
             const { data: decrypted } = await openpgp.decrypt({
                 message,
-                decryptionKeys: privateKey,
-                verificationKeys: friendPublicKeys[senderId] || undefined
+                decryptionKeys: privateKey
             });
 
-            return decrypted as string;
+            return decrypted;
         } catch (error) {
             console.error("Error decrypting message:", error);
-            return "[Encrypted message - cannot decrypt]";
+            return content;
         }
     };
 
     const sendMessage = async (content: string, media: FileList | null, replyTo?: number) => {
-        if (!currentUser || !authToken || !friendId) {
+        if (!friendId || !currentUser || !authToken) {
+            toast.error("Cannot send message: missing required information");
             return;
         }
 
+        if (!canMakeRequest('send_message')) {
+            return;
+        }
+
+        markRequestStart('send_message');
+
         try {
-            const formData = new FormData();
-            
-            // Encrypt the message if possible
-            const { encrypted, isEncrypted } = await encryptMessage(content, friendId);
-            formData.append('content', encrypted);
-            formData.append('encrypted', isEncrypted.toString());
-            
-            if (replyTo) {
-                formData.append('reply_to_id', replyTo.toString());
-            }
-            if (media) {
-                for (let i = 0; i < media.length; i++) {
-                    formData.append('media', media[i]);
-                }
+            const conversationId = generateConversationId(currentUser.id, friendId);
+            let uploadedMedia: Media[] = [];
+
+            if (media && media.length > 0) {
+                uploadedMedia = await uploadMedia(media);
             }
 
-            const response = await fetch(`${apiEndpoint}/messages/${friendId}`, { 
+            const { encrypted, isEncrypted } = await encryptMessage(content, friendId);
+
+            const response = await fetch(`${apiEndpoint}/messages`, {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${authToken}`,
                 },
-                body: formData,
+                body: JSON.stringify({
+                    content: encrypted,
+                    recipient_id: friendId,
+                    conversation_id: conversationId,
+                    media: uploadedMedia,
+                    reply_to: replyTo,
+                    encrypted: isEncrypted
+                }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to send message');
+                if (response.status === 404) {
+                    markEndpointAvailability('messages', false);
+                    throw new Error('Messaging endpoint not available');
+                }
+                throw new Error('Failed to send message');
             }
 
-            const newMessageData = await response.json();
-
-            const newMessage: Message = {
-                id: newMessageData.message_id,
-                senderId: currentUser.id,
-                content: content, // Store original content for display
-                timestamp: new Date(newMessageData.timestamp), 
-                media: newMessageData.media ? newMessageData.media.map((m: any) => ({ url: m.media_url, type: m.media_type })) : null,
-                reactions: [],
-                replyTo,
-                isSent: true,
-                isRead: false,
-                encrypted: isEncrypted,
-            };
-
-            setMessages(prevMessages => [...prevMessages, newMessage]);
-
+            markEndpointAvailability('messages', true);
+            
+            // Refresh messages
+            await getMessages(friendId, 20);
         } catch (error) {
             console.error("Error sending message:", error);
-            toast.error("Failed to send message. Please try again.");
+            toast.error("Failed to send message");
+        } finally {
+            markRequestEnd('send_message');
         }
     };
 
     const getMessages = async (friendId: string, batchSize: number, lastMessageId?: number): Promise<Message[]> => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || fetchingMessagesRef.current) {
             return [];
         }
 
+        if (!canMakeRequest('get_messages')) {
+            return [];
+        }
+
+        fetchingMessagesRef.current = true;
+        markRequestStart('get_messages');
+
         try {
-            // Try using conversation_id first (more modern approach)
             const conversationId = generateConversationId(currentUser.id, friendId);
-            
-            // Create URL with proper query parameters
-            const urlWithConvId = new URL(`${apiEndpoint}/messages/conversation/${conversationId}`);
-            urlWithConvId.searchParams.append('batch_size', batchSize.toString());
+            const url = new URL(`${apiEndpoint}/messages/${conversationId}`);
+            url.searchParams.append('limit', batchSize.toString());
             if (lastMessageId) {
-                urlWithConvId.searchParams.append('last_message_id', lastMessageId.toString());
+                url.searchParams.append('before', lastMessageId.toString());
             }
 
-            // First try the conversation ID approach
-            try {
-                const convResponse = await fetch(urlWithConvId.toString(), {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                });
-
-                // If successful, parse and return the messages
-                if (convResponse.ok) {
-                    const data = await convResponse.json();
-                    const messages = data.messages.map((msg: any) => ({
-                        id: msg.id,
-                        senderId: msg.sender_id,
-                        content: msg.content,
-                        timestamp: new Date(msg.timestamp),
-                        media: msg.media ? msg.media.map((m: any) => ({ url: m.url, type: m.type })) : null,
-                        reactions: msg.reactions || [],
-                        replyTo: msg.reply_to_id,
-                        isSent: true,
-                        isRead: msg.is_read,
-                        encrypted: msg.is_encrypted || false,
-                    }));
-                    return messages;
-                }
-                
-                // If endpoint not found (404) or other error, fall back to the friendId approach
-                if (convResponse.status !== 200) {
-                    console.warn(`Conversation endpoint failed with status ${convResponse.status}, falling back to friendId approach`);
-                }
-            } catch (convError) {
-                console.warn("Error using conversation ID approach, falling back to friendId approach:", convError);
-            }
-
-            // Fallback to using friendId directly (legacy approach)
-            const urlWithFriendId = new URL(`${apiEndpoint}/messages/${friendId}`);
-            urlWithFriendId.searchParams.append('batch_size', batchSize.toString());
-            if (lastMessageId) {
-                urlWithFriendId.searchParams.append('last_message_id', lastMessageId.toString());
-            }
-
-            const response = await fetch(urlWithFriendId.toString(), {
+            const response = await fetch(url.toString(), {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
 
-            // Handle 404 errors specifically - the endpoint doesn't exist
             if (response.status === 404) {
-                console.warn(`Messages endpoint not found for friendId: ${friendId}`);
-                // Don't show error toast for 404 to avoid user confusion
+                markEndpointAvailability('messages', false);
+                // Don't show error for new conversations with no messages
                 return [];
             }
 
             if (!response.ok) {
-                throw new Error('Failed to fetch messages');
+                if (response.status === 401) {
+                    console.warn('Unauthorized access to messages');
+                    return [];
+                }
+                throw new Error(`Failed to fetch messages: ${response.status}`);
             }
 
+            markEndpointAvailability('messages', true);
             const data = await response.json();
-            const messages = await Promise.all(data.messages.map(async (msg: any) => {
-                // Decrypt message if it's encrypted
-                const content = msg.encrypted ? 
-                    await decryptMessage(msg.content, msg.sender_id) : 
-                    msg.content;
+            const messagesData = await Promise.all(data.messages.map(async (msg: any) => {
+                let decryptedContent = msg.content;
+                if (msg.encrypted) {
+                    decryptedContent = await decryptMessage(msg.content, msg.sender_id);
+                }
 
                 return {
                     id: msg.id,
                     senderId: msg.sender_id,
-                    content: content,
+                    content: decryptedContent,
                     timestamp: new Date(msg.timestamp),
-                    media: msg.media ? msg.media.map((m: any) => ({ url: m.url, type: m.type })) : null,
+                    media: msg.media || null,
                     reactions: msg.reactions || [],
-                    replyTo: msg.reply_to_id,
-                    isSent: true,
+                    replyTo: msg.reply_to,
+                    isSent: msg.sender_id === currentUser.id,
                     isRead: msg.is_read,
-                    encrypted: msg.encrypted || false,
+                    encrypted: msg.encrypted
                 };
             }));
-            
-            return messages;
+
+            if (!lastMessageId) {
+                setMessages(messagesData.reverse());
+            }
+
+            return messagesData;
         } catch (error) {
             console.error("Error fetching messages:", error);
-            toast.error("Failed to fetch messages.");
             return [];
+        } finally {
+            fetchingMessagesRef.current = false;
+            markRequestEnd('get_messages');
         }
     };
 
     const getChatList = async () => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('get_chat_list')) {
             return [];
         }
-    
+
+        markRequestStart('get_chat_list');
+
         try {
-            const response = await fetch(`${apiEndpoint}/chat-list`, {
+            const response = await fetch(`${apiEndpoint}/friends`, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
-    
+
+            if (response.status === 404) {
+                markEndpointAvailability('friends', false);
+                console.warn('Friends endpoint not available');
+                return [];
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to fetch chat list');
             }
-    
+
+            markEndpointAvailability('friends', true);
             const data = await response.json();
-            setChatList(data.chat_list || []);
-            return data.chat_list;
-    
+            const chatListData = data.friends.map((friend: any) => ({
+                id: friend.id,
+                firstName: friend.first_name,
+                lastName: friend.last_name,
+                avatar: friend.avatar || ''
+            }));
+
+            setChatList(chatListData);
+            return chatListData;
         } catch (error) {
             console.error("Error fetching chat list:", error);
-            toast.error("Failed to fetch chat list.");
             return [];
+        } finally {
+            markRequestEnd('get_chat_list');
         }
     };
-    
+
     const editMessage = async (messageId: number, newContent: string) => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('edit_message')) {
+            toast.error("Cannot edit message");
             return;
         }
+
+        markRequestStart('edit_message');
+
         try {
             const response = await fetch(`${apiEndpoint}/messages/${messageId}`, {
                 method: 'PUT',
@@ -707,23 +883,35 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 body: JSON.stringify({ content: newContent }),
             });
 
+            if (response.status === 404) {
+                markEndpointAvailability('messages', false);
+                throw new Error('Message editing not available');
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to edit message');
             }
 
-            setMessages(prevMessages => prevMessages.map(msg =>
-                msg.id === messageId ? { ...msg, content: newContent } : msg
-            ));
+            markEndpointAvailability('messages', true);
+            if (friendId) {
+                await getMessages(friendId, 20);
+            }
         } catch (error) {
             console.error("Error editing message:", error);
-            toast.error("Failed to edit message.");
+            toast.error("Failed to edit message");
+        } finally {
+            markRequestEnd('edit_message');
         }
     };
 
     const deleteMessage = async (messageId: number) => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('delete_message')) {
+            toast.error("Cannot delete message");
             return;
         }
+
+        markRequestStart('delete_message');
+
         try {
             const response = await fetch(`${apiEndpoint}/messages/${messageId}`, {
                 method: 'DELETE',
@@ -732,21 +920,34 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 },
             });
 
+            if (response.status === 404) {
+                markEndpointAvailability('messages', false);
+                throw new Error('Message deletion not available');
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to delete message');
             }
 
-            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+            markEndpointAvailability('messages', true);
+            if (friendId) {
+                await getMessages(friendId, 20);
+            }
         } catch (error) {
             console.error("Error deleting message:", error);
-            toast.error("Failed to delete message.");
+            toast.error("Failed to delete message");
+        } finally {
+            markRequestEnd('delete_message');
         }
     };
 
     const addReaction = async (messageId: number, reactionType: string) => {
-        if (!currentUser || !authToken) {
+        if (!currentUser || !authToken || !canMakeRequest('add_reaction')) {
             return;
         }
+
+        markRequestStart('add_reaction');
+
         try {
             const response = await fetch(`${apiEndpoint}/messages/${messageId}/reactions`, {
                 method: 'POST',
@@ -757,33 +958,41 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 body: JSON.stringify({ reaction_type: reactionType }),
             });
 
+            if (response.status === 404) {
+                markEndpointAvailability('messages', false);
+                console.warn('Message reactions not available');
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to add reaction');
             }
 
-            setMessages(prevMessages => prevMessages.map(msg =>
-                msg.id === messageId
-                  ? { ...msg, reactions: [...msg.reactions, { userId: currentUser.id, reactionType }] }
-                  : msg
-            ));
+            markEndpointAvailability('messages', true);
+            if (friendId) {
+                await getMessages(friendId, 20);
+            }
         } catch (error) {
             console.error("Error adding reaction:", error);
-            toast.error("Failed to add reaction.");
+        } finally {
+            markRequestEnd('add_reaction');
         }
     };
 
     const uploadMedia = async (files: FileList) => {
-        if (!currentUser || !authToken) {
-            return [];
+        if (!currentUser || !authToken || !canMakeRequest('upload_media')) {
+            throw new Error('Cannot upload media');
         }
+
+        markRequestStart('upload_media');
 
         try {
             const formData = new FormData();
-            for (let i = 0; i < files.length; i++) {
-                formData.append('media', files[i]);
-            }
+            Array.from(files).forEach((file, index) => {
+                formData.append(`media_${index}`, file);
+            });
 
-            const response = await fetch(`${apiEndpoint}/upload`, { 
+            const response = await fetch(`${apiEndpoint}/upload`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${authToken}`,
@@ -791,51 +1000,53 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 body: formData,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to upload media");
+            if (response.status === 404) {
+                markEndpointAvailability('upload', false);
+                throw new Error('Media upload not available');
             }
 
-            const data = await response.json();
-            return data.media; 
+            if (!response.ok) {
+                throw new Error('Failed to upload media');
+            }
 
+            markEndpointAvailability('upload', true);
+            return await response.json();
         } catch (error) {
             console.error("Error uploading media:", error);
-            toast.error("Failed to upload media.");
-            return [];
+            throw error;
+        } finally {
+            markRequestEnd('upload_media');
         }
     };
 
-    console.log("FriendDetails", friendDetails);
-
-    const contextData: ChatContextType = {
-        sendMessage,
-        getMessages,
-        editMessage,
-        deleteMessage,
-        addReaction,
-        uploadMedia,
-        authToken,
-        friendId,
-        setFriendId,
-        messages,
-        setMessages,
-        getChatList,
-        chatList,
-        generateKeys,
-        exportPublicKey,
-        keyStatus,
-        generateConversationId,
-        fetchConversations,
-        checkIfConversationExists,
-        conversations,
-        getFriendDetails,
-        friendDetails,
-        currentUser
-    };
-
     return (
-        <ChatContext.Provider value={contextData}>
+        <ChatContext.Provider
+            value={{
+                sendMessage,
+                getMessages,
+                editMessage,
+                deleteMessage,
+                addReaction,
+                uploadMedia,
+                authToken,
+                friendId,
+                setFriendId,
+                messages,
+                setMessages,
+                getChatList,
+                chatList,
+                generateKeys,
+                exportPublicKey,
+                keyStatus,
+                generateConversationId,
+                fetchConversations,
+                checkIfConversationExists,
+                conversations,
+                getFriendDetails,
+                friendDetails,
+                currentUser,
+            }}
+        >
             {children}
         </ChatContext.Provider>
     );

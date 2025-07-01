@@ -23,25 +23,25 @@ const features = [
     icon: Users,
     title: "Connect",
     description: "Build authentic relationships with your campus community",
-    color: "from-blue-500 to-cyan-400"
+    color: "from-[#92736C] to-[#92736C]/80"
   },
   {
     icon: Calendar,
     title: "Events",
     description: "Discover and create memorable campus experiences",
-    color: "from-purple-500 to-pink-400"
+    color: "from-[#92736C]/90 to-[#FDF1F5]"
   },
   {
     icon: ShoppingBag,
     title: "Marketplace",
     description: "Buy and sell with confidence within your university",
-    color: "from-green-500 to-emerald-400"
+    color: "from-[#92736C]/80 to-[#92736C]/60"
   },
   {
     icon: MessageSquare,
     title: "Chat",
     description: "Stay connected with real-time messaging",
-    color: "from-orange-500 to-yellow-400"
+    color: "from-[#92736C]/70 to-[#FDF1F5]/80"
   }
 ];
 
@@ -63,7 +63,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#92736C] to-[#92736C]/80 rounded-lg flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold text-foreground">CampoSocial</span>
@@ -74,7 +74,7 @@ export default function Home() {
                 <Button variant="ghost" size="sm">Sign In</Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold">
+                <Button size="sm" className="bg-gradient-to-r from-[#92736C] to-[#92736C]/90 hover:from-[#92736C]/90 hover:to-[#92736C]/80 text-white font-semibold">
                   Get Started
                 </Button>
               </Link>
@@ -100,7 +100,7 @@ export default function Home() {
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-6">
                 Your campus.
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#92736C] via-[#92736C]/90 to-[#FDF1F5]">
                   Connected.
                 </span>
               </h1>
@@ -112,7 +112,7 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
                 <Link href="/signup">
-                  <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl group">
+                  <Button size="lg" className="bg-gradient-to-r from-[#92736C] to-[#92736C]/90 hover:from-[#92736C]/90 hover:to-[#92736C]/80 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl group">
                     Start connecting today
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
@@ -197,28 +197,33 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-12 text-white relative overflow-hidden"
+            className="text-center bg-gradient-to-r from-[#92736C] to-[#92736C]/90 rounded-3xl p-12 text-white relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm" />
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }} />
+            </div>
+            
             <div className="relative z-10">
-              <Zap className="h-12 w-12 mx-auto mb-6 text-white/90" />
-              <h2 className="text-3xl font-bold mb-4">
-                Ready to transform your campus experience?
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Ready to join your campus community?
               </h2>
-              <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-                Join thousands of students who are already connecting, discovering, and thriving on CampoSocial.
+              <p className="text-xl mb-8 opacity-90">
+                Connect with thousands of students, discover amazing events, and make lasting friendships.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/signup">
-                  <Button size="lg" variant="secondary" className="bg-white text-purple-600 hover:bg-white/90 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105">
-                    Create your account
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                  <Button size="lg" className="bg-white text-[#92736C] hover:bg-white/90 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105">
+                    Join CampoSocial Today
                   </Button>
                 </Link>
-                <div className="flex items-center text-white/75 text-sm">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Free forever • No credit card required
-                </div>
+                <Link href="/events">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-semibold px-8 py-3 rounded-xl transition-all duration-300">
+                    Explore Events
+                  </Button>
+                </Link>
               </div>
             </div>
           </motion.div>
@@ -230,7 +235,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#92736C] to-[#92736C]/80 rounded-lg flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-lg font-bold text-foreground">CampoSocial</span>

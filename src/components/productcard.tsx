@@ -30,7 +30,7 @@ console.log(product.reviews?.length);
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400"
+            className="absolute top-2 right-2 text-gray-600 dark:text-gray-300 hover:text-[#92736C] dark:hover:text-[#92736C] transition-colors duration-200"
           >
             <Heart className="h-5 w-5" />
           </Button>
@@ -41,7 +41,7 @@ console.log(product.reviews?.length);
             </Badge>
           )}
           {product.isNew && (
-            <Badge className="absolute bottom-2 left-2 bg-pink-500 text-white">
+            <Badge className="absolute bottom-2 left-2 bg-[#92736C]/80 text-white">
               New
             </Badge>
           )}

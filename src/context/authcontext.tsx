@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useState, useEffect, useContext, use } from "react";
+import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MarketplaceContext } from "./marketplacecontext";
 import {toast} from 'react-hot-toast'
@@ -61,7 +61,6 @@ interface AuthProviderProps {
 
 export default function AuthProvider({ children }: AuthProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
-//   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState <currentUser| null>(null)
   const [isLoading, setIsLoading] = useState(true);
   const [onAuthChange, setOnAuthChange] = useState(false)
@@ -70,6 +69,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Add refs to prevent duplicate requests
+  const fetchingUserRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Initialize auth token from cookies on mount
   useEffect(() => {
@@ -120,7 +124,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         setIsAuthenticated(true);
         toast.success('Welcome back');
         setOnAuthChange(!onAuthChange)
-        router.push('/yaps')
+        
+        // Check if user is new (no friends, yaps, etc.) and redirect accordingly
+        setTimeout(() => router.push('/yaps'), 100);
       } else {
         toast.error('Invalid username or password');
       }
@@ -222,70 +228,108 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       console.error('Error clearing token:', error);
     }
     
+    // Abort any ongoing requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
     setCurrentUser(null)
     setAuthToken(null)
     setIsAuthenticated(false)
+    fetchingUserRef.current = false;
+    lastFetchTimeRef.current = 0;
     router.push('/login')
   }
 
-    // Get Authenticated user
-    useEffect(() => {
-        if (authToken && isAuthenticated) {
-          setIsLoading(true);
-          fetch(`${apiEndpoint}/authenticated_user`, {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json',
-              Authorization: `Bearer ${authToken}`,
-            },
-          })
-            .then((res) => res.json())
-            .then((response) => {
-              if (response.email || response.username) {
-                setCurrentUser(response)
-              } else {
-                setCurrentUser(null)
-                setIsAuthenticated(false)
-              }
-            })
-            .catch((error) => {
-              console.error('Error fetching user:', error);
-              setCurrentUser(null)
-              setIsAuthenticated(false)
-            })
-            .finally(() => {
-              setIsLoading(false);
-            })
-        } else {
-          setIsLoading(false);
+  // Debounced user fetch function
+  const fetchAuthenticatedUser = useCallback(async () => {
+    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingUserRef.current) {
+      return;
+    }
+
+    // Debounce requests - only allow one request per 5 seconds
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 5000) {
+      return;
+    }
+
+    fetchingUserRef.current = true;
+    lastFetchTimeRef.current = now;
+    setIsLoading(true);
+
+    // Abort previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await fetch(`${apiEndpoint}/authenticated_user`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid, clear auth state
+          setCurrentUser(null);
+          setAuthToken(null);
+          setIsAuthenticated(false);
+          return;
         }
-      }, [authToken, onAuthChange, sellerStatusChange, isAuthenticated])
-    
-      const updateUserContext = () => {
-        if (!authToken || !isAuthenticated) return;
-        
-        fetch(`${apiEndpoint}/authenticated_user`, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-        })
-          .then((res) => res.json())
-          .then((response) => {
-            if (response.email || response.username) {
-              setCurrentUser(response)
-            } else {
-              setCurrentUser(null)
-              setIsAuthenticated(false)
-            }
-          })
-          .catch((error) => {
-            console.error('Error updating user context:', error);
-            setCurrentUser(null)
-            setIsAuthenticated(false)
-          })
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const userData = await response.json();
+      
+      if (userData && (userData.email || userData.username)) {
+        setCurrentUser(userData);
+      } else {
+        console.warn('Invalid user data received');
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching authenticated user:', error.message);
+        
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          setCurrentUser(null);
+          setAuthToken(null);
+          setIsAuthenticated(false);
+        }
+      }
+    } finally {
+      fetchingUserRef.current = false;
+      setIsLoading(false);
+    }
+  }, [authToken, isAuthenticated, apiEndpoint]);
+
+  // Get Authenticated user with proper debouncing
+  useEffect(() => {
+    if (authToken && isAuthenticated && apiEndpoint) {
+      fetchAuthenticatedUser();
+    } else {
+      setIsLoading(false);
+    }
+  }, [authToken, isAuthenticated, apiEndpoint, fetchAuthenticatedUser]);
+
+  // Separate effect for seller status changes that only triggers when needed
+  useEffect(() => {
+    if (currentUser && sellerStatusChange) {
+      fetchAuthenticatedUser();
+    }
+  }, [sellerStatusChange, currentUser, fetchAuthenticatedUser]);
+    
+  const updateUserContext = useCallback(() => {
+    fetchAuthenticatedUser();
+  }, [fetchAuthenticatedUser]);
 
   // The context data that will be passed down to components
   const contextData = {

@@ -25,7 +25,7 @@ export default function FloatingEmojisBackground({
   const [isSocialOpen, setIsSocialOpen] = useState(false)
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 dark:from-purple-900 dark:via-gray-900 dark:to-indigo-900 transition-colors duration-500">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-blush-100 dark:bg-mocha-500 transition-colors duration-300">
       <FloatingBackground iconCount={60} opacity={10} />
 
       {/* Subtle grid pattern overlay */}
@@ -62,9 +62,9 @@ export default function FloatingEmojisBackground({
                       damping: 20,
                     }}
                     className="inline-block text-transparent bg-clip-text 
-                               bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 
-                               dark:from-purple-300 dark:via-pink-200 dark:to-indigo-300
-                               hover:from-pink-600 hover:via-purple-500 hover:to-indigo-600
+                               bg-gradient-to-r from-mocha-500 via-sunset-500 to-blush-500 
+                               dark:from-blush-300 dark:via-sunset-400 dark:to-mocha-300
+                               hover:from-sunset-600 hover:via-blush-500 hover:to-mocha-600
                                transition-all duration-300"
                   >
                     {letter}
@@ -93,7 +93,7 @@ export default function FloatingEmojisBackground({
                 <DialogTrigger asChild>
                   <Button 
                     size="lg" 
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full bg-gradient-to-r from-mocha-500 to-sunset-500 hover:from-mocha-600 hover:to-sunset-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
                     <Icons.globe className="mr-2 h-5 w-5" />
                     Sign Up with Social

@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, ReactNode, useState, useEffect, useContext } from "react";
+import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
 import {nanoid} from 'nanoid';
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { send } from "process";
 import {toast} from "react-hot-toast";
+
 interface UserContextProps {
   user: any[];
   users: any[];
@@ -69,60 +70,203 @@ export default function UserProvider({ children }: UserProviderProps) {
   const [onchange, setOnchange] = useState(false);
   const [category, setCategory] = useState("Fun"); // Default category
   const user = ['fuck ts']
-  const{authToken, onAuthChange}= useContext(AuthContext)
+  const{authToken, onAuthChange, isAuthenticated, currentUser}= useContext(AuthContext)
 
+  // Add refs to prevent duplicate requests
+  const fetchingUsersRef = useRef(false);
+  const fetchingFriendsRef = useRef(false);
+  const fetchingRequestsRef = useRef(false);
+  const lastUsersFetchRef = useRef(0);
+  const lastFriendsFetchRef = useRef(0);
+  const lastRequestsFetchRef = useRef(0);
+  const usersAbortControllerRef = useRef<AbortController | null>(null);
+  const friendsAbortControllerRef = useRef<AbortController | null>(null);
+  const requestsAbortControllerRef = useRef<AbortController | null>(null);
 
   const router = useRouter()
 
-  useEffect(() => {
+  // Debounced fetch users function
+  const fetchUsers = useCallback(async () => {
+    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingUsersRef.current) {
+      return;
+    }
+
+    // Debounce requests - only allow one request per 10 seconds
+    const now = Date.now();
+    if (now - lastUsersFetchRef.current < 10000) {
+      return;
+    }
+
+    fetchingUsersRef.current = true;
+    lastUsersFetchRef.current = now;
     setIsLoading(true);
-    fetch(`${apiEndpoint}/users`,{
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-        
+
+    // Abort previous request if it exists
+    if (usersAbortControllerRef.current) {
+      usersAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    usersAbortControllerRef.current = controller;
+
+    try {
+      const response = await fetch(`${apiEndpoint}/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid, don't make further requests
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setUsers(data.users);
-        setFilteredUsers(data.users); // Initially set filteredUsers to all users
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+
+      const data = await response.json();
+      setUsers(data.users || []);
+      setFilteredUsers(data.users || []);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error("Error fetching users:", error);
         setUsers([]);
         setFilteredUsers([]);
-        setIsLoading(false);
-      });
-  }, [onAuthChange]);
-
-  useEffect(() => {
-    setIsLoading(true);
-    fetch(`${apiEndpoint}/friends`,{
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-        
       }
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setFriends(data.friends);
-        setFilteredFriends(data.friends); // Initially set filteredFriends to all friends
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+    } finally {
+      fetchingUsersRef.current = false;
+      setIsLoading(false);
+    }
+  }, [authToken, isAuthenticated, apiEndpoint]);
+
+  // Debounced fetch friends function
+  const fetchFriends = useCallback(async () => {
+    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingFriendsRef.current) {
+      return;
+    }
+
+    // Debounce requests - only allow one request per 10 seconds
+    const now = Date.now();
+    if (now - lastFriendsFetchRef.current < 10000) {
+      return;
+    }
+
+    fetchingFriendsRef.current = true;
+    lastFriendsFetchRef.current = now;
+    setIsLoading(true);
+
+    // Abort previous request if it exists
+    if (friendsAbortControllerRef.current) {
+      friendsAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    friendsAbortControllerRef.current = controller;
+
+    try {
+      const response = await fetch(`${apiEndpoint}/friends`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid, don't make further requests
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setFriends(data.friends || []);
+      setFilteredFriends(data.friends || []);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error("Error fetching friends:", error);
         setFriends([]);
         setFilteredFriends([]);
-        setIsLoading(false);
+      }
+    } finally {
+      fetchingFriendsRef.current = false;
+      setIsLoading(false);
+    }
+  }, [authToken, isAuthenticated, apiEndpoint]);
+
+  // Debounced fetch pending requests function
+  const fetchPendingRequests = useCallback(async () => {
+    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingRequestsRef.current) {
+      return;
+    }
+
+    // Debounce requests - only allow one request per 10 seconds
+    const now = Date.now();
+    if (now - lastRequestsFetchRef.current < 10000) {
+      return;
+    }
+
+    fetchingRequestsRef.current = true;
+    lastRequestsFetchRef.current = now;
+
+    // Abort previous request if it exists
+    if (requestsAbortControllerRef.current) {
+      requestsAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    requestsAbortControllerRef.current = controller;
+
+    try {
+      const response = await fetch(`${apiEndpoint}/friends/pending`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        signal: controller.signal,
       });
-  }, [onAuthChange]);
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid, don't make further requests
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setReceivedRequests(data.pending_requests || []);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching pending friend requests:', error);
+        setReceivedRequests([]);
+      }
+    } finally {
+      fetchingRequestsRef.current = false;
+    }
+  }, [authToken, isAuthenticated, apiEndpoint]);
+
+  // Effect to fetch data when auth state changes - but only once per session
+  useEffect(() => {
+    if (authToken && isAuthenticated && currentUser) {
+      // Only fetch if we don't have data yet or auth state actually changed
+      if (users.length === 0) {
+        fetchUsers();
+      }
+      if (friends.length === 0) {
+        fetchFriends();
+      }
+      if (receivedRequests.length === 0) {
+        fetchPendingRequests();
+      }
+    }
+  }, [authToken, isAuthenticated, currentUser, fetchUsers, fetchFriends, fetchPendingRequests]);
 
   async function sendFriendRequest(receipientId: number) {
     try {
@@ -151,32 +295,6 @@ export default function UserProvider({ children }: UserProviderProps) {
     }
   }
 
-  
-  useEffect(() => {
-    (async () => {
-      try {
-        const response = await fetch(`${apiEndpoint}/friends/pending`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-        });
-  
-        if (!response.ok) {
-          console.error('Failed to get pending friend requests');
-          return;
-        }
-  
-        const data = await response.json();
-        setReceivedRequests(data.pending_requests);
-      } catch (error) {
-        console.error('Error fetching pending friend requests:', error);
-      }
-    })();
-  }, [onAuthChange]);
-  
-
   async function removeFriend(friendId: string) {
     try {
       const response = await fetch(`${apiEndpoint}/friends/remove`, {
@@ -196,16 +314,20 @@ export default function UserProvider({ children }: UserProviderProps) {
   
       const responseData = await response.json();
       toast.success('Friend removed successfully!');
+      
+      // Refresh friends list
+      fetchFriends();
+      
       return responseData.message;
     } catch (error) {
       console.error('Error removing friend:', error);
-      return 'Error occurred while processing the request.';
+      toast.error('An error occurred while removing the friend.');
     }
   }
 
   async function addFriend(requesterId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/add`, {
+      const response = await fetch(`${apiEndpoint}/friends/accept-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,42 +343,54 @@ export default function UserProvider({ children }: UserProviderProps) {
       }
   
       const responseData = await response.json();
+      toast.success('Friend request accepted!');
+      
+      // Refresh both friends list and pending requests
+      fetchFriends();
+      fetchPendingRequests();
+      
       return responseData.message;
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      return 'Error occurred while processing the request.';
+      toast.error('An error occurred while accepting the friend request.');
     }
   }
 
   async function blockUser(targetId: string, action: 'block' | 'unblock') {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/block`, {
+      const response = await fetch(`${apiEndpoint}/friends/${action}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ target_id: targetId, action }),
+        body: JSON.stringify({ target_id: targetId }),
       });
   
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Failed to block/unblock user:', errorData);
+        console.error(`Failed to ${action} user:`, errorData);
         return errorData.message || 'Error occurred';
       }
   
       const responseData = await response.json();
+      toast.success(`User ${action}ed successfully!`);
+      
+      // Refresh relevant lists
+      fetchUsers();
+      fetchFriends();
+      
       return responseData.message;
     } catch (error) {
-      console.error('Error blocking/unblocking user:', error);
-      return 'Error occurred while processing the request.';
+      console.error(`Error ${action}ing user:`, error);
+      toast.error(`An error occurred while ${action}ing the user.`);
     }
   }
 
   async function rejectFriendRequest(requesterId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/reject`, {
-        method: 'DELETE',
+      const response = await fetch(`${apiEndpoint}/friends/reject-request`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
@@ -271,41 +405,55 @@ export default function UserProvider({ children }: UserProviderProps) {
       }
   
       const responseData = await response.json();
+      toast.success('Friend request rejected!');
+      
+      // Refresh pending requests
+      fetchPendingRequests();
+      
       return responseData.message;
     } catch (error) {
       console.error('Error rejecting friend request:', error);
-      return 'Error occurred while processing the request.';
+      toast.error('An error occurred while rejecting the friend request.');
     }
   }
 
-  console.log('====================================');
-  console.log('users', users);
-  console.log('====================================');
-  
-  
-
-
-  
-    const contextData = {
-      user,
-      users,
-      sendFriendRequest,
-      receivedRequests,
-      addFriend,
-      removeFriend,
-      blockUser,
-      rejectFriendRequest,
-      friends,
-      filteredFriends
-
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (usersAbortControllerRef.current) {
+        usersAbortControllerRef.current.abort();
+      }
+      if (friendsAbortControllerRef.current) {
+        friendsAbortControllerRef.current.abort();
+      }
+      if (requestsAbortControllerRef.current) {
+        requestsAbortControllerRef.current.abort();
+      }
     };
-  
-    return (
-      <UserContext.Provider value={contextData}>
-        {children}
-      </UserContext.Provider>
-    );
-  }
+  }, []);
 
-// To use the context
+  const contextData: UserContextProps = {
+    user,
+    users,
+    sendFriendRequest,
+    receivedRequests,
+    setReceivedRequests,
+    removeFriend,
+    addFriend,
+    blockUser,
+    setUsers,
+    setFilteredUsers,
+    onchange: setOnchange,
+    rejectFriendRequest,
+    friends,
+    filteredFriends,
+  };
+
+  return (
+    <UserContext.Provider value={contextData}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
 export const useUserContext = () => useContext(UserContext);

@@ -16,7 +16,7 @@ import { FloatingBackground } from "@/components/ui/floating-background";
 
 export default function LoginForm() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 dark:from-purple-900 dark:via-gray-900 dark:to-indigo-900 transition-colors duration-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#FDF1F5] via-[#FDF1F5]/70 to-[#92736C]/20 dark:from-gray-900 dark:via-gray-800 dark:to-[#92736C]/20 transition-colors duration-500 flex items-center justify-center p-4">
       {/* Theme toggle */}
       <div className="absolute top-4 right-4">
         <ThemeToggle />
@@ -31,14 +31,14 @@ export default function LoginForm() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md relative z-10"
       >
-        <Card className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 shadow-2xl">
+        <Card className="bg-white/90 dark:bg-black/70 backdrop-blur-xl border border-[#92736C]/20 dark:border-gray-700/50 shadow-2xl">
           <CardHeader className="text-center space-y-2">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#92736C] to-[#92736C]/80 bg-clip-text text-transparent">
                 Welcome Back
               </CardTitle>
             </motion.div>
@@ -66,7 +66,7 @@ export default function LoginForm() {
                 Don't have an account?{" "}
                 <Link 
                   href="/signup" 
-                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold transition-colors duration-200 hover:underline"
+                  className="text-[#92736C] dark:text-[#92736C] hover:text-[#92736C]/80 dark:hover:text-[#92736C]/80 font-semibold transition-colors duration-200 hover:underline"
                 >
                   Sign up here
                 </Link>
