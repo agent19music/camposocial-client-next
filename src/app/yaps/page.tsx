@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Heart, MessageCircle, MoreHorizontal, Repeat, Share2, Users, Calendar, ShoppingBag, Search, Sparkles, UserPlus, Plus } from "lucide-react"
+import { Heart, MessageCircle, MoreHorizontal, Repeat, Share2, Users, Calendar, ShoppingBag, Search, Sparkles, UserPlus, Plus, TrendingUp, Clock, UsersIcon } from "lucide-react"
 import { Home, PartyPopper } from "lucide-react";
 import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
@@ -36,6 +36,7 @@ import { AuthContext } from '@/context/authcontext'
 import { UserContext } from '@/context/usercontext'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import AddYap from '@/components/addyap'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
@@ -141,8 +142,8 @@ const NewUserWelcome = () => {
 };
 
 export default function Component() {
-  const {yaps} = useContext(YapContext)
-  const { currentUser, isLoading } = useContext(AuthContext)
+  const { yaps, isLoading, feedType, setFeedType, refreshFeed } = useContext(YapContext)
+  const { currentUser, isLoading: authLoading } = useContext(AuthContext)
   const { friends, users } = useContext(UserContext)
   const router = useRouter();
 
@@ -153,10 +154,23 @@ export default function Component() {
   ];
 
   // Check if user is new (no yaps, no friends, etc.)
-  const isNewUser = !isLoading && currentUser && (
+  const isNewUser = !authLoading && currentUser && (
     (yaps.length === 0) &&
     (friends.length === 0)
   );
+
+  // Handle feed type change
+  const handleFeedTypeChange = (newFeedType: 'chronological' | 'trending' | 'following') => {
+    setFeedType(newFeedType);
+    // The context will automatically refetch with the new feed type
+  };
+
+  // Feed type icons and labels
+  const feedTypeConfig = {
+    chronological: { icon: Clock, label: "Latest", description: "Recent yaps from everyone" },
+    trending: { icon: TrendingUp, label: "Trending", description: "Popular yaps right now" },
+    following: { icon: UsersIcon, label: "Following", description: "Yaps from people you follow" }
+  };
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
@@ -184,39 +198,170 @@ export default function Component() {
             </form>
           </div>
 
+          {/* Add Yap Button */}
+          <div className="w-full max-w-xl mb-4">
+            <AddYap />
+          </div>
+
           <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px]">
             {isNewUser ? (
               <NewUserWelcome />
             ) : (
-              <Tabs defaultValue="for-you" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="for-you">For You</TabsTrigger>
-                  <TabsTrigger value="following">Following</TabsTrigger>
-                </TabsList>
-                <TabsContent value="for-you">
-                  {yaps.length < 1 ? (
+              <div className="w-full">
+                {/* Feed Type Selector */}
+                <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-10">
+                  <div className="flex items-center justify-between p-4">
+                    <h2 className="text-xl font-bold">Home</h2>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 gap-2">
+                          {React.createElement(feedTypeConfig[feedType].icon, { className: "h-4 w-4" })}
+                          {feedTypeConfig[feedType].label}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {Object.entries(feedTypeConfig).map(([key, config]) => (
+                          <DropdownMenuItem 
+                            key={key}
+                            onClick={() => handleFeedTypeChange(key as any)}
+                            className="flex items-start gap-3 p-3"
+                          >
+                            <config.icon className="h-4 w-4 mt-0.5" />
+                            <div className="flex flex-col">
+                              <span className="font-medium">{config.label}</span>
+                              <span className="text-xs text-muted-foreground">{config.description}</span>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Feed Content */}
+                <div className="min-h-[400px]">
+                  {isLoading ? (
                     // Display Skeletons while loading
                     <>
                       {Array.from({ length: 4 }).map((_, index) => (
                         <YapCardSkeleton key={index} />
                       ))}
                     </>
+                  ) : yaps.length > 0 ? (
+                    // Display yaps
+                    <div className="divide-y">
+                      {yaps.map((yap) => (
+                        <YapCard
+                          key={yap.id}
+                          display_name={yap.display_name}
+                          username={yap.username}
+                          content={yap.content}
+                          avatar={yap.avatar}
+                          media={yap.media}
+                          yap={yap}
+                          likes_count={yap.likes_count}
+                          replies_count={yap.replies_count}
+                          retweets_count={yap.retweets_count}
+                        />
+                      ))}
+                    </div>
                   ) : (
-                    // Display YapCards when data is loaded
-                    yaps.length > 0 &&
-                    yaps.map((yap, index) => (
-                      <YapCard key={index} {...yap} yap={yap} />
-                    ))
+                    // Empty state
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                        <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
+                      <p className="text-muted-foreground mb-4 max-w-sm">
+                        {feedType === 'following' 
+                          ? "Follow some people to see their yaps here, or switch to trending to discover new content."
+                          : "Be the first to share what's happening!"
+                        }
+                      </p>
+                      {feedType === 'following' && (
+                        <Button 
+                          variant="outline"
+                          onClick={() => handleFeedTypeChange('trending')}
+                        >
+                          <TrendingUp className="h-4 w-4 mr-2" />
+                          View Trending
+                        </Button>
+                      )}
+                    </div>
                   )}
-                </TabsContent>
+                </div>
 
-                <TabsContent value="following">
-                  <p className="text-center text-muted-foreground mt-4">
-                    Yaps from accounts you follow will appear here.
-                  </p>
-                </TabsContent>
-              </Tabs>
+                {/* Load more button */}
+                {yaps.length > 0 && (
+                  <div className="p-4 border-t">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full" 
+                      onClick={refreshFeed}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Loading...' : 'Load more yaps'}
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
+          </div>
+        </div>
+        
+        {/* Right sidebar - Trending/Suggestions */}
+        <div className="hidden lg:block w-80 p-4">
+          <div className="space-y-4">
+            {/* Trending hashtags */}
+            <Card>
+              <CardHeader>
+                <h3 className="font-semibold">Trending on Campus</h3>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="font-medium">#StudyGroup</p>
+                    <p className="text-sm text-muted-foreground">142 yaps</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="font-medium">#CampusLife</p>
+                    <p className="text-sm text-muted-foreground">89 yaps</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="font-medium">#Finals</p>
+                    <p className="text-sm text-muted-foreground">67 yaps</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Who to follow */}
+            <Card>
+              <CardHeader>
+                <h3 className="font-semibold">Who to follow</h3>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {users.slice(0, 3).map((user, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={user.avatar} />
+                        <AvatarFallback>{user.first_name?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{user.first_name} {user.last_name}</p>
+                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline">Follow</Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

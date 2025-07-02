@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext, useState, useEffect } from "react"
+import { useContext, useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,7 @@ import { UserContext } from "@/context/usercontext"
 import { FriendshipContext } from "@/context/friendshipcontext"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ReceivedRequestsModal } from "@/modals/friends/friendrequests"
+import { useDebounce } from "@/hooks/useDebounce"
 
 interface Friend {
   id: number
@@ -227,6 +228,14 @@ export default function Component() {
     friends,
   } = useContext(FriendshipContext);
 
+  // Get data from UserContext
+  const {
+    users,
+    addFriend,
+    removeFriend,
+    receivedRequests,
+  } = useContext(UserContext);
+
   useEffect(() => {
     getFriendRequests();
   }, []);
@@ -255,7 +264,28 @@ export default function Component() {
     }
   };
 
-  const transformedUsers: Suggestion[] = users?.map(user => ({
+  // Debounced search function
+  const debouncedSearch = useCallback((query: string) => {
+    if (query.trim() === "") {
+      setSearchResults([])
+      return;
+    }
+    
+    const results = (users || []).filter(user =>
+      user.username.toLowerCase().includes(query.toLowerCase())
+    )
+    setSearchResults(results)
+  }, [users]);
+
+  // Use the debounce hook
+  const { debouncedCallback: debouncedSearchHandler } = useDebounce(debouncedSearch, 300);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    debouncedSearchHandler(query)
+  }
+
+  const transformedUsers: Suggestion[] = (users || []).map(user => ({
     id: user.id,
     username: user.username,
     photoUrl: user.photoUrl || "/placeholder.svg?height=40&width=40",
@@ -266,18 +296,6 @@ export default function Component() {
   const suggestions: Suggestion[] = [
     ...(Array.isArray(transformedUsers) && transformedUsers.length > 0 ? transformedUsers : [])
   ]
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query)
-    if (query.trim() === "") {
-      setSearchResults([])
-    } else {
-      const results = users.filter(user =>
-        user.username.toLowerCase().includes(query.toLowerCase())
-      )
-      setSearchResults(results)
-    }
-  }
 
   const handleAddFriend = (user: User) => {
     console.log(`Added ${user.username} as a friend`)
@@ -343,9 +361,13 @@ export default function Component() {
                 <DialogTitle>Friends</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {friends?.map((friend) => (
-                  <FriendCard key={friend.id} friend={friend} removeFriend={removeFriend} blockFriend={blockUser} />
-                ))}
+                {friends && friends.length > 0 ? (
+                  friends.map((friend) => (
+                    <FriendCard key={friend.id} friend={friend} removeFriend={removeFriend} blockFriend={blockUser} />
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground">No friends yet. Start by sending friend requests!</p>
+                )}
               </div>
             </DialogContent>
           </Dialog>
@@ -356,9 +378,13 @@ export default function Component() {
                 <DialogTitle>People You May Know</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {suggestions?.map((suggestion) => (
-                  <SuggestionCard key={suggestion.id} suggestion={suggestion} sendFriendRequest={sendFriendRequest} acceptFriendRequest={handleAcceptRequest} />
-                ))}
+                {suggestions && suggestions.length > 0 ? (
+                  suggestions.map((suggestion) => (
+                    <SuggestionCard key={suggestion.id} suggestion={suggestion} sendFriendRequest={sendFriendRequest} acceptFriendRequest={handleAcceptRequest} />
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground">No suggestions available at the moment.</p>
+                )}
               </div>
             </DialogContent>
           </Dialog>

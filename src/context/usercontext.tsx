@@ -181,6 +181,13 @@ export default function UserProvider({ children }: UserProviderProps) {
           // Token is invalid, don't make further requests
           return;
         }
+        // Don't throw error for 404 - friends endpoint might not exist
+        if (response.status === 404) {
+          console.warn('Friends endpoint not found');
+          setFriends([]);
+          setFilteredFriends([]);
+          return;
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -235,6 +242,12 @@ export default function UserProvider({ children }: UserProviderProps) {
       if (!response.ok) {
         if (response.status === 401) {
           // Token is invalid, don't make further requests
+          return;
+        }
+        // Don't throw error for 404 - endpoint might not exist
+        if (response.status === 404) {
+          console.warn('Friends pending endpoint not found');
+          setReceivedRequests([]);
           return;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);

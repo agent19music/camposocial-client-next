@@ -36,7 +36,7 @@ function generateCodeVerifier() {
 }
 
 export function SocialLoginModal() {
-  const { socialLogin } = useContext(AuthContext);
+  const { socialLogin, showSocialModal, setShowSocialModal } = useContext(AuthContext);
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (credentialResponse) => {
@@ -150,8 +150,36 @@ export function SocialLoginModal() {
     }
   ];
 
+  if (!showSocialModal) {
+    return (
+      <div className="text-center">
+        <Button 
+          onClick={() => setShowSocialModal(true)}
+          className="w-full h-14 bg-gradient-to-r from-[#92736C] to-[#92736C]/80 hover:from-[#92736C]/90 hover:to-[#92736C]/70 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+        >
+          <div className="flex items-center justify-center space-x-3">
+            <span className="text-lg">🚀</span>
+            <span>Get Started</span>
+          </div>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Choose your login method</h3>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setShowSocialModal(false)}
+          className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <span className="text-xl">&times;</span>
+        </Button>
+      </div>
+
       {socialProviders.map((provider, index) => (
         <motion.div
           key={provider.name}

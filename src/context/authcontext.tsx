@@ -38,6 +38,8 @@ interface AuthContextType {
   isProfileComplete: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
+  showSocialModal: boolean;
+  setShowSocialModal: (show: boolean) => void;
 }
 
 // Create the AuthContext with a default value (null user initially)
@@ -61,14 +63,15 @@ interface AuthProviderProps {
 
 export default function AuthProvider({ children }: AuthProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
-  const [currentUser, setCurrentUser] = useState <currentUser| null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [onAuthChange, setOnAuthChange] = useState(false)
+  const [onAuthChange, setOnAuthChange] = useState(false);
   const {sellerStatusChange} = useContext(MarketplaceContext)
   const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
-  const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showSocialModal, setShowSocialModal] = useState(false);
   
   // Add refs to prevent duplicate requests
   const fetchingUserRef = useRef(false);
@@ -169,12 +172,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         setIsAuthenticated(true);
         setIsProfileComplete(result.is_profile_complete);
         setOnAuthChange(!onAuthChange);
-        
-        toast.success(`Successfully signed in with ${provider}`);
+        setShowSocialModal(false); // Close the modal on successful login
         
         if (!result.is_profile_complete) {
+          toast.success('Welcome! Let\'s complete your profile');
           router.push('/complete-profile');
         } else {
+          toast.success('Welcome back!');
           router.push('/yaps');
         }
       } else {
@@ -343,7 +347,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     onAuthChange,
     isProfileComplete,
     isAuthenticated,
-    isLoading
+    isLoading,
+    showSocialModal,
+    setShowSocialModal
   };
 
   // Render the provider and pass the context data

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useContext, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,7 +20,9 @@ import {
   CalendarIcon, 
   BarChartIcon,
   PlusIcon,
-  MinusIcon
+  MinusIcon,
+  X,
+  Hash
 } from "lucide-react"
 import {
   Select,
@@ -29,229 +31,473 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useContext } from "react"
 import { YapContext } from "@/context/yapcontext"
 import { AuthContext } from "@/context/authcontext"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { cn } from "@/lib/utils"
+
+interface YapPayload {
+  content: string;
+  location?: string;
+  originalYapId?: string;
+  mediaFiles?: File[];
+}
 
 export default function AddYap() {
   const [open, setOpen] = useState(false)
   const [yapContent, setYapContent] = useState("")
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
+  const [location, setLocation] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Hashtag suggestions
+  const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false)
+  const [hashtagQuery, setHashtagQuery] = useState("")
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<any[]>([])
+  const [cursorPosition, setCursorPosition] = useState(0)
+  
+  // Location suggestions
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false)
+  const [locationQuery, setLocationQuery] = useState("")
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([])
+  
+  // Poll functionality
   const [isPollMode, setIsPollMode] = useState(false)
   const [pollOptions, setPollOptions] = useState(["", ""])
   const [pollDuration, setPollDuration] = useState("1 day")
-  const [location, setLocation] = useState("")
 
-
-  const {postYap} = useContext(YapContext)
-
-  interface YapPayload {
-    content: string;
-    location?: string;
-    originalYapId?: number; // Optional: for retweets
-    mediaFiles?: File[];    // Optional: images or videos
-  }
-
-  let payload = {
-    content: yapContent,
-    mediaFiles : mediaFiles,
-    location: location,
-  }
-
-  console.log(payload);
+  const { postYap, getHashtagSuggestions, getLocationSuggestions } = useContext(YapContext)
+  const { currentUser } = useContext(AuthContext)
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setMediaFiles(Array.from(event.target.files))
-    }
-  }
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const {currentUser} = useContext(AuthContext)
+  const MAX_CHARACTERS = 280
+  const characterCount = yapContent.length
+  const remainingChars = MAX_CHARACTERS - characterCount
+  const warningThreshold = 20
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  // Extract hashtags from content for real-time processing
+  const extractedHashtags = yapContent.match(/#[\w]+/g) || []
 
-    const payload = {
-      content: yapContent,
-      mediaFiles: mediaFiles.length > 0 ? mediaFiles : undefined,
-      location: location || undefined,
-    };
-
-    console.log(payload);
+  // Handle content change and detect hashtag typing
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    const cursorPos = e.target.selectionStart
     
+    if (value.length <= MAX_CHARACTERS) {
+      setYapContent(value)
+      setCursorPosition(cursorPos)
+      
+      // Check for hashtag typing
+      const textBeforeCursor = value.substring(0, cursorPos)
+      const hashtagMatch = textBeforeCursor.match(/#(\w*)$/)
+      
+      if (hashtagMatch) {
+        setHashtagQuery(hashtagMatch[1])
+        setShowHashtagSuggestions(true)
+        fetchHashtagSuggestions(hashtagMatch[1])
+      } else {
+        setShowHashtagSuggestions(false)
+      }
+    }
+  }
 
+  // Fetch hashtag suggestions
+  const fetchHashtagSuggestions = async (query: string) => {
     try {
-      await postYap(payload); // Call your postYap function
-      resetForm(); // Reset form after successful submission
-      setOpen(false); // Close the dialog
+      const suggestions = await getHashtagSuggestions(query)
+      setHashtagSuggestions(suggestions)
     } catch (error) {
-      console.error('Failed to post Yap:', error);
+      console.error('Failed to fetch hashtag suggestions:', error)
     }
-  };
+  }
 
-  const handlePolls = (event: React.FormEvent) => {
-    event.preventDefault()
-    if (isPollMode) {
-      console.log("Poll content:", yapContent)
-      console.log("Poll options:", pollOptions)
-      console.log("Poll duration:", pollDuration)
+  // Fetch location suggestions
+  const fetchLocationSuggestions = async (query: string) => {
+    try {
+      const suggestions = await getLocationSuggestions(query)
+      setLocationSuggestions(suggestions)
+    } catch (error) {
+      console.error('Failed to fetch location suggestions:', error)
+    }
+  }
+
+  // Handle hashtag selection
+  const handleHashtagSelect = (hashtag: string) => {
+    const textBeforeCursor = yapContent.substring(0, cursorPosition)
+    const textAfterCursor = yapContent.substring(cursorPosition)
+    
+    // Replace the partial hashtag with the selected one
+    const updatedTextBefore = textBeforeCursor.replace(/#\w*$/, `#${hashtag} `)
+    const newContent = updatedTextBefore + textAfterCursor
+    
+    setYapContent(newContent)
+    setShowHashtagSuggestions(false)
+    
+    // Focus back to textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(updatedTextBefore.length, updatedTextBefore.length)
+      }
+    }, 0)
+  }
+
+  // Handle location input change
+  const handleLocationChange = (value: string) => {
+    setLocationQuery(value)
+    setLocation(value)
+    
+    if (value.length > 1) {
+      setShowLocationSuggestions(true)
+      fetchLocationSuggestions(value)
     } else {
-      console.log("Yap content:", yapContent)
-      console.log("Media files:", mediaFiles)
+      setShowLocationSuggestions(false)
     }
-    setOpen(false)
-    resetForm()
   }
 
-  const resetForm = () => {
-    setYapContent("")
-    setMediaFiles([])
-    setIsPollMode(false)
-    setPollOptions(["", ""])
-    setPollDuration("1 day")
+  // Handle location selection
+  const handleLocationSelect = (selectedLocation: string) => {
+    setLocation(selectedLocation)
+    setLocationQuery(selectedLocation)
+    setShowLocationSuggestions(false)
   }
 
+  // Handle media file selection
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/')
+      const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
+      return isValidType && isValidSize
+    })
+    
+    setMediaFiles(prev => [...prev, ...validFiles].slice(0, 4)) // Max 4 files
+  }
+
+  // Remove media file
+  const removeMediaFile = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Add poll option
   const addPollOption = () => {
     if (pollOptions.length < 4) {
-      setPollOptions([...pollOptions, ""])
+      setPollOptions(prev => [...prev, ""])
     }
   }
 
+  // Remove poll option
   const removePollOption = (index: number) => {
     if (pollOptions.length > 2) {
-      const newOptions = pollOptions.filter((_, i) => i !== index)
-      setPollOptions(newOptions)
+      setPollOptions(prev => prev.filter((_, i) => i !== index))
     }
   }
 
+  // Update poll option
   const updatePollOption = (index: number, value: string) => {
-    const newOptions = [...pollOptions]
-    newOptions[index] = value
-    setPollOptions(newOptions)
+    setPollOptions(prev => prev.map((option, i) => i === index ? value : option))
   }
+
+  // Submit yap
+  const handleSubmit = async () => {
+    if (!yapContent.trim() || isSubmitting) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      const payload: YapPayload = {
+        content: yapContent.trim(),
+        location: location.trim() || undefined,
+        mediaFiles: mediaFiles.length > 0 ? mediaFiles : undefined
+      }
+      
+      await postYap(payload)
+      
+      // Reset form
+      setYapContent("")
+      setMediaFiles([])
+      setLocation("")
+      setLocationQuery("")
+      setPollOptions(["", ""])
+      setIsPollMode(false)
+      setOpen(false)
+      
+    } catch (error) {
+      console.error('Failed to post yap:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const isSubmitDisabled = !yapContent.trim() || characterCount > MAX_CHARACTERS || isSubmitting
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button  className="rounded-md">Add Yap</Button>
+        <Button className="w-full bg-[#92736C] hover:bg-[#92736C]/90 text-white font-medium rounded-full h-12">
+          What's happening?
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Compose Yap</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="flex items-start gap-4">
-            <Avatar>
-              <AvatarImage src={currentUser?.avatarUrl || "/placeholder-avatar.jpg"} alt={`@${currentUser?.username || "username"}`} />
-              <AvatarFallback>{currentUser?.username ? currentUser.username[0].toUpperCase() : "UN"}</AvatarFallback>
+        
+        <div className="space-y-4">
+          {/* User info */}
+          <div className="flex items-start space-x-3">
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={currentUser?.avatar} alt={currentUser?.username} />
+              <AvatarFallback>{currentUser?.first_name?.[0] || 'U'}</AvatarFallback>
             </Avatar>
-            <Textarea
-              id="yap"
-              value={yapContent}
-              onChange={(e) => setYapContent(e.target.value)}
-              placeholder={isPollMode ? "Ask a question..." : "What's happening?"}
-              className="flex-1 resize-none dark:bg-foreground/10"
-            />
-          </div>
-          {isPollMode ? (
-            <div className="space-y-2">
-              {pollOptions.map((option, index) => (
-                <div key={index} className="flex items-center gap-2">
+            <div className="flex-1 space-y-3">
+              {/* Content textarea */}
+              <div className="relative">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder="What's happening?"
+                  value={yapContent}
+                  onChange={handleContentChange}
+                  className="min-h-[120px] resize-none border-none p-0 text-lg placeholder:text-muted-foreground/60 focus-visible:ring-0"
+                  maxLength={MAX_CHARACTERS}
+                />
+                
+                {/* Hashtag suggestions */}
+                {showHashtagSuggestions && hashtagSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1">
+                    <div className="bg-popover border rounded-md shadow-md max-h-40 overflow-y-auto">
+                      {hashtagSuggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center justify-between"
+                          onClick={() => handleHashtagSelect(suggestion.name)}
+                        >
+                          <span>#{suggestion.name}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {suggestion.usage_count} uses
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Extracted hashtags display */}
+              {extractedHashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {extractedHashtags.map((hashtag, index) => (
+                    <Badge key={index} variant="secondary" className="text-blue-500">
+                      {hashtag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Media preview */}
+              {mediaFiles.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {mediaFiles.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        {file.type.startsWith('image/') ? (
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={URL.createObjectURL(file)}
+                            className="w-full h-full object-cover"
+                            controls
+                          />
+                        )}
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-2 right-2 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeMediaFile(index)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Location input */}
+              <div className="relative">
+                <div className="flex items-center space-x-2">
+                  <MapPinIcon className="w-4 h-4 text-muted-foreground" />
                   <Input
-                    value={option}
-                    onChange={(e) => updatePollOption(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
+                    placeholder="Add location..."
+                    value={locationQuery}
+                    onChange={(e) => handleLocationChange(e.target.value)}
+                    className="border-none p-0 h-8 focus-visible:ring-0"
                   />
-                  {index > 1 && (
+                </div>
+                
+                {/* Location suggestions */}
+                {showLocationSuggestions && locationSuggestions.length > 0 && (
+                  <div className="absolute top-full left-6 right-0 z-50 mt-1">
+                    <div className="bg-popover border rounded-md shadow-md max-h-40 overflow-y-auto">
+                      {locationSuggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center justify-between"
+                          onClick={() => handleLocationSelect(suggestion.name)}
+                        >
+                          <span>{suggestion.name}</span>
+                          {suggestion.usage_count > 0 && (
+                            <span className="text-muted-foreground text-xs">
+                              {suggestion.usage_count} uses
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Poll options */}
+              {isPollMode && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Poll Options</div>
+                  {pollOptions.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        placeholder={`Option ${index + 1}`}
+                        value={option}
+                        onChange={(e) => updatePollOption(index, e.target.value)}
+                        className="flex-1"
+                      />
+                      {pollOptions.length > 2 && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removePollOption(index)}
+                          className="w-8 h-8"
+                        >
+                          <MinusIcon className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {pollOptions.length < 4 && (
                     <Button
-                      type="button"
                       variant="ghost"
-                      size="icon"
-                      onClick={() => removePollOption(index)}
+                      onClick={addPollOption}
+                      className="text-blue-500 hover:text-blue-600"
                     >
-                      <MinusIcon className="h-4 w-4" />
+                      <PlusIcon className="w-4 h-4 mr-1" />
+                      Add option
                     </Button>
                   )}
+                  <Select value={pollDuration} onValueChange={setPollDuration}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5 minutes">5 minutes</SelectItem>
+                      <SelectItem value="1 hour">1 hour</SelectItem>
+                      <SelectItem value="1 day">1 day</SelectItem>
+                      <SelectItem value="3 days">3 days</SelectItem>
+                      <SelectItem value="7 days">7 days</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-              {pollOptions.length < 4 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addPollOption}
-                  className="mt-2"
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Option
-                </Button>
               )}
-              <Select value={pollDuration} onValueChange={setPollDuration}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Poll duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1 day">1 day</SelectItem>
-                  <SelectItem value="3 days">3 days</SelectItem>
-                  <SelectItem value="1 week">1 week</SelectItem>
-                  <SelectItem value="1 month">1 month</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-          ) : (
-            mediaFiles.length > 0 && (
-              <div className="grid gap-2">
-                {mediaFiles.map((file, index) => (
-                  <div key={index} className="text-sm text-gray-500">
-                    {file.name}
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsPollMode(!isPollMode)}
-              className={isPollMode ? "text-blue-500" : "text-gray-500"}
-            >
-              <BarChartIcon className="h-5 w-5" />
-            </Button>
-            {!isPollMode && (
-              <>
-                <label htmlFor="image-upload" className="cursor-pointer">
-                  <ImageIcon className="h-5 w-5 text-blue-500" />
-                  <input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-                <label htmlFor="video-upload" className="cursor-pointer">
-                  <VideoIcon className="h-5 w-5 text-blue-500" />
-                  <input
-                    id="video-upload"
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-              </>
-            )}
-            <SmileIcon className="h-5 w-5 text-blue-500" />
-            <MapPinIcon className="h-5 w-5 text-blue-500" />
-            <CalendarIcon className="h-5 w-5 text-blue-500" />
-            <Button type="submit" className="ml-auto rounded-full">
-              Yap
-            </Button>
           </div>
-        </form>
+
+          {/* Action bar */}
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center space-x-2">
+              {/* Media upload */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={mediaFiles.length >= 4}
+                className="text-blue-500 hover:text-blue-600"
+              >
+                <ImageIcon className="w-5 h-5" />
+              </Button>
+              
+              {/* Poll toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsPollMode(!isPollMode)}
+                className={cn(
+                  "text-blue-500 hover:text-blue-600",
+                  isPollMode && "bg-blue-100 dark:bg-blue-900/20"
+                )}
+              >
+                <BarChartIcon className="w-5 h-5" />
+              </Button>
+
+              {/* Emoji (placeholder) */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-blue-500 hover:text-blue-600"
+              >
+                <SmileIcon className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {/* Character count */}
+              <div className="flex items-center space-x-2">
+                {characterCount > 0 && (
+                  <>
+                    <div className="relative w-8 h-8">
+                      <Progress
+                        value={(characterCount / MAX_CHARACTERS) * 100}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      {remainingChars <= warningThreshold && (
+                        <span className={cn(
+                          "absolute inset-0 flex items-center justify-center text-xs font-medium",
+                          remainingChars < 0 ? "text-red-500" : "text-orange-500"
+                        )}>
+                          {remainingChars}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Submit button */}
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitDisabled}
+                className="bg-[#92736C] hover:bg-[#92736C]/90 text-white font-medium rounded-full px-6"
+              >
+                {isSubmitting ? 'Posting...' : 'Yap'}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          onChange={handleMediaUpload}
+          className="hidden"
+        />
       </DialogContent>
     </Dialog>
   )
-}
+} 

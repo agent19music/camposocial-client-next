@@ -7,35 +7,96 @@ import { AuthContext } from "./authcontext";
 import {toast} from 'react-hot-toast'
 
 
-// Yap interface to define the structure of each yap
+// Enhanced Yap interface with all social features
 interface Yap {
   id: string;
-  media: [];
   content: string;
   timestamp: string;
+  updated_at?: string;
+  location?: string;
+  user_id: string;
   username: string;
-  handle: string;
+  display_name: string;
   avatar: string;
-  replies: [];
+  original_yap_id?: string;
+  replies_count: number;
+  likes_count: number;
+  retweets_count: number;
+  media: MediaItem[];
+  hashtags: string[];
+  // Client-side optimistic state
+  isOptimistic?: boolean;
+  optimisticLiked?: boolean;
+  optimisticLikesCount?: number;
+  optimisticRepliesCount?: number;
+  optimisticRetweetsCount?: number;
 }
 
-// YapContextProps to define the types used in the context
+interface MediaItem {
+  id: number;
+  url: string;
+  type: 'image' | 'video';
+}
+
+interface Reply {
+  id: number;
+  content: string;
+  created_at: string;
+  user: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar: string;
+  };
+  parent_reply_id?: number;
+  isOptimistic?: boolean;
+}
+
+interface HashtagSuggestion {
+  name: string;
+  usage_count: number;
+}
+
+interface LocationSuggestion {
+  name: string;
+  usage_count: number;
+}
+
+// Enhanced YapContextProps with all social features
 interface YapContextProps {
   yaps: Yap[];
   isLoading: boolean;
   onchange: boolean;
   setOnchange: (value: boolean) => void;
-  selectedYap: Yap | null; // Null when no Yap is selected
-  setSelectedYap: (yap: Yap | null) => void; // Setter function for selectedYap
-  navigateToSingleYapView: (yap: Yap, flag: string) => void; // Add this to the interface
-  postYap : (payload:YapPayload ) => void;
+  selectedYap: Yap | null;
+  setSelectedYap: (yap: Yap | null) => void;
+  navigateToSingleYapView: (yap: Yap, flag: string) => void;
+  postYap: (payload: YapPayload) => Promise<void>;
+  
+  // Social interactions with optimistic updates
+  toggleLike: (yapId: string) => Promise<void>;
+  addReply: (yapId: string, content: string, parentReplyId?: number) => Promise<void>;
+  retweet: (yapId: string, content?: string) => Promise<void>;
+  
+  // Feed management
+  feedType: 'chronological' | 'trending' | 'following';
+  setFeedType: (type: 'chronological' | 'trending' | 'following') => void;
+  refreshFeed: () => Promise<void>;
+  
+  // Suggestions
+  getHashtagSuggestions: (query?: string) => Promise<HashtagSuggestion[]>;
+  getLocationSuggestions: (query?: string) => Promise<LocationSuggestion[]>;
+  
+  // Reply management for single yap view
+  yapReplies: Reply[];
+  setYapReplies: (replies: Reply[]) => void;
 }
 
 interface YapPayload {
   content: string;
   location?: string;
-  originalYapId?: number; // Optional: for retweets
-  mediaFiles?: File[];    // Optional: images or videos
+  originalYapId?: string;
+  mediaFiles?: File[];
 }
 
 // Default values for the context
@@ -47,7 +108,25 @@ const defaultValue: YapContextProps = {
   setSelectedYap: () => {}, // No-op function for default
   setOnchange: () => {},
   navigateToSingleYapView: () => {}, // No-op function for default
-  postYap: () => {}
+  postYap: async () => {},
+  
+  // Social interactions
+  toggleLike: async () => {},
+  addReply: async () => {},
+  retweet: async () => {},
+  
+  // Feed management
+  feedType: 'chronological',
+  setFeedType: () => {},
+  refreshFeed: async () => {},
+  
+  // Suggestions
+  getHashtagSuggestions: async () => [],
+  getLocationSuggestions: async () => [],
+  
+  // Reply management
+  yapReplies: [],
+  setYapReplies: () => {}
 };
 
 // Create the YapContext with default values
@@ -61,15 +140,16 @@ interface YapProviderProps {
 // YapProvider component to wrap the application
 export default function YapProvider({ children }: YapProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // API endpoint from environment variables
-  const { authToken, isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
+  const { authToken, isAuthenticated, isLoading: authLoading, currentUser } = useContext(AuthContext);
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
   const [yaps, setYaps] = useState<Yap[]>([]);
   const [filteredYaps, setFilteredYaps] = useState<Yap[]>([]);
   const [onchange, setOnchange] = useState(false);
-  const [category, setCategory] = useState("Fun"); // Default category
-  const [selectedYap, setSelectedYap] = useState<Yap | null>(null); // Initially no yap is selected
+  const [selectedYap, setSelectedYap] = useState<Yap | null>(null);
+  const [feedType, setFeedType] = useState<'chronological' | 'trending' | 'following'>('chronological');
+  const [yapReplies, setYapReplies] = useState<Reply[]>([]);
 
   const router = useRouter(); // Initialize the router
 
@@ -83,9 +163,9 @@ export default function YapProvider({ children }: YapProviderProps) {
 
   // Rate limiting configuration
   const RATE_LIMIT_WINDOW = 60000; // 1 minute
-  const MAX_REQUESTS_PER_WINDOW = 15;
-  const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between requests
-  const DEBOUNCE_DELAY = 1000; // 1 second debounce for UI changes
+  const MAX_REQUESTS_PER_WINDOW = 30; // Increased for more interactions
+  const MIN_REQUEST_INTERVAL = 1000; // Reduced to 1 second for better responsiveness
+  const DEBOUNCE_DELAY = 500; // Reduced debounce for faster updates
 
   // Rate limiting function
   const canMakeRequest = useCallback((requestType: string): boolean => {
@@ -133,8 +213,8 @@ export default function YapProvider({ children }: YapProviderProps) {
     activeRequestsRef.current.delete(requestType);
   }, []);
 
-  // Debounced fetch yaps function
-  const fetchYaps = useCallback(async () => {
+  // Enhanced fetch yaps function with feed algorithm support
+  const fetchYaps = useCallback(async (feedTypeOverride?: string) => {
     if (authLoading || !isAuthenticated || !authToken || !apiEndpoint || fetchingRef.current) {
       setYaps([]);
       setFilteredYaps([]);
@@ -142,15 +222,11 @@ export default function YapProvider({ children }: YapProviderProps) {
       return;
     }
 
-    if (!canMakeRequest('fetch_yaps')) {
-      return;
-    }
+    if (!canMakeRequest('fetch_yaps')) return;
 
-    fetchingRef.current = true;
     markRequestStart('fetch_yaps');
     setIsLoading(true);
 
-    // Abort previous request if it exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -159,7 +235,19 @@ export default function YapProvider({ children }: YapProviderProps) {
     abortControllerRef.current = controller;
 
     try {
-      const response = await fetch(`${apiEndpoint}/yaps`, {
+      const currentFeedType = feedTypeOverride || feedType;
+      let endpoint = `${apiEndpoint}/yaps`;
+      
+      // Use different endpoints based on feed type
+      if (currentFeedType === 'trending') {
+        endpoint = `${apiEndpoint}/yaps/trending`;
+      } else if (currentFeedType === 'following') {
+        endpoint = `${apiEndpoint}/yaps/feed?type=following`;
+      } else {
+        endpoint = `${apiEndpoint}/yaps/feed?type=mixed`; // Chronological with some algorithmic boost
+      }
+
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +258,6 @@ export default function YapProvider({ children }: YapProviderProps) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token is invalid, clear data and don't retry
           setYaps([]);
           setFilteredYaps([]);
           toast.error('Session expired. Please log in again.');
@@ -189,7 +276,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
       const data = await response.json();
       setYaps(data.yaps || []);
-      setFilteredYaps(data.yaps || []); // Initially set filteredYaps to all yaps
+      setFilteredYaps(data.yaps || []);
       
     } catch (error: any) {
       if (error.name !== 'AbortError') {
@@ -203,7 +290,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       fetchingRef.current = false;
       markRequestEnd('fetch_yaps');
     }
-  }, [authLoading, isAuthenticated, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd]);
+  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType]);
 
   // Fetch yaps only when authenticated and not loading
   useEffect(() => {
@@ -240,8 +327,6 @@ export default function YapProvider({ children }: YapProviderProps) {
     return `${baseSlug}-${nanoid(12)}`;
   }
 
-
-
   // Function to navigate to a single Yap view
   function navigateToSingleYapView(yap: Yap, flag: string) {    
     const slug = slugify(yap.id);
@@ -255,8 +340,366 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
   }
   
-   const postYap = async (yapPayload: YapPayload): Promise<Response | void> => {
+  // Optimistic toggle like function
+  const toggleLike = useCallback(async (yapId: string) => {
     if (!isAuthenticated || !authToken) {
+      toast.error('Please log in to like yaps');
+      return;
+    }
+
+    // Optimistic update
+    setYaps(prevYaps => 
+      prevYaps.map(yap => {
+        if (yap.id === yapId) {
+          const isCurrentlyLiked = yap.optimisticLiked ?? false;
+          return {
+            ...yap,
+            optimisticLiked: !isCurrentlyLiked,
+            optimisticLikesCount: isCurrentlyLiked 
+              ? (yap.optimisticLikesCount ?? yap.likes_count) - 1
+              : (yap.optimisticLikesCount ?? yap.likes_count) + 1
+          };
+        }
+        return yap;
+      })
+    );
+    
+    setFilteredYaps(prevYaps => 
+      prevYaps.map(yap => {
+        if (yap.id === yapId) {
+          const isCurrentlyLiked = yap.optimisticLiked ?? false;
+          return {
+            ...yap,
+            optimisticLiked: !isCurrentlyLiked,
+            optimisticLikesCount: isCurrentlyLiked 
+              ? (yap.optimisticLikesCount ?? yap.likes_count) - 1
+              : (yap.optimisticLikesCount ?? yap.likes_count) + 1
+          };
+        }
+        return yap;
+      })
+    );
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/${yapId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle like');
+      }
+
+      const data = await response.json();
+      
+      // Update with actual server response
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              likes_count: data.likes_count,
+              optimisticLiked: data.liked,
+              optimisticLikesCount: data.likes_count
+            };
+          }
+          return yap;
+        })
+      );
+      
+      setFilteredYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              likes_count: data.likes_count,
+              optimisticLiked: data.liked,
+              optimisticLikesCount: data.likes_count
+            };
+          }
+          return yap;
+        })
+      );
+
+    } catch (error) {
+      // Revert optimistic update on error
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              optimisticLiked: undefined,
+              optimisticLikesCount: undefined
+            };
+          }
+          return yap;
+        })
+      );
+      
+      setFilteredYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              optimisticLiked: undefined,
+              optimisticLikesCount: undefined
+            };
+          }
+          return yap;
+        })
+      );
+      
+      console.error('Error toggling like:', error);
+      toast.error('Failed to update like. Please try again.');
+    }
+  }, [authToken, isAuthenticated, apiEndpoint]);
+
+  // Optimistic add reply function
+  const addReply = useCallback(async (yapId: string, content: string, parentReplyId?: number) => {
+    if (!isAuthenticated || !authToken || !currentUser) {
+      toast.error('Please log in to reply');
+      return;
+    }
+
+    // Create optimistic reply
+    const optimisticReply: Reply = {
+      id: Date.now(), // Temporary ID
+      content,
+      created_at: new Date().toISOString(),
+      user: {
+        id: currentUser.id,
+        username: currentUser.username,
+        display_name: `${currentUser.first_name} ${currentUser.last_name}`,
+        avatar: currentUser.avatar
+      },
+      parent_reply_id: parentReplyId,
+      isOptimistic: true
+    };
+
+    // Optimistic update for replies list
+    setYapReplies(prevReplies => [optimisticReply, ...prevReplies]);
+
+    // Optimistic update for yap replies count
+    setYaps(prevYaps => 
+      prevYaps.map(yap => {
+        if (yap.id === yapId) {
+          return {
+            ...yap,
+            optimisticRepliesCount: (yap.optimisticRepliesCount ?? yap.replies_count) + 1
+          };
+        }
+        return yap;
+      })
+    );
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/${yapId}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          content,
+          parent_reply_id: parentReplyId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add reply');
+      }
+
+      const data = await response.json();
+      
+      // Replace optimistic reply with real reply
+      setYapReplies(prevReplies => 
+        prevReplies.map(reply => 
+          reply.id === optimisticReply.id 
+            ? { ...data.reply, isOptimistic: false }
+            : reply
+        )
+      );
+
+      // Update yap replies count with server response
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              replies_count: (yap.optimisticRepliesCount ?? yap.replies_count),
+              optimisticRepliesCount: undefined
+            };
+          }
+          return yap;
+        })
+      );
+
+      toast.success('Reply added successfully!');
+
+    } catch (error) {
+      // Remove optimistic reply on error
+      setYapReplies(prevReplies => 
+        prevReplies.filter(reply => reply.id !== optimisticReply.id)
+      );
+      
+      // Revert optimistic update
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              optimisticRepliesCount: undefined
+            };
+          }
+          return yap;
+        })
+      );
+      
+      console.error('Error adding reply:', error);
+      toast.error('Failed to add reply. Please try again.');
+    }
+  }, [authToken, isAuthenticated, apiEndpoint, currentUser]);
+
+  // Optimistic retweet function
+  const retweet = useCallback(async (yapId: string, content?: string) => {
+    if (!isAuthenticated || !authToken || !currentUser) {
+      toast.error('Please log in to retweet');
+      return;
+    }
+
+    // Optimistic update
+    setYaps(prevYaps => 
+      prevYaps.map(yap => {
+        if (yap.id === yapId) {
+          return {
+            ...yap,
+            optimisticRetweetsCount: (yap.optimisticRetweetsCount ?? yap.retweets_count) + 1
+          };
+        }
+        return yap;
+      })
+    );
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/${yapId}/retweet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          content: content || ''
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to retweet');
+      }
+
+      const data = await response.json();
+      
+      // Update with server response
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              retweets_count: data.retweets_count,
+              optimisticRetweetsCount: data.retweets_count
+            };
+          }
+          return yap;
+        })
+      );
+
+      toast.success('Yap retweeted successfully!');
+      
+      // Refresh feed to show new retweet
+      setTimeout(() => {
+        setOnchange(!onchange);
+      }, 1000);
+
+    } catch (error: any) {
+      // Revert optimistic update
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              optimisticRetweetsCount: undefined
+            };
+          }
+          return yap;
+        })
+      );
+      
+      console.error('Error retweeting:', error);
+      toast.error(error.message || 'Failed to retweet. Please try again.');
+    }
+  }, [authToken, isAuthenticated, apiEndpoint, currentUser, onchange]);
+
+  // Get hashtag suggestions
+  const getHashtagSuggestions = useCallback(async (query?: string): Promise<HashtagSuggestion[]> => {
+    if (!authToken) return [];
+
+    try {
+      const url = new URL(`${apiEndpoint}/hashtags/suggestions`);
+      if (query) url.searchParams.append('q', query);
+      url.searchParams.append('limit', '10');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch hashtag suggestions');
+
+      const data = await response.json();
+      return data.hashtags || [];
+    } catch (error) {
+      console.error('Error fetching hashtag suggestions:', error);
+      return [];
+    }
+  }, [authToken, apiEndpoint]);
+
+  // Get location suggestions
+  const getLocationSuggestions = useCallback(async (query?: string): Promise<LocationSuggestion[]> => {
+    if (!authToken) return [];
+
+    try {
+      const url = new URL(`${apiEndpoint}/locations/suggestions`);
+      if (query) url.searchParams.append('q', query);
+      url.searchParams.append('limit', '10');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch location suggestions');
+
+      const data = await response.json();
+      return data.locations || [];
+    } catch (error) {
+      console.error('Error fetching location suggestions:', error);
+      return [];
+    }
+  }, [authToken, apiEndpoint]);
+
+  // Refresh feed
+  const refreshFeed = useCallback(async () => {
+    await fetchYaps();
+  }, [fetchYaps]);
+
+  // Enhanced post yap with optimistic update
+  const postYap = async (yapPayload: YapPayload): Promise<void> => {
+    if (!isAuthenticated || !authToken || !currentUser) {
       toast.error('Please log in to post a yap');
       return;
     }
@@ -266,51 +709,58 @@ export default function YapProvider({ children }: YapProviderProps) {
       return;
     }
 
-    if (!canMakeRequest('post_yap')) {
-      return;
-    }
+    // Create optimistic yap
+    const optimisticYap: Yap = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      content: yapPayload.content,
+      timestamp: new Date().toISOString(),
+      location: yapPayload.location,
+      user_id: currentUser.id,
+      username: currentUser.username,
+      display_name: `${currentUser.first_name} ${currentUser.last_name}`,
+      avatar: currentUser.avatar,
+      original_yap_id: yapPayload.originalYapId,
+      replies_count: 0,
+      likes_count: 0,
+      retweets_count: 0,
+      media: [],
+      hashtags: [],
+      isOptimistic: true
+    };
 
-    markRequestStart('post_yap');
+    // Add optimistic yap to the top of the feed
+    setYaps(prevYaps => [optimisticYap, ...prevYaps]);
+    setFilteredYaps(prevYaps => [optimisticYap, ...prevYaps]);
 
     const { content, location, originalYapId, mediaFiles } = yapPayload;
-
     
-    
-  
-    // Create a FormData object to handle both text and files
+    // Create FormData for submission
     const formData = new FormData();
     formData.append('content', content);
   
-    // Append optional fields if present
     if (location) {
       formData.append('location', location);
     }
   
     if (originalYapId) {
-      formData.append('original_yap_id', originalYapId.toString());
+      formData.append('original_yap_id', originalYapId);
     }
   
-    // Append media files, if any exist
     if (mediaFiles && mediaFiles.length > 0) {
-      mediaFiles.forEach((file, index) => {
-        formData.append('media', file); // Automatically handles multiple files
+      mediaFiles.forEach((file) => {
+        formData.append('media', file);
       });
     }
   
     try {
-      // Make the fetch request
-      
-      
       const response = await fetch(`${apiEndpoint}/add_yap`, {
         method: 'POST',
         headers: {
-          // Do not set 'Content-Type' header; fetch will automatically set it with multipart boundary for FormData
-          'Authorization': `Bearer ${authToken}` // Using the authToken from context
+          'Authorization': `Bearer ${authToken}`
         },
-        body: formData // The FormData object that contains the Yap payload
+        body: formData
       });
   
-      // Check if the response is successful
       if (!response.ok) {
         if (response.status === 401) {
           toast.error('Session expired. Please log in again.');
@@ -324,27 +774,32 @@ export default function YapProvider({ children }: YapProviderProps) {
         }
         toast.error('Failed to post yap. Please try again.');
         throw new Error(`Failed to post Yap: ${response.statusText}`);
-        
-        
       }
   
-      // Handle successful response
       const data = await response.json();
-      setOnchange(!onchange)
+      
+      // Remove optimistic yap and refresh feed to get the real one
+      setYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
+      setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
+      
       toast.success('Yap posted successfully!');
-  
-      return response; // Optional, you can use this to handle response in the calling function
+      
+      // Refresh feed after a short delay to get the new yap
+      setTimeout(() => {
+        setOnchange(!onchange);
+      }, 500);
   
     } catch (error: any) {
+      // Remove optimistic yap on error
+      setYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
+      setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
+      
       if (error.name !== 'AbortError') {
         console.error('Error posting Yap:', error);
         toast.error('Failed to post yap. Please try again.');
       }
-    } finally {
-      markRequestEnd('post_yap');
     }
   };
-  
 
   // The context data that will be passed down to components
   const contextData = {
@@ -354,8 +809,26 @@ export default function YapProvider({ children }: YapProviderProps) {
     onchange,
     setOnchange,
     setSelectedYap,
-    navigateToSingleYapView ,
-    postYap// Include this in the context data
+    navigateToSingleYapView,
+    postYap,
+    
+    // Social interactions
+    toggleLike,
+    addReply,
+    retweet,
+    
+    // Feed management
+    feedType,
+    setFeedType,
+    refreshFeed,
+    
+    // Suggestions
+    getHashtagSuggestions,
+    getLocationSuggestions,
+    
+    // Reply management
+    yapReplies,
+    setYapReplies
   };
 
   // Render the provider and pass the context data

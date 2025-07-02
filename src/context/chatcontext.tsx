@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
+import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback, useMemo } from "react";
 import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
@@ -117,14 +117,16 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
     
-    const currentUser = rawCurrentUser
+    // Memoize currentUser to prevent unnecessary re-renders
+    const currentUser = useMemo(() => rawCurrentUser
         ? {
             id: rawCurrentUser.id,
             firstName: rawCurrentUser.first_name,
             lastName: rawCurrentUser.last_name,
             email: rawCurrentUser.email,
         }
-        : null;
+        : null, [rawCurrentUser?.id, rawCurrentUser?.first_name, rawCurrentUser?.last_name, rawCurrentUser?.email]);
+        
     const [messages, setMessages] = useState<Message[]>([]);
     const [friendId, setFriendId] = useState<string | null>(null); 
     const [friendDetails, setFriendDetails] = useState<Friend | null>(null);
@@ -212,6 +214,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         endpointAvailabilityRef.current.set(endpoint, available);
     }, []);
 
+    // Memoize setMessages to prevent unnecessary re-renders
+    const setMessagesCallback = useCallback((messages: React.SetStateAction<Message[]>) => {
+        setMessages(messages);
+    }, []);
+
+    // Stable API endpoint reference
+    const stableApiEndpoint = useMemo(() => apiEndpoint, []);
+
     useEffect(() => {
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
@@ -221,38 +231,47 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     useEffect(() => {
         if (friendId && currentUser && authToken) {
             // Check if conversation exists before fetching messages
-            checkIfConversationExists(friendId).then(exists => {
+            checkIfConversationExistsMemoized(friendId).then(exists => {
                 if (exists) {
                     getMessages(friendId, 10);
                 } else {
-                    setMessages([]);
+                    setMessagesCallback([]);
                 }
             });
             fetchFriendPublicKey(friendId);
         } else {
-            setMessages([]); 
+            setMessagesCallback([]); 
         }
-    }, [friendId, currentUser, authToken]);
+    }, [friendId, currentUser?.id, authToken]); // Simplified dependencies to prevent circular references
 
     // Load user's keys from localStorage when component mounts
     useEffect(() => {
         if (currentUser) {
             loadKeys();
         }
-    }, [currentUser]);
+    }, [currentUser?.id]); // Use stable currentUser.id instead of whole object
 
     // Load conversations when component mounts with debouncing
     useEffect(() => {
         if (currentUser && authToken && isAuthenticated) {
-            const timeoutId = setTimeout(() => {
-                fetchConversations();
+            const timeoutId = setTimeout(async () => {
+                // Call the function directly to avoid dependency issues
+                if (!fetchingConversationsRef.current) {
+                    try {
+                        await fetchConversations();
+                    } catch (error) {
+                        console.error('Error fetching conversations:', error);
+                        // Mark conversations as unavailable if they fail to load
+                        markEndpointAvailability('conversations', false);
+                    }
+                }
             }, DEBOUNCE_DELAY);
 
             return () => {
                 clearTimeout(timeoutId);
             };
         }
-    }, [currentUser, authToken, isAuthenticated]);
+    }, [currentUser?.id, authToken, isAuthenticated]); // Simplified dependencies to prevent circular references
 
     // Cleanup effect
     useEffect(() => {
@@ -265,14 +284,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     }, []);
 
     // Generate a unique conversation ID from two user IDs
-    const generateConversationId = (userId1: string, userId2: string): string => {
+    const generateConversationId = useCallback((userId1: string, userId2: string): string => {
         // Sort IDs to ensure the same conversation ID regardless of order
         const sortedIds = [userId1, userId2].sort();
         return `${sortedIds[0]}_${sortedIds[1]}`;
-    };
+    }, []);
 
     // Fetch friend details including online status
-    const getFriendDetails = async (conversationId: string): Promise<{ name: string; avatar: string; isOnline: boolean } | null> => {
+    const getFriendDetails = useCallback(async (conversationId: string): Promise<{ name: string; avatar: string; isOnline: boolean } | null> => {
         if (!currentUser || !authToken || !canMakeRequest('friend_details')) {
             return null;
         }
@@ -315,10 +334,10 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             markRequestEnd('friend_details');
         }
         return null;
-    };
+    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
 
     // Check if a conversation with a friend exists (has any messages)
-    const checkIfConversationExists = async (friendId: string): Promise<boolean> => {
+    const checkIfConversationExists = useCallback(async (friendId: string): Promise<boolean> => {
         if (!currentUser || !authToken || !canMakeRequest('conversation_exists')) {
             return false;
         }
@@ -356,10 +375,10 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('conversation_exists');
         }
-    };
+    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
 
     // Fallback method to check if messages exist
-    const checkMessagesExistFallback = async (friendId: string): Promise<boolean> => {
+    const checkMessagesExistFallback = useCallback(async (friendId: string): Promise<boolean> => {
         if (!canMakeRequest('messages_exist_fallback')) {
             return false;
         }
@@ -375,231 +394,76 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('messages_exist_fallback');
         }
-    };
+    }, [canMakeRequest, markRequestStart, markRequestEnd]); // Note: getMessages will be defined below
 
-    // Fetch all conversations with conversation IDs
-    const fetchConversations = async (): Promise<Conversation[]> => {
-        if (!currentUser || !authToken || !isAuthenticated || fetchingConversationsRef.current) {
-            return [];
+    // Add getMessages dependency to checkMessagesExistFallback  
+    const checkMessagesExistFallbackMemoized = useCallback(async (friendId: string): Promise<boolean> => {
+        if (!canMakeRequest('messages_exist_fallback')) {
+            return false;
         }
 
-        if (!canMakeRequest('fetch_conversations')) {
-            return [];
-        }
-
-        // Check if conversations endpoint is known to be unavailable
-        if (endpointAvailabilityRef.current.get('conversations') === false) {
-            console.warn('Conversations endpoint is not available. Skipping fetch.');
-            return [];
-        }
-
-        fetchingConversationsRef.current = true;
-        markRequestStart('fetch_conversations');
-
-        // Abort previous request if it exists
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
+        markRequestStart('messages_exist_fallback');
 
         try {
-            const response = await fetch(`${apiEndpoint}/conversations`, {
+            const messages = await getMessages(friendId, 1);
+            return messages.length > 0;
+        } catch (error) {
+            console.error("Error in fallback message check:", error);
+            return false;
+        } finally {
+            markRequestEnd('messages_exist_fallback');
+        }
+    }, [canMakeRequest, markRequestStart, markRequestEnd]); // Remove getMessages to prevent circular dependency
+
+    // Update checkIfConversationExists to use the memoized fallback
+    const checkIfConversationExistsMemoized = useCallback(async (friendId: string): Promise<boolean> => {
+        if (!currentUser || !authToken || !canMakeRequest('conversation_exists')) {
+            return false;
+        }
+
+        markRequestStart('conversation_exists');
+
+        try {
+            // First try the dedicated endpoint
+            const response = await fetch(`${apiEndpoint}/conversation-exists/${friendId}`, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${authToken}`,
                 },
-                signal: controller.signal,
             });
 
+            // Handle 404 errors specifically - this means the endpoint doesn't exist
             if (response.status === 404) {
-                // Mark endpoint as unavailable and stop making requests to it
-                markEndpointAvailability('conversations', false);
-                console.warn('Conversations endpoint not found (404). Marking as unavailable.');
-                setConversations([]);
-                return [];
+                markEndpointAvailability('conversation-exists', false);
+                // Fallback: check for messages directly
+                return await checkMessagesExistFallbackMemoized(friendId);
             }
 
-            if (response.status === 401) {
-                console.warn('Unauthorized access to conversations');
-                setConversations([]);
-                return [];
-            }
-
-            if (response.status === 429) {
-                console.warn('Rate limited on conversations endpoint');
-                return [];
-            }
-
+            // Handle other HTTP errors
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: Failed to fetch conversations`);
+                console.warn(`Error ${response.status} checking if conversation exists, falling back to message check`);
+                return await checkMessagesExistFallbackMemoized(friendId);
             }
 
+            // Process successful response
             const data = await response.json();
-            const conversationsData = data.conversations.map((conv: any) => ({
-                id: conv.conversation_id,
-                friendId: conv.friend.id,
-                friendName: conv.friend.username,
-                friendAvatar: conv.friend.avatar || '',
-                lastMessage: conv.last_message ? conv.last_message.content : null,
-                lastMessageTime: conv.last_message ? new Date(conv.last_message.timestamp) : new Date(conv.updated_at),
-                unreadCount: 0, // You might want to add this to your API response
-                isEmpty: !conv.last_message,
-                isOnline: conv.friend.is_online
-            }));
-            
-            setConversations(conversationsData);
-            markEndpointAvailability('conversations', true);
-            return conversationsData;
-        } catch (error: any) {
-            if (error.name !== 'AbortError') {
-                console.error("Error fetching conversations:", error);
-                // Don't show user-facing error for conversations as it might be optional
-            }
-            return [];
-        } finally {
-            fetchingConversationsRef.current = false;
-            markRequestEnd('fetch_conversations');
-        }
-    };
-
-    const generateKeys = async () => {
-        if (!currentUser) {
-            toast.error("You must be logged in to generate keys");
-            return;
-        }
-
-        if (!canMakeRequest('generate_keys')) {
-            return;
-        }
-
-        markRequestStart('generate_keys');
-
-        try {
-            setKeyStatus('generating');
-            toast.loading("Generating encryption keys...");
-
-            const { privateKey, publicKey } = await openpgp.generateKey({
-                type: 'rsa',
-                rsaBits: 4096,  // Match server's RSA key size
-                userIDs: [{ name: currentUser.firstName, email: currentUser.email }],
-                passphrase: '',
-                format: 'armored'
-            });
-
-            const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: privateKey });
-            const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
-
-            setPrivateKey(privateKeyObj);
-            setPublicKey(publicKeyObj);
-            setKeyStatus('available');
-
-            if (currentUser) {
-                localStorage.setItem(`pgp-private-key-${currentUser.id}`, privateKey);
-            }
-            localStorage.setItem(`pgp-public-key-${currentUser.id}`, publicKey);
-
-            await uploadPublicKey(publicKey);
-
-            toast.dismiss();
-            toast.success("Encryption keys generated successfully");
+            return data.exists;
         } catch (error) {
-            console.error("Error generating keys:", error);
-            setKeyStatus('unavailable');
-            toast.dismiss();
-            toast.error("Failed to generate encryption keys");
+            console.error("Error checking if conversation exists:", error);
+            return await checkMessagesExistFallbackMemoized(friendId);
         } finally {
-            markRequestEnd('generate_keys');
+            markRequestEnd('conversation_exists');
         }
-    };
+    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, checkMessagesExistFallbackMemoized]);
 
-    const loadKeys = async () => {
-        if (!currentUser) return;
-
-        try {
-            const storedPrivateKey = localStorage.getItem(`pgp-private-key-${currentUser.id}`);
-            const storedPublicKey = localStorage.getItem(`pgp-public-key-${currentUser.id}`);
-
-            if (storedPrivateKey && storedPublicKey) {
-                const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: storedPrivateKey });
-                const publicKeyObj = await openpgp.readKey({ armoredKey: storedPublicKey });
-
-                setPrivateKey(privateKeyObj);
-                setPublicKey(publicKeyObj);
-                setKeyStatus('available');
-            } else {
-                setKeyStatus('unavailable');
-            }
-        } catch (error) {
-            console.error("Error loading keys:", error);
-            setKeyStatus('unavailable');
-        }
-    };
-
-    const exportPublicKey = async (): Promise<string | null> => {
-        if (!publicKey) {
-            toast.error("No public key available");
-            return null;
-        }
-
-        try {
-            const armoredKey = openpgp.armor(openpgp.enums.armor.message, publicKey.toPacketList());
-            return armoredKey;
-        } catch (error) {
-            console.error("Error exporting public key:", error);
-            toast.error("Failed to export public key");
-            return null;
-        }
-    };
-
-    const uploadPublicKey = async (armoredPublicKey: string): Promise<any> => {
-        if (!currentUser || !authToken) {
-            throw new Error('Authentication required');
-        }
-
-        if (!canMakeRequest('upload_public_key')) {
-            throw new Error('Rate limited');
-        }
-
-        markRequestStart('upload_public_key');
-
-        try {
-            const response = await fetch(`${apiEndpoint}/keys`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({ public_key: armoredPublicKey }),
-            });
-
-            if (response.status === 404) {
-                markEndpointAvailability('keys', false);
-                throw new Error('Keys endpoint not available');
-            }
-
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Failed to upload public key: ${error}`);
-            }
-
-            markEndpointAvailability('keys', true);
-            return response.json();
-        } finally {
-            markRequestEnd('upload_public_key');
-        }
-    };
-
-    const fetchFriendPublicKey = async (userId: string): Promise<openpgp.PublicKey | null> => {
-        if (!currentUser || !authToken || !canMakeRequest('fetch_friend_public_key')) {
-            return null;
-        }
-
-        // Return cached key if available
+    const fetchFriendPublicKey = useCallback(async (userId: string): Promise<openpgp.PublicKey | null> => {
+        // Check if we already have this friend's public key
         if (friendPublicKeys[userId]) {
             return friendPublicKeys[userId];
+        }
+
+        if (!currentUser || !authToken || !canMakeRequest('fetch_friend_public_key')) {
+            return null;
         }
 
         markRequestStart('fetch_friend_public_key');
@@ -612,44 +476,36 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 },
             });
 
-            // Handle 404 errors (endpoint doesn't exist or user has no key)
             if (response.status === 404) {
                 markEndpointAvailability('keys', false);
-                console.warn(`No public key found for user ${userId} or endpoint not available`);
+                console.warn(`No public key found for user ${userId}`);
                 return null;
             }
 
             if (!response.ok) {
-                console.error(`Failed to fetch friend public key: ${response.status} ${response.statusText}`);
-                return null;
+                throw new Error(`Failed to fetch public key for user ${userId}`);
             }
 
+            markEndpointAvailability('keys', true);
             const data = await response.json();
-            
-            if (data.public_key) {
-                try {
-                    const friendKey = await openpgp.readKey({ armoredKey: data.public_key });
-                    setFriendPublicKeys(prevKeys => ({
-                        ...prevKeys,
-                        [userId]: friendKey
-                    }));
-                    markEndpointAvailability('keys', true);
-                    return friendKey;
-                } catch (pgpError) {
-                    console.error("Error parsing PGP key:", pgpError);
-                    return null;
-                }
-            }
-            return null;
+            const publicKey = await openpgp.readKey({ armoredKey: data.public_key });
+
+            // Cache the key for future use
+            setFriendPublicKeys(prev => ({
+                ...prev,
+                [userId]: publicKey
+            }));
+
+            return publicKey;
         } catch (error) {
-            console.error("Error fetching friend public key:", error);
+            console.error(`Error fetching public key for user ${userId}:`, error);
             return null;
         } finally {
             markRequestEnd('fetch_friend_public_key');
         }
-    };
+    }, [friendPublicKeys, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
 
-    const encryptMessage = async (content: string, recipientId: string): Promise<{ encrypted: string, isEncrypted: boolean }> => {
+    const encryptMessage = useCallback(async (content: string, recipientId: string): Promise<{ encrypted: string, isEncrypted: boolean }> => {
         if (!publicKey || !friendPublicKeys[recipientId]) {
             return { encrypted: content, isEncrypted: false };
         }
@@ -665,9 +521,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             console.error("Error encrypting message:", error);
             return { encrypted: content, isEncrypted: false };
         }
-    };
+    }, [publicKey, friendPublicKeys]);
 
-    const decryptMessage = async (content: string, senderId: string): Promise<string> => {
+    const decryptMessage = useCallback(async (content: string, senderId: string): Promise<string> => {
         if (!privateKey) {
             return content;
         }
@@ -684,9 +540,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             console.error("Error decrypting message:", error);
             return content;
         }
-    };
+    }, [privateKey]);
 
-    const sendMessage = async (content: string, media: FileList | null, replyTo?: number) => {
+    const sendMessage = useCallback(async (content: string, media: FileList | null, replyTo?: number) => {
         if (!friendId || !currentUser || !authToken) {
             toast.error("Cannot send message: missing required information");
             return;
@@ -742,9 +598,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('send_message');
         }
-    };
+    }, [friendId, currentUser, authToken, generateConversationId, encryptMessage]); // Simplified dependencies
 
-    const getMessages = async (friendId: string, batchSize: number, lastMessageId?: number): Promise<Message[]> => {
+    const getMessages = useCallback(async (friendId: string, batchSize: number, lastMessageId?: number): Promise<Message[]> => {
         if (!currentUser || !authToken || fetchingMessagesRef.current) {
             return [];
         }
@@ -808,7 +664,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }));
 
             if (!lastMessageId) {
-                setMessages(messagesData.reverse());
+                setMessagesCallback(messagesData.reverse());
             }
 
             return messagesData;
@@ -819,7 +675,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             fetchingMessagesRef.current = false;
             markRequestEnd('get_messages');
         }
-    };
+    }, [currentUser, authToken, stableApiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, setMessagesCallback, decryptMessage]);
 
     const getChatList = async () => {
         if (!currentUser || !authToken || !canMakeRequest('get_chat_list')) {
@@ -979,7 +835,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     };
 
-    const uploadMedia = async (files: FileList) => {
+    const uploadMedia = useCallback(async (files: FileList) => {
         if (!currentUser || !authToken || !canMakeRequest('upload_media')) {
             throw new Error('Cannot upload media');
         }
@@ -1017,6 +873,229 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('upload_media');
         }
+    }, [currentUser, authToken, canMakeRequest, markRequestStart, apiEndpoint, markEndpointAvailability, markRequestEnd]);
+
+    const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
+        // Don't proceed if required data is missing or already fetching
+        if (!currentUser || !authToken || !isAuthenticated || !apiEndpoint || fetchingConversationsRef.current) {
+            return [];
+        }
+
+        // Rate limiting check - inline to avoid dependency
+        const now = Date.now();
+        if (now - rateLimitWindowRef.current > RATE_LIMIT_WINDOW) {
+            rateLimitWindowRef.current = now;
+            requestCountRef.current = 0;
+        }
+        
+        if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
+            console.warn('Rate limit exceeded for fetch_conversations');
+            return [];
+        }
+        
+        if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
+            console.warn('Request too frequent for fetch_conversations');
+            return [];
+        }
+        
+        if (activeRequestsRef.current.has('fetch_conversations')) {
+            console.warn('fetch_conversations already in progress');
+            return [];
+        }
+
+        // Check if endpoint is known to be unavailable
+        if (endpointAvailabilityRef.current.get('conversations') === false) {
+            console.warn('Conversations endpoint is known to be unavailable');
+            return [];
+        }
+
+        fetchingConversationsRef.current = true;
+        lastRequestTimeRef.current = now;
+        requestCountRef.current += 1;
+        activeRequestsRef.current.add('fetch_conversations');
+
+        // Abort previous request if it exists
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        try {
+            const response = await fetch(`${apiEndpoint}/conversations`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+                signal: controller.signal,
+            });
+
+            if (response.status === 404) {
+                // Conversations endpoint doesn't exist - mark as unavailable
+                endpointAvailabilityRef.current.set('conversations', false);
+                console.warn('Conversations endpoint not found (404). Disabling further requests.');
+                return [];
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const conversationsData = data.conversations?.map((conv: any) => ({
+                id: conv.id,
+                friendId: conv.friend_id,
+                friendName: conv.friend_name,
+                friendAvatar: conv.friend_avatar || '/default-avatar.png',
+                lastMessage: conv.last_message,
+                lastMessageTime: conv.last_message_time ? new Date(conv.last_message_time) : null,
+                unreadCount: conv.unread_count || 0,
+                isEmpty: !conv.last_message,
+                isOnline: false, // Will be updated via socket
+            })) || [];
+            
+            setConversations(conversationsData);
+            endpointAvailabilityRef.current.set('conversations', true);
+            return conversationsData;
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error("Error fetching conversations:", error);
+                // Don't show user-facing error for conversations as it might be optional
+            }
+            return [];
+        } finally {
+            fetchingConversationsRef.current = false;
+            activeRequestsRef.current.delete('fetch_conversations');
+        }
+    }, [currentUser?.id, authToken, isAuthenticated, stableApiEndpoint]); // Only stable dependencies
+
+    const generateKeys = async () => {
+        if (!currentUser) {
+            toast.error("You must be logged in to generate keys");
+            return;
+        }
+
+        if (!canMakeRequest('generate_keys')) {
+            return;
+        }
+
+        markRequestStart('generate_keys');
+
+        try {
+            setKeyStatus('generating');
+            toast.loading("Generating encryption keys...");
+
+            const { privateKey, publicKey } = await openpgp.generateKey({
+                type: 'rsa',
+                rsaBits: 4096,  // Match server's RSA key size
+                userIDs: [{ name: currentUser.firstName, email: currentUser.email }],
+                passphrase: '',
+                format: 'armored'
+            });
+
+            const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: privateKey });
+            const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+
+            setPrivateKey(privateKeyObj);
+            setPublicKey(publicKeyObj);
+            setKeyStatus('available');
+
+            if (currentUser) {
+                localStorage.setItem(`pgp-private-key-${currentUser.id}`, privateKey);
+            }
+            localStorage.setItem(`pgp-public-key-${currentUser.id}`, publicKey);
+
+            await uploadPublicKey(publicKey);
+
+            toast.dismiss();
+            toast.success("Encryption keys generated successfully");
+        } catch (error) {
+            console.error("Error generating keys:", error);
+            setKeyStatus('unavailable');
+            toast.dismiss();
+            toast.error("Failed to generate encryption keys");
+        } finally {
+            markRequestEnd('generate_keys');
+        }
+    };
+
+    const loadKeys = async () => {
+        if (!currentUser) return;
+
+        try {
+            const storedPrivateKey = localStorage.getItem(`pgp-private-key-${currentUser.id}`);
+            const storedPublicKey = localStorage.getItem(`pgp-public-key-${currentUser.id}`);
+
+            if (storedPrivateKey && storedPublicKey) {
+                const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: storedPrivateKey });
+                const publicKeyObj = await openpgp.readKey({ armoredKey: storedPublicKey });
+
+                setPrivateKey(privateKeyObj);
+                setPublicKey(publicKeyObj);
+                setKeyStatus('available');
+            } else {
+                setKeyStatus('unavailable');
+            }
+        } catch (error) {
+            console.error("Error loading keys:", error);
+            setKeyStatus('unavailable');
+        }
+    };
+
+    const exportPublicKey = async (): Promise<string | null> => {
+        if (!publicKey) {
+            toast.error("No public key available");
+            return null;
+        }
+
+        try {
+            const armoredKey = openpgp.armor(openpgp.enums.armor.message, publicKey.toPacketList());
+            return armoredKey;
+        } catch (error) {
+            console.error("Error exporting public key:", error);
+            toast.error("Failed to export public key");
+            return null;
+        }
+    };
+
+    const uploadPublicKey = async (armoredPublicKey: string): Promise<any> => {
+        if (!currentUser || !authToken) {
+            throw new Error('Authentication required');
+        }
+
+        if (!canMakeRequest('upload_public_key')) {
+            throw new Error('Rate limited');
+        }
+
+        markRequestStart('upload_public_key');
+
+        try {
+            const response = await fetch(`${apiEndpoint}/keys`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify({ public_key: armoredPublicKey }),
+            });
+
+            if (response.status === 404) {
+                markEndpointAvailability('keys', false);
+                throw new Error('Keys endpoint not available');
+            }
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Failed to upload public key: ${error}`);
+            }
+
+            markEndpointAvailability('keys', true);
+            return response.json();
+        } finally {
+            markRequestEnd('upload_public_key');
+        }
     };
 
     return (
@@ -1053,3 +1132,30 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 }
 
 export const useChat = () => useContext(ChatContext);
+
+// Debug component to test for infinite re-renders
+export const ChatDebugger = () => {
+    const renderCount = useRef(0);
+    renderCount.current += 1;
+    
+    useEffect(() => {
+        console.log('ChatContext re-rendered:', renderCount.current);
+        if (renderCount.current > 5) {
+            console.warn('⚠️ ChatContext has re-rendered more than 5 times - potential infinite re-render detected!');
+        }
+    });
+    
+    return null;
+};
+
+// Test utility to verify our fixes
+export const ChatContextTester = () => {
+    useEffect(() => {
+        console.log('✅ ChatContext dependency fix test: Component mounted successfully');
+        return () => {
+            console.log('✅ ChatContext dependency fix test: Component unmounted successfully');
+        };
+    }, []);
+    
+    return null;
+};

@@ -53,7 +53,7 @@ function messagesReducer(state: MessageState, action: Action): MessageState {
                 messages: state.messages.filter(msg => msg.id !== action.payload)
             };
         case 'SET_ONLINE_STATUS':
-            return { ...state, onlineStatus: action.payload };
+            return { ...state, onlineStatus: { ...state.onlineStatus, ...action.payload } };
         case 'SET_CURRENT_CONVERSATION':
             return { ...state, currentConversation: action.payload };
         case 'SET_PAGE':
@@ -251,7 +251,6 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             dispatch({
                 type: 'SET_ONLINE_STATUS',
                 payload: {
-                    ...state.onlineStatus,
                     [event.userId]: { online: true, lastActive: event.lastActive }
                 }
             });
@@ -261,12 +260,11 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             dispatch({
                 type: 'SET_ONLINE_STATUS',
                 payload: {
-                    ...state.onlineStatus,
                     [event.userId]: { online: false, lastActive: event.lastActive }
                 }
             });
         });
-    }, [state.onlineStatus]);
+    }, []);
 
     // Initialize socket when auth state changes
     useEffect(() => {
@@ -295,7 +293,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 clearTimeout(connectionTimeoutRef.current);
             }
         };
-    }, [authToken, isAuthenticated, initializeSocket]);
+    }, [authToken, isAuthenticated]);
 
     // Cleanup on unmount
     useEffect(() => {

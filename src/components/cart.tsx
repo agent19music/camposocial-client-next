@@ -46,12 +46,16 @@ export default function CartComponent() {
     try {
       const response = await fetch(`${apiEndpoint}/cart/${userId}`);
       if (!response.ok) {
+        // Handle 404 gracefully - empty cart is normal
+        if (response.status === 404) {
+          return [];
+        }
         throw new Error('Failed to fetch cart data');
       }
       const data: CartResponse = await response.json();
-      return data.cart_items;
+      return data.cart_items || [];
     } catch (error) {
-      console.error(error);
+      console.error('Cart fetch error:', error);
       return [];
     }
   };
@@ -59,6 +63,8 @@ export default function CartComponent() {
   useEffect(() => {
     
     const fetchCartItems = async () => {
+      if (!currentUser?.id) return;
+      
       setLoading(true);
       const items = await getCartItems(currentUser?.id);
       setCartItems(items);
@@ -196,7 +202,17 @@ export default function CartComponent() {
           </div>
 
           <div className="flex-grow overflow-y-auto p-4">
-            {cartItems.map(item => (
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            ) : cartItems.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Your cart is empty</p>
+                <p className="text-sm mt-2">Add some products to get started!</p>
+              </div>
+            ) : (
+              cartItems.map(item => (
               <div key={item.id} className="flex items-center justify-between mb-4 pb-4 border-b">
                 <div className="flex items-center">
                   <Image
@@ -240,18 +256,21 @@ export default function CartComponent() {
                   </Button>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
 
-          <div className="p-4 border-t">
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-semibold">Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+          {cartItems.length > 0 && (
+            <div className="p-4 border-t">
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-semibold">Subtotal:</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              <Button className="w-full" onClick={() => takeMeToCheckout()}>
+                Proceed to Checkout
+              </Button>
             </div>
-            <Button className="w-full" onClick={() => takeMeToCheckout()}>
-              Proceed to Checkout
-            </Button>
-          </div>
+          )}
         </div>
       </div>
     </div>
