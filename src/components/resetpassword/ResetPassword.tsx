@@ -1,12 +1,15 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
+import { motion } from "framer-motion"
 import { UsernameEmailForm } from "./UsernameEmailForm"
 import { VerificationCodeForm } from "./VerificationCodeForm"
 import { NewPasswordForm } from "./NewPasswordForm"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {toast} from "react-hot-toast"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 type ResetStep = "username-email" | "verification" | "new-password"
 
@@ -66,21 +69,71 @@ export function ResetPassword() {
   }
 
   return (
-    <Card className="w-[350px]">
-      <CardHeader>
-        <CardTitle>Reset Password</CardTitle>
-        <CardDescription>
-          {step === "username-email" && "Enter your username and email to reset your password."}
-          {step === "verification" && "Enter the verification code sent to your email."}
-          {step === "new-password" && "Enter your new password."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {step === "username-email" && <UsernameEmailForm onSubmit={handleUsernameEmailSubmit} />}
-        {step === "verification" && <VerificationCodeForm onSubmit={handleVerificationSubmit} />}
-        {step === "new-password" && <NewPasswordForm onSubmit={handleNewPasswordSubmit} />}
-      </CardContent>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <Card className="w-full max-w-md bg-white/80 dark:bg-black/70 backdrop-blur-xl border border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-2xl">
+        <CardHeader className="text-center space-y-4">
+          {/* Logo */}
+          <motion.div
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="mx-auto mb-2"
+          >
+            <Image
+              src="/camposocial_logo.png"
+              alt="CampoSocial"
+              width={80}
+              height={80}
+              className="rounded-full shadow-xl"
+              priority
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent">
+              Reset Password
+            </CardTitle>
+          </motion.div>
+          <CardDescription className="text-gray-600 dark:text-gray-300">
+            {step === "username-email" && "Enter your username and email to reset your password."}
+            {step === "verification" && "Enter the verification code sent to your email."}
+            {step === "new-password" && "Enter your new password."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            {step === "username-email" && <UsernameEmailForm onSubmit={handleUsernameEmailSubmit} />}
+            {step === "verification" && <VerificationCodeForm onSubmit={handleVerificationSubmit} />}
+            {step === "new-password" && <NewPasswordForm onSubmit={handleNewPasswordSubmit} />}
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center pt-4"
+          >
+            <Link 
+              href="/login" 
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#B16FE8] dark:hover:text-[#D29DF6] transition-colors duration-200 hover:underline"
+            >
+              Back to login
+            </Link>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 

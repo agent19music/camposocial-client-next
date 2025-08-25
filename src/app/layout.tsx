@@ -19,26 +19,31 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Campo Social - Your Campus Connected",
+  title: "CampoSocial - Your Campus Connected",
   description: "The social platform designed for university life",
-  authors: [{ name: "Campo Social" }],
+  authors: [{ name: "CampoSocial" }],
+  icons: {
+    icon: "/camposocial_logo.png",
+    shortcut: "/camposocial_logo.png",
+    apple: "/camposocial_logo.png"
+  },
   openGraph: {
-    title: "Campo Social - Your Campus Connected",
+    title: "CampoSocial - Your Campus Connected",
     description: "The social platform designed for university life",
     type: "website",
     images: [
       {
-        url: "https://lovable.dev/opengraph-image-p98pqg.png",
+        url: "/camposocial_logo.png",
         width: 1200,
         height: 630,
-        alt: "Campo Social - Your Campus Connected"
+        alt: "CampoSocial - Your Campus Connected"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
     site: "@camposocial",
-    images: ["https://lovable.dev/opengraph-image-p98pqg.png"]
+    images: ["/camposocial_logo.png"]
   }
 };
 

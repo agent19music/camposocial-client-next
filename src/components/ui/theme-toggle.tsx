@@ -3,32 +3,43 @@
 import React from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/themecontext';
-import { Switch } from './switch';
-import { cn } from '@/lib/utils';
+import { Button } from './button';
+import { motion } from 'framer-motion';
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="flex items-center space-x-1 sm:space-x-2">
-      <Sun 
-        className={cn(
-          "h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 transition-all", 
-          theme === 'light' ? 'opacity-100' : 'opacity-30'
-        )} 
-      />
-      <Switch
-        checked={theme === 'dark'}
-        onCheckedChange={toggleTheme}
-        className="theme-toggle-switch scale-90 sm:scale-100"
-      />
-      <Moon 
-        className={cn(
-          "h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 transition-all", 
-          theme === 'dark' ? 'opacity-100' : 'opacity-30'
-        )} 
-      />
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="relative w-9 h-9 rounded-lg hover:bg-[#D29DF6]/10 dark:hover:bg-[#B16FE8]/20 transition-colors"
+      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+    >
+      <motion.div
+        initial={false}
+        animate={{ 
+          rotate: theme === 'dark' ? 180 : 0,
+          scale: theme === 'dark' ? 0 : 1 
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="absolute"
+      >
+        <Sun className="h-5 w-5 text-amber-500" />
+      </motion.div>
+      <motion.div
+        initial={false}
+        animate={{ 
+          rotate: theme === 'dark' ? 0 : -180,
+          scale: theme === 'dark' ? 1 : 0 
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="absolute"
+      >
+        <Moon className="h-5 w-5 text-[#B16FE8]" />
+      </motion.div>
+    </Button>
   );
 }
 

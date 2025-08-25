@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { 
   ArrowRight,
@@ -10,10 +11,10 @@ import {
   Calendar,
   ShoppingBag,
   MessageSquare,
-  Sparkles,
   Globe,
   Shield,
-  Zap
+  Zap,
+  ChevronRight
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { FloatingBackground } from "@/components/ui/floating-background";
@@ -50,27 +51,34 @@ const stats = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background grain-bg">
-      {/* Floating background icons */}
-      <FloatingBackground iconCount={40} opacity={6} />
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20">
+      {/* Subtle floating background */}
+      <FloatingBackground iconCount={20} opacity={3} />
       
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/80 rounded-lg flex items-center justify-center shadow-lg">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-foreground">CampoSocial</span>
+      {/* Navigation - Clean header with unified dark mode */}
+      <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-black/90 backdrop-blur-2xl border-b border-purple-100/50 dark:border-purple-900/20">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+          <div className="flex justify-between items-center h-14">
+            <div className="flex items-center space-x-3">
+              <Image
+                src="/camposocial_logo.png"
+                alt="CampoSocial"
+                width={36}
+                height={36}
+                className="rounded-xl shadow-sm"
+                priority
+              />
+              <span className="text-[1.125rem] font-semibold tracking-tight text-slate-900 dark:text-white">CampoSocial</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-2">
               <ThemeToggle />
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="glass-card border-0">Sign In</Button>
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium px-4">
+                  Sign In
+                </Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/90 hover:from-[#D29DF6]/90 hover:to-[#D29DF6]/80 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                <Button size="sm" className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium px-6 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200">
                   Get Started
                 </Button>
               </Link>
@@ -79,148 +87,102 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {/* Dynamic gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D29DF6]/10 via-background to-[#D29DF6]/5 animate-pulse" style={{ animationDuration: '4s' }}></div>
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#D29DF6]/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '6s' }}></div>
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-[#D29DF6]/15 rounded-full blur-2xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '1s' }}></div>
-        
-        {/* Floating emojis for extra personality */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div 
-            className="absolute top-20 left-20 text-4xl opacity-40"
-            animate={{ y: [-10, 10, -10], rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          >
-            🎉
-          </motion.div>
-          <motion.div 
-            className="absolute top-40 right-32 text-3xl opacity-30"
-            animate={{ y: [10, -10, 10], rotate: [0, -5, 5, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          >
-            🚀
-          </motion.div>
-          <motion.div 
-            className="absolute bottom-40 left-32 text-5xl opacity-20"
-            animate={{ y: [-5, 15, -5], rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          >
-            ⚡
-          </motion.div>
-          <motion.div 
-            className="absolute top-60 right-20 text-3xl opacity-35"
-            animate={{ y: [5, -15, 5], rotate: [0, -10, 10, 0] }}
-            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          >
-            💫
-          </motion.div>
+      {/* Hero Section - Clean Apple-style hero with dark mode background */}
+      <section className="pt-32 pb-20 px-6 sm:px-8 lg:px-10 relative overflow-hidden dark:bg-black">
+        {/* Gradient orbs - enhanced for dark mode */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-purple-500/20 dark:from-purple-600/30 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-violet-500/20 dark:from-violet-600/30 to-transparent rounded-full blur-3xl" />
         </div>
         
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              {/* Badge with animation */}
+              {/* Clean pill badge */}
               <motion.div 
-                className="inline-flex items-center px-6 py-3 rounded-full glass-golden text-foreground text-sm font-medium mb-8 shadow-xl border border-[#D29DF6]/20"
-                initial={{ scale: 0.8, opacity: 0 }}
+                className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-[#D29DF6]/10 to-[#C17FF2]/10 backdrop-blur-sm border border-[#D29DF6]/20 mb-8"
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
               >
-                <Zap className="h-4 w-4 mr-2 text-[#D29DF6] animate-pulse" />
-                <span className="bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/80 bg-clip-text text-transparent font-semibold">
-                  Join 50K+ students already vibing
+                <span className="text-sm font-medium bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] bg-clip-text text-transparent">
+                  Over 50,000 students connected
                 </span>
               </motion.div>
               
-              {/* Main headline with staggered animation */}
-              <div className="space-y-4 mb-10">
+              {/* Main headline - Clean Apple-style typography */}
+              <div className="mb-8">
                 <motion.h1 
-                  className="text-6xl sm:text-7xl lg:text-8xl font-inter font-black text-foreground leading-tight"
-                  initial={{ opacity: 0, y: 30 }}
+                  className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-slate-900 dark:text-white leading-[1.1] mb-6"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
                 >
-                  <span className="block">Where Campus</span>
-                  <span className="block bg-gradient-to-r from-[#D29DF6] via-[#D29DF6]/90 to-[#D29DF6]/70 bg-clip-text text-transparent animate-gradient-x">
-                    Legends
+                  <span className="block">The Campus</span>
+                  <span className="block bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent">
+                    Social Network
                   </span>
-                  <span className="block">Are Born</span>
+                  <span className="block">That Gets You</span>
                 </motion.h1>
-                
-                <motion.div
-                  className="text-2xl sm:text-3xl lg:text-4xl font-playfair italic text-foreground/70 font-light"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.6 }}
-                >
-                  Your social universe awaits ✨
-                </motion.div>
               </div>
               
-              {/* Enhanced description */}
+              {/* Clean description */}
               <motion.p 
-                className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed"
+                className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-10 max-w-2xl mx-auto leading-[1.5] font-normal"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.8 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
               >
-                Stop doom-scrolling and start <span className="text-[#D29DF6] font-semibold">actually connecting</span>. 
-                Find your tribe, discover epic events, trade like a pro, and turn your campus into your playground.
+                Connect with students who share your interests. Discover events that matter. 
+                Build friendships that last beyond graduation.
               </motion.p>
               
-              {/* Enhanced CTA buttons */}
+              {/* Clean CTA buttons - Apple style */}
               <motion.div 
-                className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+                className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 1.0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
               >
                 <Link href="/signup">
-                  <Button size="lg" className="relative bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/90 hover:from-[#D29DF6]/90 hover:to-[#D29DF6]/80 text-white font-bold px-10 py-4 rounded-2xl transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-[#D29DF6]/25 group text-lg overflow-hidden">
-                    <span className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></span>
-                    <span className="relative">Start Your Journey</span>
-                    <Sparkles className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                  <Button size="lg" className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl text-[1.0625rem] min-w-[180px]">
+                    Get Started
+                    <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="lg" variant="outline" className="glass-card border-2 border-[#D29DF6]/30 hover:border-[#D29DF6] font-semibold px-10 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg group">
-                    <span className="group-hover:text-[#D29DF6] transition-colors">I&apos;m Already Cool</span>
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 group-hover:text-[#D29DF6] transition-all" />
+                  <Button size="lg" variant="ghost" className="text-[#D29DF6] hover:text-[#C17FF2] font-medium px-8 py-3 rounded-full transition-colors duration-200 text-[1.0625rem] hover:bg-[#D29DF6]/5">
+                    Sign In
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               </motion.div>
               
-              {/* Enhanced Stats with better visual appeal */}
+              {/* Clean stats grid */}
               <motion.div 
-                className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-12 border-t border-white/20"
-                initial={{ opacity: 0, y: 30 }}
+                className="grid grid-cols-2 lg:grid-cols-4 gap-8 pt-16 border-t border-slate-200 dark:border-slate-700/50 max-w-4xl mx-auto"
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 1.2 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
               >
                 {stats.map((stat, index) => (
                   <motion.div
                     key={index}
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.6, delay: 1.3 + (0.1 * index) }}
-                    whileHover={{ scale: 1.1, y: -5 }}
-                    className="text-center glass-card p-6 rounded-2xl border border-[#D29DF6]/20 hover:border-[#D29DF6]/40 transition-all duration-300 group cursor-pointer"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 + (0.05 * index) }}
+                    className="text-center"
                   >
-                    <div className="text-4xl font-black bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/70 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-semibold bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] bg-clip-text text-transparent mb-1">
                       {stat.value}
                     </div>
-                    <div className="text-sm font-medium text-muted-foreground group-hover:text-[#D29DF6]/80 transition-colors">
+                    <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
                       {stat.label}
                     </div>
-                    {/* Add subtle glow effect */}
-                    <div className="absolute inset-0 bg-[#D29DF6]/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
                   </motion.div>
                 ))}
               </motion.div>
@@ -229,22 +191,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#D29DF6]/5 to-transparent pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto relative z-10">
+      {/* Features Section - Clean grid layout */}
+      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-purple-50/30 dark:bg-black/95">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.5 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl font-bold text-foreground mb-4">
-                Everything you need for campus life
+              <h2 className="text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900 dark:text-white mb-4">
+                Built for Campus Life
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Powerful features designed specifically for university students and campus communities.
+              <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+                Everything you need to thrive in your university community.
               </p>
             </motion.div>
           </div>
@@ -255,17 +216,17 @@ export default function Home() {
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
               >
-                <div className="glass-card p-6 h-full rounded-2xl group hover:shadow-2xl transition-all duration-500">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/80 flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
-                    <feature.icon className="h-6 w-6 text-white" />
+                <div className="bg-white dark:bg-purple-950/20 p-8 h-full rounded-2xl border border-purple-100/50 dark:border-purple-900/30 hover:shadow-lg transition-all duration-300 group backdrop-blur-sm">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D29DF6]/10 to-[#C17FF2]/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="h-6 w-6 text-[#D29DF6]" />
                   </div>
-                  <h3 className="text-lg font-semibold text-card-foreground mb-2 group-hover:text-[#D29DF6] transition-colors duration-300">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -275,39 +236,38 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* CTA Section - Clean gradient card */}
+      <section className="py-24 px-6 sm:px-8 lg:px-10 dark:bg-black">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="text-center bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/90 rounded-3xl p-12 text-white relative overflow-hidden shadow-2xl"
-          >
-            {/* Enhanced background pattern */}
-            <div className="absolute inset-0 opacity-20">
+            className="text-center bg-gradient-to-br from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] rounded-3xl p-16 text-white relative overflow-hidden shadow-xl">
+            {/* Subtle pattern overlay */}
+            <div className="absolute inset-0 opacity-10">
               <div className="absolute inset-0" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.15'%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
               }} />
             </div>
             
             <div className="relative z-10">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Ready to join your campus community?
+              <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
+                Ready to find your people?
               </h2>
-              <p className="text-xl mb-8 opacity-90">
-                Connect with thousands of students, discover amazing events, and make lasting friendships.
+              <p className="text-xl mb-10 opacity-95 max-w-2xl mx-auto">
+                Join thousands of students already building meaningful connections on campus.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/signup">
-                  <Button size="lg" className="bg-white text-[#D29DF6] hover:bg-white/90 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                    Join CampoSocial Today
+                  <Button size="lg" className="bg-white text-[#D29DF6] hover:bg-white/95 font-medium px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl">
+                    Get Started Free
                   </Button>
                 </Link>
                 <Link href="/events">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-semibold px-8 py-3 rounded-xl transition-all duration-300 glass border-2">
-                    Explore Events
+                  <Button size="lg" variant="outline" className="border-2 border-white/80 text-white hover:bg-white/10 font-medium px-8 py-3 rounded-full transition-all duration-200">
+                    Browse Events
                   </Button>
                 </Link>
               </div>
@@ -316,22 +276,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/10 relative">
-        <div className="absolute inset-0 glass-card border-0 rounded-none"></div>
-        <div className="max-w-7xl mx-auto relative z-10">
+      {/* Footer - Minimal Apple style */}
+      <footer className="py-16 px-6 sm:px-8 lg:px-10 border-t border-purple-100 dark:border-purple-900/20 bg-purple-50/30 dark:bg-black">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#D29DF6] to-[#D29DF6]/80 rounded-lg flex items-center justify-center shadow-lg">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-bold text-foreground">CampoSocial</span>
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Image
+                src="/camposocial_logo.png"
+                alt="CampoSocial"
+                width={36}
+                height={36}
+                className="rounded-xl shadow-sm"
+              />
+              <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">CampoSocial</span>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Connecting university students worldwide
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Connecting students worldwide since 2024
             </p>
-            <div className="flex justify-center items-center text-xs text-muted-foreground">
-              Made with ❤️ for students, by students
+            <div className="text-xs text-slate-500 dark:text-slate-500">
+              Made with care for the student community
             </div>
           </div>
         </div>

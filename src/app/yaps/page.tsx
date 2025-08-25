@@ -48,28 +48,28 @@ const NewUserWelcome = () => {
       title: "Share Your First Yap",
       description: "Tell your campus what's on your mind",
       action: () => {}, // This would trigger the add yap modal
-      color: "from-[#92736C] to-[#92736C]/80"
+      color: "from-purple-600 to-violet-600"
     },
     {
       icon: Users,
       title: "Find Friends",
       description: "Connect with classmates and build your network",
       action: () => router.push('/friends'),
-      color: "from-[#92736C]/90 to-[#FDF1F5]"
+      color: "from-purple-500 to-violet-400"
     },
     {
       icon: Calendar,
       title: "Discover Events",
       description: "See what's happening on campus",
       action: () => router.push('/events'),
-      color: "from-[#92736C]/80 to-[#92736C]/60"
+      color: "from-violet-600 to-purple-500"
     },
     {
       icon: ShoppingBag,
       title: "Browse Marketplace",
       description: "Find great deals from fellow students",
       action: () => router.push('/marketplace'),
-      color: "from-[#92736C]/70 to-[#FDF1F5]/80"
+      color: "from-purple-400 to-violet-300"
     }
   ];
 
@@ -82,7 +82,7 @@ const NewUserWelcome = () => {
         className="max-w-2xl mx-auto"
       >
         <div className="mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-[#92736C] to-[#92736C]/80 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-violet-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <Sparkles className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -102,7 +102,7 @@ const NewUserWelcome = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
               <Card 
-                className="p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:bg-accent/50 border-[#92736C]/10"
+                className="p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:bg-accent/50 border-purple-200 dark:border-purple-900/30"
                 onClick={action.action}
               >
                 <CardContent className="p-0">
@@ -129,7 +129,7 @@ const NewUserWelcome = () => {
           <div className="flex justify-center space-x-4">
             <Button 
               onClick={() => router.push('/friends')}
-              className="bg-gradient-to-r from-[#92736C] to-[#92736C]/90 hover:from-[#92736C]/90 hover:to-[#92736C]/80 text-white"
+              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white"
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Find Friends

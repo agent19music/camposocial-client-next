@@ -2,6 +2,7 @@
 
 import { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,25 +24,25 @@ const features: FeatureCard[] = [
     icon: Icons.messageCircle,
     title: "Connect & Chat",
     description: "Share your thoughts and connect with like-minded people in your campus community.",
-    color: "blush"
+    color: "purple"
   },
   {
     icon: Icons.calendar,
     title: "Discover Events",
     description: "Find exciting events happening around campus and never miss out on the fun.",
-    color: "sunset"
+    color: "violet"
   },
   {
     icon: Icons.shoppingBag,
     title: "Campus Marketplace",
     description: "Buy and sell items within your campus community safely and easily.",
-    color: "mocha"
+    color: "purple"
   },
   {
     icon: Icons.users,
     title: "Build Your Network",
     description: "Follow friends, join conversations, and grow your campus social circle.",
-    color: "sage"
+    color: "violet"
   }
 ];
 
@@ -70,29 +71,40 @@ export default function WelcomePage() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#B16FE8]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 overflow-hidden">
-      {/* Background decoration */}
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 overflow-hidden">
+      {/* Background decoration - matching landing page */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-200/20 dark:bg-purple-800/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-blue-200/20 dark:bg-blue-800/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-indigo-200/20 dark:bg-indigo-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-[#D29DF6]/20 dark:from-[#B16FE8]/30 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-[#C17FF2]/20 dark:from-[#C17FF2]/30 to-transparent rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-screen">
         {/* Welcome Header */}
         <motion.div className="text-center mb-12">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#92736C] to-[#92736C]/80 rounded-full flex items-center justify-center shadow-lg">
-            <Sparkles className="h-8 w-8 text-white" />
-          </div>
+          <motion.div
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200 }}
+            className="w-24 h-24 mx-auto mb-6"
+          >
+            <Image
+              src="/camposocial_logo.png"
+              alt="CampoSocial"
+              width={96}
+              height={96}
+              className="rounded-full shadow-xl"
+              priority
+            />
+          </motion.div>
           
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-[#92736C] via-[#92736C]/90 to-[#FDF1F5] dark:from-[#92736C] dark:via-[#92736C]/90 dark:to-[#FDF1F5] bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent mb-4">
             Welcome, {currentUser?.first_name}!
           </h1>
           
@@ -117,12 +129,11 @@ export default function WelcomePage() {
               whileHover={{ scale: 1.02, y: -5 }}
               className="group"
             >
-                              <Card className="h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200 dark:border-gray-600 shadow-lg hover:shadow-xl transition-all duration-300">
+                              <Card className="h-full bg-white/80 dark:bg-black/70 backdrop-blur-sm border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardContent className="p-6">
                   <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${
-                    feature.color === 'blush' ? 'from-[#92736C]/80 to-[#92736C]/60' :
-                    feature.color === 'mocha' ? 'from-[#92736C] to-[#92736C]/80' :
-                    'from-[#92736C]/70 to-[#FDF1F5]/80'
+                    feature.color === 'purple' ? 'from-[#D29DF6] to-[#B16FE8]' :
+                    'from-[#C17FF2] to-[#B16FE8]'
                   } flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
@@ -149,7 +160,7 @@ export default function WelcomePage() {
         >
           <Button 
             onClick={handleGetStarted}
-            className="bg-gradient-to-r from-[#92736C] to-[#92736C]/90 hover:from-[#92736C]/90 hover:to-[#92736C]/80 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
           >
             <Icons.messageCircle className="w-5 h-5 mr-2" />
             Start Exploring
@@ -158,7 +169,7 @@ export default function WelcomePage() {
           <Button 
             onClick={handleExploreMarketplace}
             variant="outline"
-            className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-300 dark:text-gray-200 dark:hover:bg-gray-700 font-semibold px-8 py-3 rounded-full transition-all duration-300"
+            className="border-2 border-[#D29DF6]/50 text-[#B16FE8] hover:bg-[#D29DF6]/10 dark:border-[#B16FE8]/50 dark:text-[#D29DF6] dark:hover:bg-[#B16FE8]/10 font-semibold px-8 py-3 rounded-full transition-all duration-300">
           >
             <Icons.shoppingBag className="w-5 h-5 mr-2" />
             Browse Marketplace
@@ -167,7 +178,7 @@ export default function WelcomePage() {
           <Button 
             onClick={handleDiscoverEvents}
             variant="outline"
-            className="border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-300 dark:text-indigo-200 dark:hover:bg-gray-700 font-semibold px-8 py-3 rounded-full transition-all duration-300"
+            className="border-2 border-[#C17FF2]/50 text-[#C17FF2] hover:bg-[#C17FF2]/10 dark:border-[#C17FF2]/50 dark:text-[#C17FF2] dark:hover:bg-[#C17FF2]/10 font-semibold px-8 py-3 rounded-full transition-all duration-300">
           >
             <Icons.calendar className="w-5 h-5 mr-2" />
             Discover Events
@@ -182,7 +193,7 @@ export default function WelcomePage() {
         >
           <button 
             onClick={handleGetStarted}
-            className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm underline transition-colors duration-200"
+            className="text-gray-500 dark:text-gray-400 hover:text-[#B16FE8] dark:hover:text-[#D29DF6] text-sm underline transition-colors duration-200">
           >
             Skip tour and continue
           </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useContext, useState } from 'react';
+import Image from 'next/image';
 import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,12 +49,18 @@ export default function CompleteProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FDF1F5] via-[#FDF1F5]/70 to-[#92736C]/20 dark:from-gray-900 dark:via-gray-800 dark:to-[#92736C]/20 flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
       </div>
       
       <FloatingBackground iconCount={30} opacity={8} />
+      
+      {/* Decorative gradient orbs - matching landing page */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-[#D29DF6]/20 dark:from-[#B16FE8]/30 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-[#C17FF2]/20 dark:from-[#C17FF2]/30 to-transparent rounded-full blur-3xl" />
+      </div>
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -61,20 +68,36 @@ export default function CompleteProfile() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md relative z-10"
       >
-        <Card className="bg-white/90 dark:bg-black/70 backdrop-blur-xl border border-[#92736C]/20 dark:border-gray-700/50 shadow-2xl">
-          <CardHeader className="text-center space-y-2">
+        <Card className="bg-white/80 dark:bg-black/70 backdrop-blur-xl border border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-2xl">
+          <CardHeader className="text-center space-y-4">
+            {/* Logo */}
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              initial={{ scale: 0, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="mx-auto mb-2"
             >
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#92736C] to-[#92736C]/80 bg-clip-text text-transparent">
+              <Image
+                src="/camposocial_logo.png"
+                alt="CampoSocial"
+                width={80}
+                height={80}
+                className="rounded-full shadow-xl"
+                priority
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent">
                 Complete Your Profile
               </CardTitle>
             </motion.div>
-                         <CardDescription className="text-gray-600 dark:text-gray-400">
-               Help us personalize your campus experience
-             </CardDescription>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              Help us personalize your campus experience
+            </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-6">
@@ -116,7 +139,7 @@ export default function CompleteProfile() {
                   value={formData.display_name}
                   onChange={handleChange}
                   placeholder="How should others see your name?"
-                  className="bg-white/50 dark:bg-gray-800/50"
+                  className="bg-white/50 dark:bg-gray-800/50 border-[#D29DF6]/30 dark:border-[#B16FE8]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
                   required
                 />
               </motion.div>
@@ -136,7 +159,7 @@ export default function CompleteProfile() {
                   value={formData.phone_no}
                   onChange={handleChange}
                   placeholder="+1 (555) 123-4567"
-                  className="bg-white/50 dark:bg-gray-800/50"
+                  className="bg-white/50 dark:bg-gray-800/50 border-[#D29DF6]/30 dark:border-[#B16FE8]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
                 />
               </motion.div>
 
@@ -154,7 +177,7 @@ export default function CompleteProfile() {
                   value={formData.bio}
                   onChange={handleChange}
                   placeholder="Tell us a bit about yourself..."
-                  className="bg-white/50 dark:bg-gray-800/50 min-h-[80px] resize-none"
+                  className="bg-white/50 dark:bg-gray-800/50 min-h-[80px] resize-none border-[#D29DF6]/30 dark:border-[#B16FE8]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
                   maxLength={150}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -169,7 +192,7 @@ export default function CompleteProfile() {
               >
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-[#92736C] to-[#92736C]/90 hover:from-[#92736C]/90 hover:to-[#92736C]/80 text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="w-full bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Completing...' : 'Complete Profile'}

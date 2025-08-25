@@ -64,6 +64,19 @@ const config = {
       fontFamily: {
         inter: ["var(--font-inter)", "sans-serif"],
         playfair: ["var(--font-playfair)", "serif"],
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "SF Pro Display",
+          "SF Pro Text",
+          "Segoe UI",
+          "Roboto",
+          "Oxygen",
+          "Ubuntu",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
       },
       borderRadius: {
         lg: "var(--radius)",
