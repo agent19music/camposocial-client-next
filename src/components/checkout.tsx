@@ -12,7 +12,15 @@ import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import CardsPaymentMethod from './paymentcard'
+import dynamic from 'next/dynamic'
+
+const CardsPaymentMethod = dynamic(
+  () => import('./paymentcard'),
+  { 
+    ssr: false,
+    loading: () => <div className="flex justify-center items-center p-4">Loading payment methods...</div>
+  }
+)
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import * as z from "zod"
 import {
