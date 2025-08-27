@@ -22,6 +22,7 @@ type currentUser = {
   bio: string
   category: string
   username: string
+  display_name: string
 } | null
 
 
@@ -40,6 +41,7 @@ interface AuthContextType {
   isLoading: boolean;
   showSocialModal: boolean;
   setShowSocialModal: (show: boolean) => void;
+  sellerlogin: (email: string, password: string) => Promise<void>;
 }
 
 // Create the AuthContext with a default value (null user initially)
@@ -54,7 +56,10 @@ export const AuthContext = createContext<AuthContextType>({
   onAuthChange: false,
   isProfileComplete: false,
   isAuthenticated: false,
-  isLoading: true
+  isLoading: true,
+  showSocialModal: false,
+    setShowSocialModal: () => {},
+    sellerlogin: async () => {}
 });
 
 interface AuthProviderProps {
@@ -100,6 +105,32 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
     getAuthToken();
   }, []);
+
+  async function sellerlogin(email: string, password: string) {
+    try {
+      const response = await fetch(`${apiEndpoint}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (data.token) {
+        setAuthToken(data.token);
+        setIsAuthenticated(true);
+        toast.success('Welcome back');
+        setOnAuthChange(!onAuthChange)
+      }
+      else {
+        toast.error('Invalid username or password');
+      }
+    }
+    catch (error) {
+      console.error('Error logging in:', error);
+      toast.error('An error occurred. Please try again.');
+    }
+  }
 
   async function login(username: string, password: string, apiEndpoint: string) {
     try {
@@ -349,7 +380,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     isLoading,
     showSocialModal,
-    setShowSocialModal
+    setShowSocialModal,
+    sellerlogin
   };
 
   // Render the provider and pass the context data

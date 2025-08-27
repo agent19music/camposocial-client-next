@@ -1,19 +1,30 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { MessageCircle, Repeat2, Heart, Share2, MoreHorizontal } from "lucide-react"
 import { cn } from '@/lib/utils'
+ interface Reply {
+  id: number;
+  content: string;
+  created_at: string;
+  user: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar: string;
+  };
+}
 
-export const Reply = ({ reply }) => {
-  const [isLiked, setIsLiked] = React.useState(false)
-  const [isAlertOpen, setIsAlertOpen] = React.useState(false)
-  const [alertContent, setAlertContent] = React.useState({ title: '', description: '' })
+export const ReplyComponent = ({ reply }: { reply: Reply }) => {
+  const [isLiked, setIsLiked] = useState(false)
+  const [isAlertOpen, setIsAlertOpen] = useState(false)
+  const [alertContent, setAlertContent] = useState({ title: '', description: '' })
 
-  const handleAlert = (title, description) => {
+  const handleAlert = (title: string, description: string) => {
     setAlertContent({ title, description })
     setIsAlertOpen(true)
   }
@@ -22,14 +33,14 @@ export const Reply = ({ reply }) => {
     <article className="px-4 py-3 hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-colors">
       <div className="flex gap-3">
         <Avatar className="w-10 h-10 flex-shrink-0">
-          <AvatarImage src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${reply.author}`} />
-          <AvatarFallback>{reply.author[0]}</AvatarFallback>
+          <AvatarImage src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${reply.user.display_name}`} />
+          <AvatarFallback>{reply.user.display_name[0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 text-[15px]">
-              <span className="font-bold">{reply.author}</span>
-              <span className="text-muted-foreground">· {reply.timestamp}</span>
+              <span className="font-bold">{reply.user.display_name}</span>
+              <span className="text-muted-foreground">· {reply.created_at}</span>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -47,7 +58,7 @@ export const Reply = ({ reply }) => {
                     )
                   }
                 >
-                  Block @{reply.author}
+                  Block @{reply.user.display_name}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="dark:hover:bg-gray-700"

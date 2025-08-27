@@ -9,21 +9,28 @@ import { ReplyInput } from './replyinput'
 import { ReplyList } from './replylist'
 
 export default function SingleYapView() {
-  const selectedYap = useContext(YapContext)
-  const [replies, setReplies] = React.useState(selectedYap.replies)
+  const {selectedYap, addReply} = useContext(YapContext)
+  const [replies, setReplies] = React.useState(selectedYap?.replies || [])
 
-  const handleNewReply = (content) => {
+  const handleNewReply = async (content: string) => {
     const newReply = {
-      author: "Current User",
+      id: 0, // Add missing id field
+      created_at: new Date().toISOString(),
+      user: {
+        id: "temp-user-id",
+        username: "Current User",
+        display_name: "Current User",
+        avatar: "" // Change from null to empty string
+      },
       content,
-      timestamp: "Just now"
+      isOptimistic: true
     }
     setReplies([newReply, ...replies])
   }
 
   return (
     <main className="max-w-[600px] mx-auto min-h-screen border-x border-border">
-      <MainYap yap={selectedYap} />
+      <MainYap />
       <div className="px-4">
         <ReplyInput onReply={handleNewReply} />
       </div>

@@ -5,10 +5,10 @@ import { CardContent, Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Star } from 'lucide-react';
-import { MarketplaceContext } from '@/context/marketplacecontext';
+import { MarketplaceContext, Product } from '@/context/marketplacecontext';
 
 
-export default function  ProductCard  ({ product })  {
+export default function  ProductCard  ({ product }: { product: Product })  {
 const {navigateToSingleProductView} = useContext(MarketplaceContext)
 console.log(product.reviews?.length);
 
@@ -21,7 +21,7 @@ console.log(product.reviews?.length);
         <div className="relative">
           <Image
             src={product.images[0]} // Access the first image in the array
-            alt={product.name}
+            alt={product.title}
             className="w-full h-[200px] object-cover"
             height={200}
             width={250}

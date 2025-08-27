@@ -44,7 +44,7 @@ export function SocialLoginModal() {
         console.log('Google OAuth Response:', credentialResponse);
         
         // Check if we have the expected response structure
-        if (!credentialResponse.access_token && !credentialResponse.code) {
+        if (!credentialResponse.access_token) {
           console.error('Invalid Google OAuth response:', credentialResponse);
           toast.error('Invalid Google OAuth response');
           return;
@@ -53,7 +53,6 @@ export function SocialLoginModal() {
         // Transform the response to match backend expectations
         const transformedData = {
           access_token: credentialResponse.access_token,
-          code: credentialResponse.code,
           redirect_uri: 'postmessage',
           token_type: credentialResponse.token_type,
           expires_in: credentialResponse.expires_in,

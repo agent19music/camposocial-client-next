@@ -13,7 +13,7 @@ import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
 import { Paintbrush, Cookie, Book, Shirt, Monitor } from "lucide-react"
 import { useContext } from 'react'
-import { MarketplaceContext } from '@/context/marketplacecontext'
+import { MarketplaceContext, Seller, Product } from '@/context/marketplacecontext'
 import { toast } from 'react-hot-toast'
 import { useParams } from 'next/navigation'
 import { Skeleton } from "@/components/ui/skeleton"
@@ -24,25 +24,9 @@ export default function SellerProfile() {
   const [activeTab, setActiveTab] = useState("products")
   const params = useParams()  
   
-  function deslugify(slug: string): string {
-    const parts = slug.split('-'); 
-    parts.pop(); 
-    return parts.join('-'); 
-  }
+  const { deslugify } = useContext(MarketplaceContext)
 
-  interface Seller {
-    id: number;
-    name: string;
-    products: any[];
-    reviews: any[];
-    avatar: string;
-    location: string;
-    isVerified: boolean;
-    totalSales: number;
-    rating: number;
-    joinedDate: string;
-    about: string;
-  }
+
 
   const { selectedSeller } = useContext(MarketplaceContext)
   const [sellerData, setSellerData] = useState<Seller | null>(null);
@@ -53,6 +37,11 @@ export default function SellerProfile() {
   useEffect(() => {
     const fetchSellerData = async () => {
       setIsLoading(true);
+      if (typeof params.slug !== 'string') {
+        console.error('Slug parameter is not a string:', params.slug);
+        setIsLoading(false);
+        return;
+      }
       try {
         const response = await fetch(`${apiEndpoint}/sellers/${deslugify(params.slug)}`);
 
@@ -80,11 +69,11 @@ export default function SellerProfile() {
   }, [params]);
 
   const marketplaceLinks = [
-    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" /> },
-    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" /> },
-    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" /> },
-    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" /> },
-    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" /> },
+    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" />, onClick: () => {} },
+    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" />, onClick: () => {} },
+    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" />, onClick: () => {} },
+    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => {} },
+    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => {} },
   ];
 
   const sellerInfo = sellerData || selectedSeller;
@@ -116,7 +105,7 @@ export default function SellerProfile() {
                   ) : (
                     <CardTitle className="text-2xl sm:text-3xl">{sellerInfo?.name}</CardTitle>
                   )}
-                  {!isLoading && sellerInfo?.isVerified && (
+                  {!isLoading && sellerInfo?.is_verified && (
                     <Badge variant="secondary" className="ml-0 sm:ml-2 text-green-400">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Verified
@@ -152,7 +141,7 @@ export default function SellerProfile() {
                         {stat === 'rating' && <Star className="h-6 w-6 sm:h-10 sm:w-10 mb-1 sm:mb-2 text-primary" />}
                         {stat === 'products' && <Package className="h-6 w-6 sm:h-10 sm:w-10 mb-1 sm:mb-2 text-primary" />}
                         <span className="text-lg sm:text-3xl font-bold">
-                          {stat === 'products' ? sellerInfo?.products?.length : sellerInfo?.[stat]}
+                          {stat === 'products' ? sellerInfo?.products?.length : (stat === 'rating' ? sellerInfo?.rating : sellerInfo?.sales)}
                         </span>
                         <span className="text-xs sm:text-sm text-muted-foreground">
                           {stat.charAt(0).toUpperCase() + stat.slice(1)}
@@ -213,7 +202,7 @@ export default function SellerProfile() {
                     </Card>
                   ))
                 ) : (
-                  sellerInfo?.products?.map((product, index) => (
+                  sellerInfo?.products?.map((product: Product, index: number) => (
                     <ProductCard key={index} product={product} />
 
                   ))
@@ -242,8 +231,8 @@ export default function SellerProfile() {
                     ))
                    } 
                    
-                   {!isLoading && sellerInfo?.reviews >1 && (
-                    sellerInfo?.reviews?.map((review, index) => (
+                   {!isLoading && (Array.isArray(sellerInfo?.reviews) && sellerInfo.reviews.length > 1) && (
+                    sellerInfo?.reviews?.map((review: any, index: number) => (
                       <div key={review.id}>
                         {index > 0 && <Separator className="my-4" />}
                         <div className="flex items-center mb-2">

@@ -39,7 +39,7 @@ type CurrentUser = {
   first_name: string;
   last_name: string;
   address: string;
-  phone: string;
+  phone_no: string;
   email: string;
 } | null
 
@@ -52,7 +52,7 @@ const orderSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  phone_no: z.string().min(10, "Phone number must be at least 10 digits"),
   address: z.string().min(1, "Address is required"),
   total_price: z.number().min(0, "Total price error"),
 })
@@ -81,7 +81,7 @@ export default function CheckoutComponent() {
       first_name: currentUser?.first_name || "",
       last_name: currentUser?.last_name || "",
       email: currentUser?.email || "",
-      phone: currentUser?.phone || "",
+      phone_no: currentUser?.phone_no || "",
       address: currentUser?.address || "",
       total_price : 0,
     },
@@ -270,7 +270,7 @@ export default function CheckoutComponent() {
 
                   <FormField
                     control={form.control}
-                    name="phone"
+                    name="phone_no"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Phone</FormLabel>

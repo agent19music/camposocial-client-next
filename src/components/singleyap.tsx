@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useContext } from 'react'
 import { YapContext } from '@/context/yapcontext'
 
-const Tweet = ({ author, content, timestamp }) => (
+const Tweet = ({ author, content, timestamp }: { author: string, content: string, timestamp: string }) => (
   <Card className="mb-4">
     <CardHeader className="flex flex-row items-center gap-4">
       <Avatar>
@@ -46,11 +46,11 @@ const Tweet = ({ author, content, timestamp }) => (
   </Card>
 )
 
-const Reply = ({ author, content, timestamp }) => {
+const Reply = ({ author, content, timestamp }: { author: string, content: string, timestamp: string }) => {
   const [isAlertOpen, setIsAlertOpen] = React.useState(false)
   const [alertContent, setAlertContent] = React.useState({ title: '', description: '' })
 
-  const handleAlert = (title, description) => {
+  const handleAlert = (title: string, description: string) => {
     setAlertContent({ title, description })
     setIsAlertOpen(true)
   }
@@ -121,7 +121,7 @@ const Reply = ({ author, content, timestamp }) => {
   )
 }
 
-const ReplyInput = ({ onReply }) => {
+const ReplyInput = ({ onReply }: { onReply: (content: string) => void }) => {
   const [replyText, setReplyText] = useState('')
 
   const handleReply = () => {
@@ -162,14 +162,20 @@ const ReplyInput = ({ onReply }) => {
 }
 
 export default function Component() {
-  const selectedYap = useContext(YapContext)
-  const [replies, setReplies] = useState(selectedYap.replies)
+    const {selectedYap} = useContext(YapContext)
+  const [replies, setReplies] = useState(selectedYap?.replies || []) 
 
-  const handleNewReply = (content) => {
+  const handleNewReply = (content: string) => {
     const newReply = {
-      author: "Current User",
+      id: Date.now(),
+      created_at: new Date().toISOString(),
+      user: {
+        id: "temp-user-id",
+        username: "Current User",
+        display_name: "Current User",
+        avatar: ""
+      },
       content,
-      timestamp: "Just now"
     }
     setReplies([newReply, ...replies])
   }
@@ -177,8 +183,8 @@ export default function Component() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <Tweet
-        author={selectedYap.handle}
-        content={selectedYap.content}
+        author={selectedYap?.display_name || ""}
+        content={selectedYap?.content || ""}
         timestamp="2h ago"
       />
       <Separator className="my-4" />
@@ -187,9 +193,9 @@ export default function Component() {
       {replies.map((reply, index) => (
         <Reply
           key={index}
-          author={reply.author}
+          author={reply.user.display_name}
           content={reply.content}
-          timestamp={reply.timestamp}
+          timestamp={reply.created_at}
         />
       ))}
     </div>

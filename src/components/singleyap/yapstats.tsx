@@ -1,4 +1,4 @@
-export const YapStats = ({ replies, retweets, likes, bookmarks }) => {
+export const YapStats = ({ replies, retweets, likes, bookmarks }: { replies: number, retweets: number, likes: number, bookmarks: number }) => {
     return (
       <div className="flex gap-4 py-4">
         <div className="flex gap-1">

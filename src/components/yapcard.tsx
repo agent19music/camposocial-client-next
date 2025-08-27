@@ -4,11 +4,8 @@ import React, { useContext, useState } from 'react'
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { MessageCircle, Repeat2, Heart, Share2, Send } from "lucide-react"
-import Image from "next/image"
-import { useRouter } from 'next/navigation';
-import { YapContext } from '@/context/yapcontext'
+import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react"
+import {  YapContext } from '@/context/yapcontext'
 import { cn } from '@/lib/utils'
 import { MediaGrid } from './yapmediagrid'
 import { 
@@ -20,8 +17,51 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 
-const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets_count }) => {
-  const router = useRouter();
+interface Yap {
+  id: string;
+  content: string;
+  timestamp: string;
+  updated_at?: string;
+  location?: string;
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar: string;
+  original_yap_id?: string;
+  replies_count: number;
+  likes_count: number;
+  retweets_count: number;
+  bookmarks_count: number;
+  media: MediaItem[];
+  replies: Reply[];
+  hashtags: string[];
+  isOptimistic?: boolean;
+  optimisticLiked?: boolean;
+  optimisticLikesCount?: number;
+  optimisticRepliesCount?: number;
+  optimisticRetweetsCount?: number;
+}
+interface Reply {
+  id: number;
+  content: string;
+  created_at: string;
+  user: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar: string;
+  };
+  parent_reply_id?: number;
+  isOptimistic?: boolean;
+}
+
+interface MediaItem {
+  id: number;
+  url: string;
+  type: 'image' | 'video';
+}
+
+const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets_count }: { display_name: string, username: string, content: string, avatar: string, media: MediaItem[], yap: Yap, likes_count: number, replies_count: number, retweets_count: number }) => {
   const { navigateToSingleYapView, toggleLike, addReply, retweet } = useContext(YapContext);
   
   // Local states for UI interactions

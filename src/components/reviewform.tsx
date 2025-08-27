@@ -7,12 +7,13 @@ import { Star } from "lucide-react"  // Assume lucide-react has the Star icon
 import { AuthContext } from "@/context/authcontext"
 
 type Review = {
-  productId: string
+  product_id: string
   rating: number
   comment: string
+
 }
 
-export default function ReviewForm({ productId }: { productId: string }) {
+export default function ReviewForm({ product_id }: { product_id: string }) {
   const [review, setReview] = useState("")
   const [rating, setRating] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -26,8 +27,9 @@ export default function ReviewForm({ productId }: { productId: string }) {
     }
 
     const reviewData: Review = {
+        product_id: product_id,
       rating,
-      text: review,
+      comment: review,
     }
 
     console.log(reviewData);
@@ -35,7 +37,7 @@ export default function ReviewForm({ productId }: { productId: string }) {
 
     try {
       setIsSubmitting(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/product/${productId}/review`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/product/${product_id}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { AuthContext } from '@/context/authcontext'
 
-export const ReplyInput = ({ onReply }) => {
+export const ReplyInput = ({ onReply }: { onReply: (content: string) => void }) => {
   const [replyText, setReplyText] = React.useState('')
   const maxLength = 280
   const {currentUser} = useContext(AuthContext)

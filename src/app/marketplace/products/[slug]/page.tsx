@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import Header from "@/components/header"
 import SideNav from "@/components/sidenav"
-import { MarketplaceContext } from "@/context/marketplacecontext"
+import { MarketplaceContext, Variation } from "@/context/marketplacecontext"
 import { AuthContext } from "@/context/authcontext"
 import { toast } from "react-hot-toast"
 import ReviewForm from "@/components/reviewform"
@@ -38,13 +38,7 @@ const StarRating = ({ rating }: { rating: number }) => {
   )
 }
 
-type Variation = {
-  id: string
-  name: string
-  price: number
-  stock: number
-  value: string
-}
+// Variation type now imported from MarketplaceContext
 
 const ProductVariations = ({
   variations,
@@ -53,6 +47,7 @@ const ProductVariations = ({
 }: {
   variations: Variation[];
   onVariationChange: (variation: Variation | null) => void;
+  selectedProduct: { variations: Variation[] };
 }) => {
   // const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(selectedProduct.variations[0] || null);
@@ -99,7 +94,7 @@ const ProductVariations = ({
 };
 
 export default function SingleProductPage() {
-  const { selectedProduct, setSelectedProduct, navigateToSingleSellerView, setUpdateCart, updateCart } = useContext(MarketplaceContext)
+  const { selectedProduct, setSelectedProduct, navigateToSingleSellerView, addToCart, deslugify } = useContext(MarketplaceContext)
   const [selectedImage, setSelectedImage] = useState("")
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
   const [rating, setRating] = useState(0)
@@ -140,11 +135,7 @@ export default function SingleProductPage() {
   }, [params.slug, setSelectedProduct,apiEndpoint]);
   
 
-  function deslugify(slug: string): string {
-    const parts = slug.split('-'); 
-    parts.pop(); 
-    return parts.join('-'); 
-  }
+  // deslugify now provided by context
   const averageRating = selectedProduct?.reviews
     ? selectedProduct.reviews.length > 0
       ? selectedProduct.reviews.reduce((acc, review) => acc + review.rating, 0) / selectedProduct.reviews.length
@@ -152,42 +143,14 @@ export default function SingleProductPage() {
     : 0
 
   const marketplaceLinks = [
-    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" /> },
-    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" /> },
-    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" /> },
-    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" /> },
-    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" /> },
+    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" />, onClick: () => {} },
+    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" />, onClick: () => {} },
+    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" />, onClick: () => {} },
+    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => {} },
+    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => {} },
   ]
 
-  const addToCart = async (productId: string, quantity: number = 1, variationId?: string) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/cart/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`, // Adjust if the token is stored differently
-        },
-        body: JSON.stringify({
-          product_id: productId,
-          product_variation_id: variationId || null,
-          quantity,
-        }),
-      })
-  
-      if (response.ok) {
-        const data = await response.json()
-        toast.success("Product added to cart successfully!")
-        setUpdateCart(!updateCart);
-        return data // Optional: return response data if needed
-      } else {
-        const errorData = await response.json()
-        toast.error(errorData.error || "Failed to add product to cart")
-      }
-    } catch (error) {
-      console.error("Error adding product to cart:", error)
-      toast.error("An error occurred. Please try again.")
-    }
-  }
+  // addToCart now provided by context
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
@@ -289,7 +252,14 @@ export default function SingleProductPage() {
               ) : (
                 <div
                   className="flex items-center space-x-4 hover:cursor-pointer"
-                  onClick={() => navigateToSingleSellerView(selectedProduct?.seller)}
+                  onClick={() => selectedProduct?.seller && navigateToSingleSellerView({  
+                    name: selectedProduct.seller.name,
+                    avatar: selectedProduct.seller.avatar,
+                    id: selectedProduct.seller.id,
+                    sales: selectedProduct.seller.sales,
+                    rating: selectedProduct.seller.rating,
+                    is_verified: selectedProduct.seller.is_verified,
+                  })}
                 >
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={selectedProduct?.seller.avatar} alt={selectedProduct?.seller.name} />
@@ -297,7 +267,7 @@ export default function SingleProductPage() {
                   </Avatar>
                   <div className="flex items-center">
                     <p className="font-semibold">{selectedProduct?.seller.name}</p>
-                    {selectedProduct?.seller.is_verified && (
+                    {selectedProduct?.seller.is_verified && ( //@ts-ignore
                       <CheckCircle className="w-4 h-4 text-green-500 ml-1" />
                     )}
                   </div>
@@ -308,7 +278,11 @@ export default function SingleProductPage() {
               <Button 
             className="w-full" 
             disabled={isLoading} 
-            onClick={() => addToCart(selectedProduct?.id ,1, selectedVariation?.id)}>
+            onClick={async () => {
+              const res = await addToCart(selectedProduct?.id || '', 1, selectedVariation?.id);
+              if (res) toast.success("Product added to cart successfully!");
+              else toast.error("Failed to add product to cart");
+            }}>
               Add to Cart
           </Button>
 
@@ -348,7 +322,7 @@ export default function SingleProductPage() {
               <Button>Submit Review</Button>
             </CardContent>
           </Card> */}
-          <ReviewForm productId={selectedProduct?.id}/>
+          <ReviewForm product_id={selectedProduct?.id || ''}/>
 
            {/* Reviews */}
            <div className="mt-8">

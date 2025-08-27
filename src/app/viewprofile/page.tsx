@@ -157,7 +157,14 @@ function TweetList() {
   )
 }
 
-function TweetCard({ name, username, content, timestamp }) {
+interface TweetCardProps {
+  name: string;
+  username: string;
+  content: string;
+  timestamp: string;
+}
+
+function TweetCard({ name, username, content, timestamp }: TweetCardProps) {
   const [isMuted, setIsMuted] = useState(false)
 
   const handleMute = () => {

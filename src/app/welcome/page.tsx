@@ -7,10 +7,8 @@ import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import { Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';``
+
 
 interface FeatureCard {
   icon: React.ComponentType<any>;

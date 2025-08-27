@@ -8,7 +8,15 @@ import { get } from "http";
 import { set } from "date-fns";
 
 // Product interface to define the structure of each product
-interface Product {
+export interface Variation {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  value: string;
+}
+
+export interface Product {
   id: string;
   average_rating: number;
   category: string;
@@ -24,10 +32,7 @@ interface Product {
   description: string;
   rating: number;
   reviewsCount: number;
-  seller: {
-      name: string;
-      avatar: string;
-  };
+  seller:Seller;
   reviews: {
       username: string;
       rating: number;
@@ -35,24 +40,25 @@ interface Product {
       id: number;
       avatar: string;
   }[];
-  variations: {
-    id: string;
-    name: string;
-    price: number;
-    stock: number;
-    value: string;
-}[];
+  variations: Variation[];
   isBestseller?: boolean;
   isNew?: boolean;
 }
 
-interface Seller {
+export interface Seller {
   name: string;
   avatar: string;
   id: string;
   sales: number;
   rating: number;
   is_verified: boolean;
+
+  // Optional fields used by seller page
+  location?: string;
+  products?: Product[];
+  reviews?: any;
+  joinedDate?: string;
+  about?: string;
 
 
 }
@@ -78,6 +84,8 @@ interface MarketplaceContextProps {
   orderId: string | null;
   sellerStatusChange: boolean;
   setSellerStausChange: (value: boolean) => void;
+  addToCart: (productId: string, quantity?: number, variationId?: string) => Promise<any | void>;
+  deslugify: (slug: string) => string;
 
 }
 
@@ -102,6 +110,8 @@ const defaultValue: MarketplaceContextProps = {
   orderId: null,
   sellerStatusChange: false,
   setSellerStausChange: () => {},
+  addToCart: async () => {},
+  deslugify: () => "",
 };
 
 // Create the MarketplaceContext with default values
@@ -160,6 +170,12 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     return `${baseSlug}-${safeNanoid}`;
   }
 
+  function deslugify(slug: string): string {
+    const parts = slug.split('-');
+    parts.pop();
+    return parts.join('-');
+  }
+
   // Function to navigate to a single product view
   function navigateToSingleProductView(product: Product) {    
     const slug = slugify(product.id);
@@ -193,9 +209,37 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     const slug = slugify(seller.id);
     
     setSelectedSeller(seller);    
-    router.push(`/marketplace/sellers/${slug}`); // Navigate to the single product page
+    router.push(`/marketplace/sellers/${slug}`); // Navigate to the single seller page
     
 
+  }
+
+  async function addToCart(productId: string, quantity: number = 1, variationId?: string) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/cart/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          product_variation_id: variationId || null,
+          quantity,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUpdateCart(!updateCart);
+        return data;
+      } else {
+        const errorData = await response.json();
+        console.error(errorData.error || "Failed to add product to cart");
+      }
+    } catch (error) {
+      console.error("Error adding product to cart:", error);
+    }
   }
 
   // The context data that will be passed down to components
@@ -218,7 +262,9 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     setOrderId,
     orderId,
     sellerStatusChange,
-    setSellerStausChange
+    setSellerStausChange,
+    addToCart,
+    deslugify
     
     // Include this in the context data
   };

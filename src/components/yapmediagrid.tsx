@@ -4,7 +4,13 @@ import React from 'react'
 import Image from "next/image"
 import { cn } from '@/lib/utils'
 
-export const MediaGrid = ({ media }) => {
+interface MediaItem {
+  id: number;
+    type: 'image' | 'video';
+  url: string;
+}
+
+export const MediaGrid = ({ media }: { media: MediaItem[] }) => {
   const [images, videos] = React.useMemo(() => {
     if (!media) return [[], []]
     return [
@@ -22,8 +28,8 @@ export const MediaGrid = ({ media }) => {
       {
         'grid-cols-1': mediaCount === 1,
         'grid-cols-2': mediaCount === 2,
-        'grid-cols-2': mediaCount === 3,
-        'grid-cols-2': mediaCount === 4,
+        'grid-cols-3': mediaCount === 3,
+        'grid-cols-4': mediaCount === 4,
         'h-[260px] sm:h-[286px]': mediaCount <= 2,
         'h-[300px] sm:h-[346px]': mediaCount > 2,
       }

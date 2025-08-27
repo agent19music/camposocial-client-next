@@ -22,8 +22,10 @@ interface Yap {
   replies_count: number;
   likes_count: number;
   retweets_count: number;
+  bookmarks_count: number;
   media: MediaItem[];
   hashtags: string[];
+  replies: Reply[];
   // Client-side optimistic state
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
@@ -723,7 +725,9 @@ export default function YapProvider({ children }: YapProviderProps) {
       replies_count: 0,
       likes_count: 0,
       retweets_count: 0,
+      bookmarks_count: 0,
       media: [],
+      replies: [],
       hashtags: [],
       isOptimistic: true
     };

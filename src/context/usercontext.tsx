@@ -13,7 +13,7 @@ interface UserContextProps {
   sendFriendRequest: (receipientId:string) => void;
   receivedRequests: any[];
   setReceivedRequests: (receivedRequests: any[]) => void;
-  removeFriend: (friendId: number) => void;
+  removeFriend: (friendId: string) => void;
   addFriend: (requesterId: string) => void;
   blockUser: (targetId: string, action: 'block' | 'unblock') => void;
   setUsers: (users: any[]) => void;
@@ -122,7 +122,7 @@ export default function UserProvider({ children }: UserProviderProps) {
       if (!response.ok) {
         if (response.status === 401) {
           // Token is invalid, don't make further requests
-          return;
+          return; 
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -281,7 +281,7 @@ export default function UserProvider({ children }: UserProviderProps) {
     }
   }, [authToken, isAuthenticated, currentUser, fetchUsers, fetchFriends, fetchPendingRequests]);
 
-  async function sendFriendRequest(receipientId: number) {
+  async function sendFriendRequest(receipientId: string) {
     try {
       const response = await fetch(`${apiEndpoint}/friends/send-request`, {
         method: "POST",

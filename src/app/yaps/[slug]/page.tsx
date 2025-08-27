@@ -10,17 +10,32 @@ import { ReplyList } from '@/components/singleyap/replylist'
 import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
 import { Home,Calendar, PartyPopper, Repeat2, Share2 } from "lucide-react";
+import { useRouter } from 'next/navigation'
 
 export default function SingleYapView() {
   const {selectedYap, addReply} = useContext(YapContext)
   const [replies, setReplies] = React.useState(selectedYap?.replies || [])
+  const router = useRouter()
+  
   const eventLinks = [
-    { href: "/comingsoon", label: "Coming Soon", icon: <Home className="h-4 w-4" /> },
-    { href: "/social-events", label: "Social Events", icon: <Calendar className="h-4 w-4" /> },
-    { href: "/fun-events", label: "Fun Events", icon: <PartyPopper className="h-4 w-4" /> },
+    { 
+      label: "Coming Soon", 
+      icon: <Home className="h-4 w-4" />,
+      onClick: () => router.push("/comingsoon")
+    },
+    { 
+      label: "Social Events", 
+      icon: <Calendar className="h-4 w-4" />,
+      onClick: () => router.push("/social-events")
+    },
+    { 
+      label: "Fun Events", 
+      icon: <PartyPopper className="h-4 w-4" />,
+      onClick: () => router.push("/fun-events")
+    },
   ];
 
-  const handleNewReply = async (content) => {
+    const handleNewReply = async (content: string) => {
     if (!selectedYap) return;
     
     try {
@@ -31,9 +46,10 @@ export default function SingleYapView() {
         id: Date.now(), // temporary ID
         content,
         user: {
+          id: "temp-user-id", // Add missing id field
           username: "Current User",
           display_name: "Current User",
-          avatar: null
+          avatar: "" // Change from null to empty string
         },
         created_at: new Date().toISOString(),
         isOptimistic: true
@@ -53,7 +69,7 @@ export default function SingleYapView() {
           <SideNav links = {eventLinks} />
         </div>
     <main className="sm:max-w-[600px] mx-auto lg:min-w-full  border-x border-border">
-      <MainYap yap={selectedYap} />
+      <MainYap />
       <div className="px-4">
         <ReplyInput onReply={handleNewReply} />
       </div>
