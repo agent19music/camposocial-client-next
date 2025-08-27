@@ -189,6 +189,7 @@ export default function Dashboard() {
       key={index}
     {...event}
     event={event}
+    handleSubmit={handleSubmit}
     />
   ))}
 </div>

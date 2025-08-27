@@ -1,10 +1,41 @@
-import { GlobeIcon, MailIcon } from "lucide-react";
+import { 
+  GlobeIcon, 
+  MailIcon, 
+  MessageCircle, 
+  Calendar, 
+  ShoppingBag, 
+  Users,
+  Heart,
+  Home,
+  PartyPopper,
+  Search,
+  Settings,
+  LogOut,
+  Bell,
+  UserPlus,
+  TrendingUp,
+  Sparkles
+} from "lucide-react";
 
 export type IconProps = React.HTMLAttributes<SVGElement>;
 
 export const Icons = {
   globe: (props: IconProps) => <GlobeIcon {...props} />,
   email: (props: IconProps) => <MailIcon {...props} />,
+  messageCircle: (props: IconProps) => <MessageCircle {...props} />,
+  calendar: (props: IconProps) => <Calendar {...props} />,
+  shoppingBag: (props: IconProps) => <ShoppingBag {...props} />,
+  users: (props: IconProps) => <Users {...props} />,
+  heart: (props: IconProps) => <Heart {...props} />,
+  home: (props: IconProps) => <Home {...props} />,
+  partyPopper: (props: IconProps) => <PartyPopper {...props} />,
+  search: (props: IconProps) => <Search {...props} />,
+  settings: (props: IconProps) => <Settings {...props} />,
+  logOut: (props: IconProps) => <LogOut {...props} />,
+  bell: (props: IconProps) => <Bell {...props} />,
+  userPlus: (props: IconProps) => <UserPlus {...props} />,
+  trendingUp: (props: IconProps) => <TrendingUp {...props} />,
+  sparkles: (props: IconProps) => <Sparkles {...props} />,
   linkedin: (props: IconProps) => (
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>LinkedIn</title>
@@ -316,50 +347,5 @@ export const Icons = {
         fill="currentColor"
       />
     </svg>
-  ),
-  calendar: (props: IconProps) => (
-    <div className="w-8 h-8 flex items-center justify-center" {...props}>
-      <img 
-        src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/calendarskeuomorphism.png" 
-        alt="Calendar" 
-        className="w-full h-full object-cover filter drop-shadow-lg"
-      />
-    </div>
-  ),
-  heart: (props: IconProps) => (
-    <div className="w-8 h-8 flex items-center justify-center" {...props}>
-      <img 
-        src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/heartskeuomorphism.png" 
-        alt="Heart" 
-        className="w-full h-full object-cover filter drop-shadow-lg"
-      />
-    </div>
-  ),
-  globeIcon: (props: IconProps) => (
-    <div className="w-8 h-8 flex items-center justify-center" {...props}>
-      <img 
-        src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/globeskeuomorphism.png" 
-        alt="Globe" 
-        className="w-full h-full object-cover filter drop-shadow-lg"
-      />
-    </div>
-  ),
-  chat: (props: IconProps) => (
-    <div className="w-8 h-8 flex items-center justify-center" {...props}>
-      <img 
-        src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/chatskeuomorphism.png" 
-        alt="Chat" 
-        className="w-full h-full object-cover filter drop-shadow-lg"
-      />
-    </div>
-  ),
-  iphone: (props: IconProps) => (
-    <div className="w-8 h-8 flex items-center justify-center" {...props}>
-      <img 
-        src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/iphoneskeuomorphism.png" 
-        alt="iPhone" 
-        className="w-full h-full object-cover filter drop-shadow-lg"
-      />
-    </div>
   ),
 };

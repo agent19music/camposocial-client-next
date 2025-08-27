@@ -48,28 +48,28 @@ const NewUserWelcome = () => {
       title: "Share Your First Yap",
       description: "Tell your campus what's on your mind",
       action: () => {}, // This would trigger the add yap modal
-      color: "from-purple-600 to-violet-600"
+      color: "text-purple-600 dark:text-purple-400"
     },
     {
       icon: Users,
       title: "Find Friends",
       description: "Connect with classmates and build your network",
       action: () => router.push('/friends'),
-      color: "from-purple-500 to-violet-400"
+      color: "text-violet-600 dark:text-violet-400"
     },
     {
       icon: Calendar,
       title: "Discover Events",
       description: "See what's happening on campus",
       action: () => router.push('/events'),
-      color: "from-violet-600 to-purple-500"
+      color: "text-purple-600 dark:text-purple-400"
     },
     {
       icon: ShoppingBag,
       title: "Browse Marketplace",
       description: "Find great deals from fellow students",
       action: () => router.push('/marketplace'),
-      color: "from-purple-400 to-violet-300"
+      color: "text-violet-600 dark:text-violet-400"
     }
   ];
 
@@ -79,14 +79,26 @@ const NewUserWelcome = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-2xl mx-auto"
+        className="max-w-2xl mx-auto w-full"
       >
         <div className="mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-violet-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Welcome to CampoSocial, {currentUser?.first_name || 'friend'}! 🎉
+          <motion.div 
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200 }}
+            className="w-20 h-20 mx-auto mb-6"
+          >
+            <Image
+              src="/camposocial_logo.png"
+              alt="CampoSocial"
+              width={80}
+              height={80}
+              className="rounded-2xl shadow-xl"
+              priority
+            />
+          </motion.div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent mb-3">
+            Welcome to CampoSocial, {currentUser?.first_name || 'friend'}!
           </h1>
           <p className="text-lg text-muted-foreground">
             You're now part of your campus community. Here's how to get started:
@@ -100,17 +112,22 @@ const NewUserWelcome = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
+              whileHover={{ scale: 1.02, y: -2 }}
             >
               <Card 
-                className="p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:bg-accent/50 border-purple-200 dark:border-purple-900/30"
+                className="group p-5 hover:shadow-lg transition-all duration-300 cursor-pointer bg-card/50 backdrop-blur-sm border-border/50 hover:border-purple-300 dark:hover:border-purple-700"
                 onClick={action.action}
               >
                 <CardContent className="p-0">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${action.color} flex items-center justify-center mb-3`}>
-                    <action.icon className="h-6 w-6 text-white" />
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2.5 rounded-xl bg-background/80 group-hover:scale-110 transition-transform duration-300 ${action.color}`}>
+                      <action.icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h3 className="font-semibold mb-1">{action.title}</h3>
+                      <p className="text-sm text-muted-foreground">{action.description}</p>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-left mb-1">{action.title}</h3>
-                  <p className="text-sm text-muted-foreground text-left">{action.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -121,18 +138,22 @@ const NewUserWelcome = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-center"
+          className="text-center space-y-6"
         >
-          <p className="text-sm text-muted-foreground mb-4">
-            Once you start connecting and sharing, your personalized feed will appear here.
-          </p>
-          <div className="flex justify-center space-x-4">
+          <div className="p-4 rounded-xl bg-muted/30 backdrop-blur-sm">
+            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Once you start connecting and sharing, your personalized feed will appear here.
+            </p>
+          </div>
+          <div className="flex justify-center">
             <Button 
               onClick={() => router.push('/friends')}
-              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white"
+              size="lg"
+              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Find Friends
+              Start Exploring
             </Button>
           </div>
         </motion.div>

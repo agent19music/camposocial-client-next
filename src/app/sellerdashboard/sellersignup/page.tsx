@@ -127,26 +127,28 @@ export default function SellerSignup() {
         throw new Error('Authentication token is missing');
       }
 
-      const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-      if (!apiEndpoint) {
-        throw new Error('API endpoint configuration is missing');
-      }
-
-      const response = await fetch(`${apiEndpoint}/seller_signup`, {
+      // Use the API route instead of direct backend call
+      const response = await fetch('/api/seller/signup', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
         body: formData,
+        credentials: 'include', // Include cookies for authentication
       });
 
-      const result = await response.json();
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch (e) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        result = { error: text };
+      }
 
       if (response.ok) {
         setSellerStausChange(!sellerStatusChange)
         toast.success('Your seller account has been created successfully!');
         console.log('Seller account created:', result);
-        // Redirect after a short delay to ensure toast is visible
+        // Redirect to dashboard
+        setTimeout(() => router.push('/sellerdashboard'), 300);
       } else {
         setError(result.error || 'Failed to create seller account');
         toast.error(result.error || 'Failed to create seller account');

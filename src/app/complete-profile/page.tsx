@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
@@ -18,22 +18,108 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { FloatingBackground } from '@/components/ui/floating-background';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function CompleteProfile() {
   const { completeProfile } = useContext(AuthContext);
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const [formData, setFormData] = useState({
+    username: '',
     category: '',
     phone_no: '',
     display_name: '',
     bio: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [usernameDebounce, setUsernameDebounce] = useState<NodeJS.Timeout>();
+
+  // Check username availability
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    
+    try {
+      // First try the API route which forwards to backend
+      const response = await fetch('/api/check-username', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.available !== undefined) {
+          setUsernameStatus(data.available ? 'available' : 'taken');
+          return;
+        }
+      }
+      
+      // Fallback: If backend endpoint doesn't exist yet, do basic validation
+      // In production, you should always check with backend
+      // For now, we'll consider it available if it passes basic rules
+      if (username.length >= 3 && username.length <= 20 && /^[a-z0-9_]+$/.test(username)) {
+        setUsernameStatus('available');
+      } else {
+        setUsernameStatus('idle');
+      }
+    } catch (error) {
+      console.error('Error checking username:', error);
+      // Fallback to basic validation if network error
+      if (username.length >= 3 && username.length <= 20 && /^[a-z0-9_]+$/.test(username)) {
+        setUsernameStatus('available');
+      } else {
+        setUsernameStatus('idle');
+      }
+    }
+  };
+
+  // Handle username change with debounce
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const username = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setFormData(prev => ({ ...prev, username }));
+    
+    // Clear existing debounce
+    if (usernameDebounce) {
+      clearTimeout(usernameDebounce);
+    }
+    
+    // Set new debounce
+    const timeout = setTimeout(() => {
+      checkUsernameAvailability(username);
+    }, 500);
+    
+    setUsernameDebounce(timeout);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate username
+    if (usernameStatus !== 'available' && formData.username) {
+      toast.error('Please choose an available username');
+      return;
+    }
+    
+    // Ensure all required fields are filled
+    if (!formData.username || !formData.category || !formData.display_name) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await completeProfile(formData);
+    } catch (error) {
+      console.error('Error completing profile:', error);
+      toast.error('Failed to complete profile. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -106,6 +192,61 @@ export default function CompleteProfile() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
+                className="space-y-2"
+              >
+                <Label htmlFor="username" className="text-sm font-medium">
+                  Username *
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleUsernameChange}
+                    placeholder="Choose your unique username"
+                    className={`bg-white/50 dark:bg-gray-800/50 pr-10 ${
+                      usernameStatus === 'taken' 
+                        ? 'border-red-500 dark:border-red-400' 
+                        : usernameStatus === 'available'
+                        ? 'border-green-500 dark:border-green-400'
+                        : 'border-[#D29DF6]/30 dark:border-[#B16FE8]/30'
+                    } focus:border-[#C17FF2] dark:focus:border-[#D29DF6]`}
+                    required
+                    minLength={3}
+                    maxLength={20}
+                    pattern="[a-z0-9_]+"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    {usernameStatus === 'checking' && (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                    )}
+                    {usernameStatus === 'available' && (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    )}
+                    {usernameStatus === 'taken' && (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                </div>
+                {usernameStatus === 'taken' && (
+                  <p className="text-xs text-red-500 dark:text-red-400">
+                    This username is already taken
+                  </p>
+                )}
+                {usernameStatus === 'available' && (
+                  <p className="text-xs text-green-500 dark:text-green-400">
+                    Great! This username is available
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Only lowercase letters, numbers, and underscores allowed
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.35 }}
                 className="space-y-2"
               >
                 <Label htmlFor="category" className="text-sm font-medium">
@@ -193,7 +334,7 @@ export default function CompleteProfile() {
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  disabled={isLoading}
+                  disabled={isLoading || (formData.username && usernameStatus !== 'available') || !formData.username || !formData.category || !formData.display_name}
                 >
                   {isLoading ? 'Completing...' : 'Complete Profile'}
                 </Button>

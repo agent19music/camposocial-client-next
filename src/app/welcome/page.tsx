@@ -16,7 +16,7 @@ interface FeatureCard {
   icon: React.ComponentType<any>;
   title: string;
   description: string;
-  color: string;
+  colorClass: string;
 }
 
 const features: FeatureCard[] = [
@@ -24,25 +24,25 @@ const features: FeatureCard[] = [
     icon: Icons.messageCircle,
     title: "Connect & Chat",
     description: "Share your thoughts and connect with like-minded people in your campus community.",
-    color: "purple"
+    colorClass: "text-purple-600 dark:text-purple-400"
   },
   {
     icon: Icons.calendar,
     title: "Discover Events",
     description: "Find exciting events happening around campus and never miss out on the fun.",
-    color: "violet"
+    colorClass: "text-violet-600 dark:text-violet-400"
   },
   {
     icon: Icons.shoppingBag,
     title: "Campus Marketplace",
     description: "Buy and sell items within your campus community safely and easily.",
-    color: "purple"
+    colorClass: "text-purple-600 dark:text-purple-400"
   },
   {
     icon: Icons.users,
     title: "Build Your Network",
     description: "Follow friends, join conversations, and grow your campus social circle.",
-    color: "violet"
+    colorClass: "text-violet-600 dark:text-violet-400"
   }
 ];
 
@@ -131,11 +131,8 @@ export default function WelcomePage() {
             >
                               <Card className="h-full bg-white/80 dark:bg-black/70 backdrop-blur-sm border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardContent className="p-6">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${
-                    feature.color === 'purple' ? 'from-[#D29DF6] to-[#B16FE8]' :
-                    'from-[#C17FF2] to-[#B16FE8]'
-                  } flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <feature.icon className="w-6 h-6 text-white" />
+                  <div className="mb-4 group-hover:scale-105 transition-transform duration-300">
+                    <feature.icon className={`w-7 h-7 ${feature.colorClass}`} />
                   </div>
                   
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">

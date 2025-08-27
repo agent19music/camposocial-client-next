@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import toast from "react-hot-toast"
 export default function ProfileEditor() {
-  const { currentUser } = useContext(AuthContext) // Get current user from auth context
+  const { currentUser, updateUserContext } = useContext(AuthContext) // Get current user from auth context
   
   // State management
   const [isEditing, setIsEditing] = useState(false)
@@ -39,6 +39,7 @@ export default function ProfileEditor() {
     first_name: "",
     last_name: "",
     username: "",
+    display_name: "",
     email: "",
     bio: "",
     phone_no: "",
@@ -60,6 +61,7 @@ export default function ProfileEditor() {
         first_name: currentUser.first_name || "",
         last_name: currentUser.last_name || "",
         username: currentUser.username || "",
+        display_name: currentUser.display_name || "",
         email: currentUser.email || "",
         bio: currentUser.bio || "",
         phone_no: currentUser.phone_no || "",
@@ -167,6 +169,9 @@ export default function ProfileEditor() {
       const result = await response.json()
       toast.success("Your profile has been updated successfully")
       
+      // Update the AuthContext with new user data
+      updateUserContext()
+      
       setIsEditing(false)
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -183,6 +188,7 @@ export default function ProfileEditor() {
         first_name: currentUser.first_name || "",
         last_name: currentUser.last_name || "",
         username: currentUser.username || "",
+        display_name: currentUser.display_name || "",
         email: currentUser.email || "",
         bio: currentUser.bio || "",
         phone_no: currentUser.phone_no || "",
@@ -272,6 +278,16 @@ export default function ProfileEditor() {
               id="username" 
               name="username"
               value={profileData.username} 
+              disabled={!isEditing}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="display_name">Display Name</Label>
+            <Input 
+              id="display_name" 
+              name="display_name"
+              value={profileData.display_name} 
               disabled={!isEditing}
               onChange={handleChange}
             />

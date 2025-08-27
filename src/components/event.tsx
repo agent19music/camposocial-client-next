@@ -22,7 +22,7 @@ import { EventContext } from "@/context/eventcontext";
 // }
 
 
-const EventCard= ({ poster, title, description, date, entry_fee, comments, eventId, handleSubmit, userimage, username, event}) => {
+  const EventCard= ({ poster, title, description, date, entry_fee, comments, eventId, handleSubmit, userimage, username, event}: any) => {
   const [localCommentText, setLocalCommentText] = useState<string>("");
   const {navigateToSingleEventView} = useContext(EventContext)
   

@@ -7,9 +7,11 @@ import { Icons } from "@/components/icons"
 const floatingIcons = [
   { component: Icons.calendar, name: 'calendar' },
   { component: Icons.heart, name: 'heart' },
-  { component: Icons.globeIcon, name: 'globe' },
-  { component: Icons.chat, name: 'chat' },
-  { component: Icons.iphone, name: 'iphone' }
+  { component: Icons.globe, name: 'globe' },
+  { component: Icons.messageCircle, name: 'chat' },
+  { component: Icons.users, name: 'users' },
+  { component: Icons.sparkles, name: 'sparkles' },
+  { component: Icons.shoppingBag, name: 'shopping' }
 ]
 
 interface FloatingIconProps {
@@ -20,7 +22,12 @@ interface FloatingIconProps {
 }
 
 function FloatingIcon({ x, y, icon, delay }: FloatingIconProps) {
-  const IconComponent = icon.component
+  const IconComponent = icon?.component
+  
+  // Safety check for missing component
+  if (!IconComponent) {
+    return null
+  }
   
   return (
     <motion.div

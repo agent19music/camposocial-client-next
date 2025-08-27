@@ -12,21 +12,36 @@ import SideNav from '@/components/sidenav'
 import { Home,Calendar, PartyPopper, Repeat2, Share2 } from "lucide-react";
 
 export default function SingleYapView() {
-  const {selectedYap} = useContext(YapContext)
-  const [replies, setReplies] = React.useState(selectedYap.replies)
+  const {selectedYap, addReply} = useContext(YapContext)
+  const [replies, setReplies] = React.useState(selectedYap?.replies || [])
   const eventLinks = [
     { href: "/comingsoon", label: "Coming Soon", icon: <Home className="h-4 w-4" /> },
     { href: "/social-events", label: "Social Events", icon: <Calendar className="h-4 w-4" /> },
     { href: "/fun-events", label: "Fun Events", icon: <PartyPopper className="h-4 w-4" /> },
   ];
 
-  const handleNewReply = (content) => {
-    const newReply = {
-      author: "Current User",
-      content,
-      timestamp: "Just now"
+  const handleNewReply = async (content) => {
+    if (!selectedYap) return;
+    
+    try {
+      await addReply(selectedYap.id, content);
+      // The yapReplies will be updated by context, so we can refresh from there
+      // For now, just add optimistically
+      const newReply = {
+        id: Date.now(), // temporary ID
+        content,
+        user: {
+          username: "Current User",
+          display_name: "Current User",
+          avatar: null
+        },
+        created_at: new Date().toISOString(),
+        isOptimistic: true
+      }
+      setReplies(prev => [newReply, ...prev])
+    } catch (error) {
+      console.error('Failed to add reply:', error);
     }
-    setReplies([newReply, ...replies])
   }
 
   return (

@@ -33,6 +33,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   // Dialog states
   const [isReplyDialogOpen, setIsReplyDialogOpen] = useState(false);
   const [isRetweetDialogOpen, setIsRetweetDialogOpen] = useState(false);
+  const [isQuoteRetweetDialogOpen, setIsQuoteRetweetDialogOpen] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [retweetContent, setRetweetContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
@@ -91,15 +92,19 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
     setIsRetweetDialogOpen(true);
   };
 
-  const submitRetweet = async () => {
+  const submitRetweet = async (isQuote: boolean) => {
     if (isSubmittingRetweet) return;
+    
+    // For plain retweet, we pass empty string; for quote retweet, we need content
+    if (isQuote && !retweetContent.trim()) return;
     
     setIsSubmittingRetweet(true);
     
     try {
-      await retweet(yap.id, retweetContent.trim());
+      await retweet(yap.id, isQuote ? retweetContent.trim() : '');
       setRetweetContent('');
       setIsRetweetDialogOpen(false);
+      setIsQuoteRetweetDialogOpen(false);
       // Optimistically update retweets count
       setCurrentRetweetsCount(prev => prev + 1);
     } catch (error) {
@@ -280,15 +285,67 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
       <Dialog open={isRetweetDialogOpen} onOpenChange={setIsRetweetDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
-            <DialogTitle>Retweet</DialogTitle>
+            <DialogTitle>Retweet this yap?</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Show original yap */}
+            <div className="border rounded-lg p-3 bg-muted/50">
+              <div className="flex items-start space-x-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={avatar} alt={display_name} />
+                  <AvatarFallback>{display_name?.[0] || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="font-medium text-sm">{display_name}</span>
+                    <span className="text-sm text-muted-foreground">@{username}</span>
+                  </div>
+                  <p className="text-sm">{content}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <Button 
+                variant="outline"
+                onClick={() => submitRetweet(false)}
+                disabled={isSubmittingRetweet}
+                className="w-full justify-start"
+              >
+                <Repeat2 className="w-4 h-4 mr-2" />
+                {isSubmittingRetweet ? 'Retweeting...' : 'Retweet'}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setIsRetweetDialogOpen(false);
+                  setIsQuoteRetweetDialogOpen(true);
+                }}
+                className="w-full justify-start"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Quote Retweet
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Quote Retweet Dialog */}
+      <Dialog open={isQuoteRetweetDialogOpen} onOpenChange={setIsQuoteRetweetDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Quote Retweet</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <Textarea
-              placeholder="Add a comment (optional)..."
+              placeholder="Add your comment..."
               value={retweetContent}
               onChange={(e) => setRetweetContent(e.target.value)}
-              className="min-h-[80px] resize-none"
+              className="min-h-[100px] resize-none"
               maxLength={280}
+              autoFocus
             />
             <div className="border rounded-lg p-3 bg-muted/50">
               <div className="flex items-start space-x-3">
@@ -309,22 +366,13 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               <span className="text-sm text-muted-foreground">
                 {retweetContent.length}/280
               </span>
-              <div className="space-x-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => submitRetweet()}
-                  disabled={isSubmittingRetweet}
-                >
-                  {isSubmittingRetweet ? 'Retweeting...' : 'Retweet'}
-                </Button>
-                <Button 
-                  onClick={submitRetweet}
-                  disabled={isSubmittingRetweet}
-                  className="bg-[#92736C] hover:bg-[#92736C]/90"
-                >
-                  {isSubmittingRetweet ? 'Posting...' : 'Quote Retweet'}
-                </Button>
-              </div>
+              <Button 
+                onClick={() => submitRetweet(true)}
+                disabled={!retweetContent.trim() || isSubmittingRetweet}
+                className="bg-[#92736C] hover:bg-[#92736C]/90"
+              >
+                {isSubmittingRetweet ? 'Posting...' : 'Post'}
+              </Button>
             </div>
           </div>
         </DialogContent>

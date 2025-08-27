@@ -72,6 +72,10 @@ const Header: FC = () => {
     router.push('/profilesettings')
   }
 
+  function takeMeToProfile(){
+    router.push('/userprofile')
+  }
+
   const navItems = [
     { icon: Calendar, label: "Events", href: "/events" },
     { icon: MessageSquare, label: "Yaps", href: "/yaps" },
@@ -212,8 +216,8 @@ Login
   </DropdownMenuLabel>
 }
            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={takeMeToProfile}>Profile Info</DropdownMenuItem>
             <DropdownMenuItem onClick={takeMeToSettings}>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Profile Info</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
