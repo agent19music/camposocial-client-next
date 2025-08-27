@@ -1,13 +1,13 @@
 "use client";
 
 import { useContext, useEffect } from "react";
-import { MessageContext } from "@/context/messagecontext";
+import { MessagesContext } from "@/context/MessagesContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 
 export function ConversationList() {
-  const { conversations, loadConversations, setCurrentConversation, currentConversation } = useContext(MessageContext);
+  const { conversations, loadConversations, setCurrentConversation, currentConversation } = useContext(MessagesContext);
 
   useEffect(() => {
     loadConversations();

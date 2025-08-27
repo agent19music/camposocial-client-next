@@ -76,7 +76,7 @@ interface MessagesContextType extends MessageState {
     leaveConversation: () => void;
 }
 
-const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
+export const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
 
 export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(messagesReducer, initialState);
@@ -182,7 +182,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 reconnection: true,
                 reconnectionDelay: 2000,
                 reconnectionDelayMax: 10000,
-                maxReconnectionAttempts: maxReconnectAttempts,
+                reconnectionAttempts: maxReconnectAttempts,
                 forceNew: true // Force new connection
             });
 

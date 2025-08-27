@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef, useState } from "react";
-import { MessageContext } from "@/context/messagecontext";
+import { MessagesContext } from "@/context/MessagesContext";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ export default function MessagesPage() {
     sendMessage,
     loadMessages,
     markAsRead
-  } = useContext(MessageContext);
+  } = useContext(MessagesContext);
   
   const [newMessage, setNewMessage] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
