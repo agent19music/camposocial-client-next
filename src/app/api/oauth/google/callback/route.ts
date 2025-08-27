@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        const apiEndpoint = process.env.API_ENDPOINT;
         
         // Call the backend OAuth endpoint with the code
         const response = await fetch(`${apiEndpoint}/oauth/google/callback`, {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
-        const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        const apiEndpoint = process.env.API_ENDPOINT;
         
         // Forward the POST request to the backend
         const response = await fetch(`${apiEndpoint}/oauth/google/callback`, {

@@ -67,7 +67,7 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
+  const apiEndpoint = process.env.API_ENDPOINT; 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onAuthChange, setOnAuthChange] = useState(false);

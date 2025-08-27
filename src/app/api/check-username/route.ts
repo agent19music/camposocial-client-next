@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+    const apiEndpoint = process.env.API_ENDPOINT;
     const body = await request.json();
     
     if (!body.username) {

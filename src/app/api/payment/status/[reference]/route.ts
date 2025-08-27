@@ -23,7 +23,7 @@ export async function GET(
     
     // Fetch payment status from backend
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify/${reference}`, 
+      `${process.env.API_ENDPOINT}/api/payment/verify/${reference}`,   
       {
         method: "GET",
         headers: {
@@ -55,7 +55,7 @@ export async function GET(
       }
       
       const orderResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}`,
+          `${process.env.API_ENDPOINT}/marketplace/orders/${orderId}`,
         {
           method: "GET",
           headers: {

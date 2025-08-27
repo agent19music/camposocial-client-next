@@ -32,7 +32,7 @@ export default function SellerProfile() {
   const [sellerData, setSellerData] = useState<Seller | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const apiEndpoint = process.env.API_ENDPOINT;
 
   useEffect(() => {
     const fetchSellerData = async () => {

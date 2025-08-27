@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function GET() {
   try {
-    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+    const apiEndpoint = process.env.API_ENDPOINT;
     const cookieStore = await cookies();
     const authToken = cookieStore.get('authToken');
 
@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ is_seller: false }, { status: 200 });
     }
 
-    const response = await fetch(`${apiEndpoint}/check-seller`, {
+    const response = await fetch(`${apiEndpoint}/marketplace/check-seller`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${authToken.value}`,

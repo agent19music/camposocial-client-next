@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+    const apiEndpoint = process.env.API_ENDPOINT;
     const cookieStore = await cookies();
     const authToken = cookieStore.get('authToken');
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send request to backend API
-    const response = await fetch(`${apiEndpoint}/seller`, {
+    const response = await fetch(`${apiEndpoint}/marketplace/seller`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken.value}`,

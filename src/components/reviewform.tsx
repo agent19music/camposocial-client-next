@@ -37,7 +37,7 @@ export default function ReviewForm({ product_id }: { product_id: string }) {
 
     try {
       setIsSubmitting(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/product/${product_id}/review`, {
+      const response = await fetch(`${process.env.API_ENDPOINT}/product/${product_id}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

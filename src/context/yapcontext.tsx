@@ -141,7 +141,7 @@ interface YapProviderProps {
 
 // YapProvider component to wrap the application
 export default function YapProvider({ children }: YapProviderProps) {
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // API endpoint from environment variables
+  const apiEndpoint = process.env.API_ENDPOINT; // API endpoint from environment variables
   const { authToken, isAuthenticated, isLoading: authLoading, currentUser } = useContext(AuthContext);
 
   // State declarations

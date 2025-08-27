@@ -52,7 +52,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
 
   return (
     <html lang="en">
@@ -88,7 +88,7 @@ export default function RootLayout({
                 {process.env.NODE_ENV === 'development' && (
                   <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 m-4">
                     <p className="font-bold">Warning: Google OAuth not configured</p>
-                    <p>Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your .env.local file</p>
+                    <p>Please set GOOGLE_CLIENT_ID in your .env.local file</p>
                   </div>
                 )}
                 <AuthenticatedWrapper>

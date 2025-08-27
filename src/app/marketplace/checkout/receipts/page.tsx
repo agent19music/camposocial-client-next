@@ -91,7 +91,7 @@ export default function Receipt() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const apiEndpoint = process.env.API_ENDPOINT;
 
   const handleDownload = async () => {
     const receipt = document.getElementById("receipt");

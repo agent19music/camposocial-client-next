@@ -31,7 +31,7 @@ export default function CartComponent() {
 
   const router = useRouter()
 
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const apiEndpoint = process.env.API_ENDPOINT;
 
   function takeMeToCheckout (){
     return router.push('/marketplace/checkout')

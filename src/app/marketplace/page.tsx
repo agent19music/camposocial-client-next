@@ -21,7 +21,7 @@ export default function Marketplace() {
   const { currentUser } = useContext(AuthContext);
   const { products } = useContext(MarketplaceContext)
   
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const apiEndpoint = process.env.API_ENDPOINT;
 
   const marketplaceLinks = [
     { label: "Art", icon: <Paintbrush className="h-4 w-4" />, onClick: () => router.push("/art") },

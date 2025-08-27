@@ -115,7 +115,7 @@ interface ChatProviderProps {
 }
 
 export default function ChatProvider({ children }: ChatProviderProps) {
-    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+    const apiEndpoint = process.env.API_ENDPOINT;
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
     
     // Memoize currentUser to prevent unnecessary re-renders

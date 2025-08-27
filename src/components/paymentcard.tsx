@@ -40,7 +40,7 @@ export default function CardsPaymentMethod() {
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [paystackConfig, setPaystackConfig] = useState<any>(null)
   const router = useRouter()
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const apiEndpoint = process.env.API_ENDPOINT;
    const {authToken} = useContext(AuthContext)
    const {isPayed, setIsPayed, orderId} = useContext(MarketplaceContext)
 
@@ -99,7 +99,7 @@ export default function CardsPaymentMethod() {
         reference: data.reference,
         email: data.customer?.email || "customer@example.com",
         amount: data.amount,
-        publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
+        publicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
         label: "Pay with Card",
       };
     } catch (err: any) {
@@ -144,7 +144,7 @@ export default function CardsPaymentMethod() {
   const initializePayment = usePaystackPayment(paystackConfig || {
     email: "customer@example.com",
     amount: 0,
-    publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
+    publicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
     reference: ""
   });
 

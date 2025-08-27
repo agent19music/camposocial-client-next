@@ -75,7 +75,7 @@ export function SocialLoginModal() {
   });
 
   const handleGithubLogin = async () => {
-    const githubClientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+    const githubClientId = process.env.GITHUB_CLIENT_ID;
     
     if (!githubClientId || githubClientId === 'your_github_client_id_here') {
       toast.error('GitHub OAuth not configured. Please check environment variables.');
@@ -98,7 +98,7 @@ export function SocialLoginModal() {
 
   const handleTwitterLogin = async () => {
     try {
-      const twitterClientId = process.env.NEXT_PUBLIC_TWITTER_CLIENT_ID;
+      const twitterClientId = process.env.TWITTER_CLIENT_ID;
       const redirectUri = encodeURIComponent(`${window.location.origin}/api/oauth/twitter/callback`);
       const state = Math.random().toString(36).substring(7);
       const codeChallenge = await generateCodeChallenge();

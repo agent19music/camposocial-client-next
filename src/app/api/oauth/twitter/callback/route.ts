@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        const apiEndpoint = process.env.API_ENDPOINT;
         
         // For Twitter OAuth 2.0, we need to exchange the code for an access token
         // This should be handled by the backend
