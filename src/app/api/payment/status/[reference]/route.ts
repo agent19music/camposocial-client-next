@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 /**
  * API endpoint to check payment status and prepare receipt data
  * @param request - The incoming request
- * @param params - URL parameters including payment reference
+ * @param context - URL parameters including payment reference
  * @returns NextResponse with payment status and order details
  */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { reference: string } }
+  request: Request,
+  context: { params: Promise<{ reference: string }> }
 ) {
   try {
+    const params = await context.params;
     const { reference } = params;
     
     if (!reference) {

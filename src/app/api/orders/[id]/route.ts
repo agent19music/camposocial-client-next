@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 interface OrderItem {
@@ -33,10 +33,10 @@ interface OrderData {
  * Fetches order details from the backend API by ID
  */
 export async function GET(
-  request: NextRequest,
-  context: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { params } = context;
+  const params = await context.params;
   console.log(`Fetching order details for order ID: ${params.id}`);
   
   try {
@@ -51,7 +51,7 @@ export async function GET(
     }
 
     // Get authentication token from cookies (if your backend requires auth)
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
     // Define our API URL (make sure to use environment variables in production)
@@ -134,4 +134,3 @@ export async function GET(
     );
   }
 }
-

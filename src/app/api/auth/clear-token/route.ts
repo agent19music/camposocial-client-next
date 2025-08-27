@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
     try {
         const response = NextResponse.json({ success: true });
         
@@ -17,4 +17,4 @@ export async function POST(request: NextRequest) {
         console.error('Error clearing auth token:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-} 
+}

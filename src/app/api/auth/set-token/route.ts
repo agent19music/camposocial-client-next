@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
     try {
         const { token } = await request.json();
         
@@ -23,4 +23,4 @@ export async function POST(request: NextRequest) {
         console.error('Error setting auth token:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-} 
+}

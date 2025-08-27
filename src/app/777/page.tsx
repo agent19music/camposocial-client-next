@@ -29,18 +29,7 @@ import { format } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChatContext } from '@/context/chatcontext';
 
-type Message = {
-    id: number
-    sender: string
-    content: string
-    timestamp: Date
-    avatar: string
-    reactions: string[]
-    replyTo?: number
-    isSent: boolean
-    isRead: boolean
-    effect?: JSX.Element
-  }
+// Remove local Message type since we're using the one from ChatContext
   
   const createKeywordEffect = (emoji: string): JSX.Element => (
     <motion.div
@@ -168,7 +157,7 @@ const IMessageDesktop = () => {
 
   const handleSend = async () => {
     if (input.trim() || selectedMedia) {
-        await sendMessage(input, selectedMedia, replyingTo);
+        await sendMessage(input, selectedMedia, replyingTo ?? undefined);
         setInput("");
         setReplyingTo(null);
         setSelectedMedia(null);
@@ -191,7 +180,8 @@ const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
   if (scrollTop === 0) {
       // Reached the top, load more messages
       setBatch(prevBatch => prevBatch + 1);
-      getMessages(friendId!, 10 * batch, messages?.id); // Fetch next batch
+      const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : undefined;
+      getMessages(friendId!, 10 * batch, lastMessageId); // Fetch next batch
   }
 };
   
@@ -394,8 +384,8 @@ const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
             >
               {!message.isSent && (
                 <Avatar className="h-6 w-6 hidden sm:block">
-                  <AvatarImage src={message.avatar} alt={message.sender} />
-                  <AvatarFallback>{message.sender[0]}</AvatarFallback>
+                  <AvatarImage src="/placeholder.svg?height=40&width=40" alt={message.senderId} />
+                  <AvatarFallback>{message.senderId[0]}</AvatarFallback>
                 </Avatar>
               )}
               <div
@@ -428,14 +418,14 @@ const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
                 <p className="leading-relaxed text-base">{message.content}</p>
                 <div className="flex justify-between items-end mt-1 gap-2">
                   <div className="flex gap-1 flex-wrap">
-                    {message.reactions.map((reaction, index) => (
+                    {message.reactions?.map((reaction, index) => (
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         key={index}
                         className="text-xs bg-white/10 dark:bg-black/20 rounded-full px-1.5 py-0.5"
                       >
-                        {reaction}
+                        {typeof reaction === 'string' ? reaction : reaction.reactionType}
                       </motion.span>
                     ))}
                   </div>
@@ -449,13 +439,7 @@ const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
                       ))}
                   </div>
                 </div>
-                {message.effect && (
-                  <div
-                    className={`absolute ${message.isSent ? "left-0 -translate-x-full" : "right-0 translate-x-full"} top-1/2 -translate-y-1/2`}
-                  >
-                    {message.effect}
-                  </div>
-                )}
+                {/* Effect animation removed as it's not part of the ChatContext Message type */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

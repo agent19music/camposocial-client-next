@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
     try {
-        const authToken = request.cookies.get('authToken')?.value;
+        const cookieStore = await cookies();
+        const authToken = cookieStore.get('authToken')?.value;
         
         if (authToken) {
             return NextResponse.json({ token: authToken });
@@ -13,4 +15,4 @@ export async function GET(request: NextRequest) {
         console.error('Error getting auth token:', error);
         return NextResponse.json({ token: null }, { status: 500 });
     }
-} 
+}
