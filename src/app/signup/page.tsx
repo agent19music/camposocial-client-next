@@ -63,7 +63,6 @@ export default function SignUpPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="bg-white/80 dark:bg-black/70 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-[#D29DF6]/20 dark:border-[#B16FE8]/20">
-        >
           <SocialLoginModal />
         </motion.div>
 

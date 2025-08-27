@@ -7,7 +7,7 @@ import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PaperClipIcon, SendIcon } from "lucide-react";
+import { Paperclip, SendIcon } from "lucide-react";
 
 export default function MessagesPage() {
   const {
@@ -103,7 +103,7 @@ export default function MessagesPage() {
                   size="icon"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <PaperClipIcon className="h-4 w-4" />
+                  <Paperclip className="h-4 w-4" />
                 </Button>
                 <Input
                   value={newMessage}

@@ -115,7 +115,7 @@ export default function Marketplace() {
               ))
             ) : searchQuery.trim() ? (
               <div className="col-span-full text-center text-muted-foreground py-8">
-                No products found for "{searchQuery}"
+                No products found for &quot;{searchQuery}&quot;
               </div>
             ) : (
               <div className="col-span-full text-center text-muted-foreground py-8">

@@ -78,7 +78,7 @@ export default function Component() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will block all tweets from this account and you won't be able to see their profile.
+                        This will block all tweets from this account and you won&apos;t be able to see their profile.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

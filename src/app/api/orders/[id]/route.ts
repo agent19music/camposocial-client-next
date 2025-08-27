@@ -34,8 +34,9 @@ interface OrderData {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { params } = context;
   console.log(`Fetching order details for order ID: ${params.id}`);
   
   try {

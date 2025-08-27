@@ -101,7 +101,7 @@ const NewUserWelcome = () => {
             Welcome to CampoSocial, {currentUser?.first_name || 'friend'}!
           </h1>
           <p className="text-lg text-muted-foreground">
-            You're now part of your campus community. Here's how to get started:
+            You&apos;re now part of your campus community. Here&apos;s how to get started:
           </p>
         </div>
 

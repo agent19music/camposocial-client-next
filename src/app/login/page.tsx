@@ -86,7 +86,7 @@ export default function LoginForm() {
               className="text-center"
             >
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link 
                   href="/signup" 
                   className="text-[#B16FE8] dark:text-[#D29DF6] hover:text-[#C17FF2] dark:hover:text-[#C17FF2] font-semibold transition-colors duration-200 hover:underline"

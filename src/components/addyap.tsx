@@ -238,7 +238,7 @@ export default function AddYap() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="w-full bg-[#92736C] hover:bg-[#92736C]/90 text-white font-medium rounded-full h-12">
-          What's happening?
+          What&apos;s happening?
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">

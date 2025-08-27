@@ -109,7 +109,7 @@ export default function WelcomePage() {
           </h1>
           
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            You're all set! Here's what you can do to get the most out of CampoSocial.
+            You&apos;re all set! Here&apos;s what you can do to get the most out of CampoSocial.
           </p>
         </motion.div>
 
@@ -158,7 +158,6 @@ export default function WelcomePage() {
           <Button 
             onClick={handleGetStarted}
             className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-          >
             <Icons.messageCircle className="w-5 h-5 mr-2" />
             Start Exploring
           </Button>
@@ -167,7 +166,6 @@ export default function WelcomePage() {
             onClick={handleExploreMarketplace}
             variant="outline"
             className="border-2 border-[#D29DF6]/50 text-[#B16FE8] hover:bg-[#D29DF6]/10 dark:border-[#B16FE8]/50 dark:text-[#D29DF6] dark:hover:bg-[#B16FE8]/10 font-semibold px-8 py-3 rounded-full transition-all duration-300">
-          >
             <Icons.shoppingBag className="w-5 h-5 mr-2" />
             Browse Marketplace
           </Button>
@@ -176,7 +174,6 @@ export default function WelcomePage() {
             onClick={handleDiscoverEvents}
             variant="outline"
             className="border-2 border-[#C17FF2]/50 text-[#C17FF2] hover:bg-[#C17FF2]/10 dark:border-[#C17FF2]/50 dark:text-[#C17FF2] dark:hover:bg-[#C17FF2]/10 font-semibold px-8 py-3 rounded-full transition-all duration-300">
-          >
             <Icons.calendar className="w-5 h-5 mr-2" />
             Discover Events
           </Button>
@@ -191,7 +188,6 @@ export default function WelcomePage() {
           <button 
             onClick={handleGetStarted}
             className="text-gray-500 dark:text-gray-400 hover:text-[#B16FE8] dark:hover:text-[#D29DF6] text-sm underline transition-colors duration-200">
-          >
             Skip tour and continue
           </button>
         </motion.div>
