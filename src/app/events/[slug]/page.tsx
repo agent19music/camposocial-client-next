@@ -19,6 +19,7 @@ import { EventContext } from "@/context/eventcontext"
 import { Home,Calendar, PartyPopper, Repeat2, Share2 } from "lucide-react";
 import Header from "@/components/header"
 import SideNav from "@/components/sidenav"
+import { useRouter } from "next/navigation"
 
 // interface EventCardProps {
 //   poster: string
@@ -48,16 +49,46 @@ export default function SingleEventCard() {
   const [localCommentText, setLocalCommentText] = useState<string>("")
   const [ticketQuantity, setTicketQuantity] = useState<string>("1")
   const {selectedEvent} = useContext(EventContext)
-function handlePurchase (ticketQuantity:number){
-  console.log(`paid !!${ticketQuantity}`)
-}
-const [comments, setComments] = useState(selectedEvent.comments)
+  const [comments, setComments] = useState<Comment[]>(selectedEvent?.comments || [])
+  const router = useRouter()
+  
+  function handlePurchase (ticketQuantity:number){
+    console.log(`paid !!${ticketQuantity}`)
+  }
+  
+  function handleSubmit(e: React.MouseEvent<HTMLButtonElement>, eventId: string, comment: string) {
+    // TODO: Implement comment submission logic
+    console.log('Submitting comment:', comment, 'for event:', eventId)
+  }
 
-const eventLinks = [
-  { href: "/comingsoon", label: "Coming Soon", icon: <Home className="h-4 w-4" /> },
-  { href: "/social-events", label: "Social Events", icon: <Calendar className="h-4 w-4" /> },
-  { href: "/fun-events", label: "Fun Events", icon: <PartyPopper className="h-4 w-4" /> },
-];
+  const eventLinks = [
+    { 
+      label: "Coming Soon", 
+      icon: <Home className="h-4 w-4" />,
+      onClick: () => router.push("/comingsoon")
+    },
+    { 
+      label: "Social Events", 
+      icon: <Calendar className="h-4 w-4" />,
+      onClick: () => router.push("/social-events")
+    },
+    { 
+      label: "Fun Events", 
+      icon: <PartyPopper className="h-4 w-4" />,
+      onClick: () => router.push("/fun-events")
+    },
+  ];
+
+  if (!selectedEvent) {
+    return (
+      <div className="container mx-auto p-4">
+        <Header/>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-500">Event not found</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -72,8 +103,8 @@ const eventLinks = [
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/2 relative">
             <Image
-              src={selectedEvent?.poster}
-              alt={selectedEvent.title}
+              src={selectedEvent.poster || '/placeholder-event.jpg'}
+              alt={selectedEvent.title || 'Event'}
               width={600}
               height={400}
               className="rounded-lg object-cover w-full h-full"
@@ -142,7 +173,7 @@ const eventLinks = [
             <Button
               className="ml-4"
               onClick={(e) => {
-                handleSubmit(e, eventId, localCommentText)
+                handleSubmit(e, selectedEvent.id || '', localCommentText)
                 setLocalCommentText('')
               }}
             >

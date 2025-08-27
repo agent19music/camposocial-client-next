@@ -74,7 +74,8 @@ interface ChatContextType {
     getFriendDetails: (friendId: string) => Promise<{name: string; avatar: string; isOnline: boolean} | null>;
     friendDetails: Friend | null;
     currentUser: User | null;
-}
+    
+        }
 
 interface ChatListUser {
     id: string;
@@ -1101,6 +1102,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     return (
         <ChatContext.Provider
             value={{
+                
                 sendMessage,
                 getMessages,
                 editMessage,

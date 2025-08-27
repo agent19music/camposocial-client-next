@@ -20,13 +20,16 @@ interface EventContextProps {
 interface Event {
   id: string;
   eventId?: string;
-  images: [];
-  entryfee: number;
+  poster: string;
+  entry_fee: number;
   date: string;
   comments: [];
   user: [];
   title: string;
   description : string;
+  category: string;
+  username: string;
+  userimage: string;
 }
 
 const defaultValue: EventContextProps = {
