@@ -55,7 +55,7 @@ export async function GET(
     const token = cookieStore.get('token')?.value;
 
     // Define our API URL (make sure to use environment variables in production)
-    const apiUrl = process.env.API_ENDPOINT || 'http://localhost:5000';  
+    const apiUrl = process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:5000';  
     
     // Make the request to the Flask backend
     const response = await fetch(`${apiUrl}/marketplace/orders/${orderId}`, {

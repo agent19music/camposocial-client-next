@@ -36,7 +36,7 @@ export function FriendshipProvider({ children }: { children: ReactNode }) {
   const { authToken, isAuthenticated } = useContext(AuthContext);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const apiEndpoint = process.env.API_ENDPOINT;
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   // Helper function to check authentication
   const checkAuth = (): boolean => {

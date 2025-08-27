@@ -124,7 +124,7 @@ interface MarketplaceProviderProps {
 
 // MarketplaceProvider component to wrap the application
 export default function MarketplaceProvider({ children }: MarketplaceProviderProps) {
-  const apiEndpoint = process.env.API_ENDPOINT; // Get the API endpoint from environment variables
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // Get the API endpoint from environment variables
   const {authToken} = useContext(AuthContext); // Get the authToken from the AuthContext
 
   // State declarations
@@ -216,7 +216,7 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
 
   async function addToCart(productId: string, quantity: number = 1, variationId?: string) {
     try {
-      const response = await fetch(`${process.env.API_ENDPOINT}/cart/add`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/cart/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

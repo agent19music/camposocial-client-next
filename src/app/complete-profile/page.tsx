@@ -23,7 +23,7 @@ import toast from 'react-hot-toast';
 
 export default function CompleteProfile() {
   const { completeProfile } = useContext(AuthContext);
-  const apiEndpoint = process.env.API_ENDPOINT;
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const [formData, setFormData] = useState({
     username: '',
     category: '',

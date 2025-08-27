@@ -40,7 +40,7 @@ export default function CardsPaymentMethod() {
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [paystackConfig, setPaystackConfig] = useState<any>(null)
   const router = useRouter()
-  const apiEndpoint = process.env.API_ENDPOINT;
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
    const {authToken} = useContext(AuthContext)
    const {isPayed, setIsPayed, orderId} = useContext(MarketplaceContext)
 

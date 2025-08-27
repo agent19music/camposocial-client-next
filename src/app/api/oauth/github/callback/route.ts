@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const apiEndpoint = process.env.API_ENDPOINT;
+        const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
         
         // Call the backend OAuth endpoint with the code
         const response = await fetch(`${apiEndpoint}/oauth/github/callback?code=${code}`, {

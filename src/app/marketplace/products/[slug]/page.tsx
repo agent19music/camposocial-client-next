@@ -100,7 +100,7 @@ export default function SingleProductPage() {
   const [rating, setRating] = useState(0)
   const [review, setReview] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const apiEndpoint = process.env.API_ENDPOINT;
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const {authToken} = useContext(AuthContext)
 
   const params = useParams()

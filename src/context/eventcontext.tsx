@@ -49,7 +49,7 @@ interface EventProviderProps {
 }
 
 export default function EventProvider({ children }: EventProviderProps) {
-  const apiEndpoint = process.env.API_ENDPOINT;
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const { authToken, isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
 
   const [isLoading, setIsLoading] = useState(false);

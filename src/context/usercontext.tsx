@@ -59,7 +59,7 @@ interface UserProviderProps {
 }
 
 export default function UserProvider({ children }: UserProviderProps) {
-  const apiEndpoint = process.env.API_ENDPOINT;
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   const [isLoading, setIsLoading] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);

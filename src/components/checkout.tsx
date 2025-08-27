@@ -81,7 +81,7 @@ export default function CheckoutComponent() {
   };
 
   
-  const apiEndpoint = process.env.API_ENDPOINT
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
 
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
