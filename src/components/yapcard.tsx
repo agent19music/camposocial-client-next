@@ -220,7 +220,13 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
         </CardHeader>
 
         <CardContent className="pt-0 pb-2 px-4">
-          {media && media.length > 0 && <MediaGrid media={media} />}
+          {media && media.length > 0 && (
+            <MediaGrid 
+              media={media} 
+              showInOriginalAspect={media.length === 1} 
+              enableFocusView={true}
+            />
+          )}
         </CardContent>
 
         <CardFooter className="flex justify-between py-2 px-4">

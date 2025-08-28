@@ -85,6 +85,9 @@ interface YapContextProps {
   setFeedType: (type: 'chronological' | 'trending' | 'following') => void;
   refreshFeed: () => Promise<void>;
   
+  // Single yap fetching
+  fetchYapById: (yapId: string) => Promise<Yap | null>;
+  
   // Suggestions
   getHashtagSuggestions: (query?: string) => Promise<HashtagSuggestion[]>;
   getLocationSuggestions: (query?: string) => Promise<LocationSuggestion[]>;
@@ -121,6 +124,9 @@ const defaultValue: YapContextProps = {
   feedType: 'chronological',
   setFeedType: () => {},
   refreshFeed: async () => {},
+  
+  // Single yap fetching
+  fetchYapById: async () => null,
   
   // Suggestions
   getHashtagSuggestions: async () => [],
@@ -292,7 +298,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       fetchingRef.current = false;
       markRequestEnd('fetch_yaps');
     }
-  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType]);
+  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType, canMakeRequest, markRequestStart, markRequestEnd]);
 
   // Fetch yaps only when authenticated and not loading
   useEffect(() => {
@@ -315,11 +321,12 @@ export default function YapProvider({ children }: YapProviderProps) {
 
   // Cleanup effect
   useEffect(() => {
+    const currentActiveRequests = activeRequestsRef.current;
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      activeRequestsRef.current.clear();
+      currentActiveRequests.clear();
     };
   }, []);
 
@@ -694,6 +701,59 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
   }, [authToken, apiEndpoint]);
 
+  // Fetch single yap by ID
+  const fetchYapById = useCallback(async (yapId: string): Promise<Yap | null> => {
+    if (!authToken || !apiEndpoint) {
+      console.warn('No auth token or API endpoint available');
+      return null;
+    }
+
+    if (!canMakeRequest('fetch_yap_by_id')) return null;
+
+    markRequestStart('fetch_yap_by_id');
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/${yapId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.warn(`Yap with id ${yapId} not found`);
+          return null;
+        } else if (response.status === 401) {
+          toast.error('Session expired. Please log in again.');
+          return null;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const yap = data.yap || data;
+      
+      // Set the yap as selected and update replies
+      if (yap) {
+        setSelectedYap(yap);
+        if (yap.replies) {
+          setYapReplies(yap.replies);
+        }
+      }
+      
+      return yap;
+      
+    } catch (error: any) {
+      console.error('Error fetching yap by ID:', error);
+      toast.error('Failed to load yap. Please try again.');
+      return null;
+    } finally {
+      markRequestEnd('fetch_yap_by_id');
+    }
+  }, [authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, setSelectedYap, setYapReplies]);
+
   // Refresh feed
   const refreshFeed = useCallback(async () => {
     await fetchYaps();
@@ -825,6 +885,9 @@ export default function YapProvider({ children }: YapProviderProps) {
     feedType,
     setFeedType,
     refreshFeed,
+    
+    // Single yap fetching
+    fetchYapById,
     
     // Suggestions
     getHashtagSuggestions,
