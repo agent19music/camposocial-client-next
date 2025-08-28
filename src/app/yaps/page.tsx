@@ -197,35 +197,35 @@ export default function Component() {
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <main className="mobile-content-padding lg:pb-4">
-        <div className="flex flex-col md:flex-row"> 
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6"> 
           {/* Left SideNav - Desktop Only */}
-          <div className="hidden md:block md:w-64 flex-shrink-0">
+          <div className="hidden lg:block lg:w-64 flex-shrink-0">
             <SideNav links={eventLinks} />
           </div>
           
           {/* Center content */}
-          <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center">
-            
-            {/* Desktop Search - Hidden on Mobile */}
-            <div className="hidden lg:flex w-full flex-1 justify-center items-center">
-              <form>
-                <div className="relative mx-auto">
+          <div className="flex-1 flex flex-col gap-4 lg:gap-6">
+            {/* Desktop Search */}
+            <div className="hidden lg:flex w-full justify-center">
+              <form className="w-full max-w-2xl">
+                <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Search yaps..."
-                    className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-full"
+                    className="w-full appearance-none bg-background pl-8 shadow-none"
                   />
                 </div>
               </form>
             </div>
-          </div>
-          {/* Add Yap Button */}
-          <div className="w-full max-w-xl mb-4">
-            <AddYap />
-          </div>
 
-          <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px]">
+            {/* Add Yap Button */}
+            <div className="w-full max-w-2xl mx-auto">
+              <AddYap />
+            </div>
+
+            {/* Feed Container */}
+            <div className="w-full max-w-2xl mx-auto rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px]">
             {isNewUser ? (
               <NewUserWelcome />
             ) : (
@@ -329,11 +329,10 @@ export default function Component() {
               </div>
             )}
           </div>
-        </div>
-        
-        {/* Right sidebar - Trending/Suggestions */}
-        <div className="hidden lg:block w-80 p-4">
-          <div className="space-y-4">
+          
+          {/* Right sidebar - Trending/Suggestions */}
+          <div className="hidden lg:block w-80 flex-shrink-0">
+            <div className="space-y-4">
             {/* Trending hashtags */}
             <Card>
               <CardHeader>
@@ -384,7 +383,9 @@ export default function Component() {
                 ))}
               </CardContent>
             </Card>
+            </div>
           </div>
+        </div>
         </div>
       </main>
     </div>
