@@ -237,23 +237,25 @@ export default function AddYap() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-[#92736C] hover:bg-[#92736C]/90 text-white font-medium rounded-full h-12">
+        <Button className="w-full bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200">
           What&apos;s happening?
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Compose Yap</DialogTitle>
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-xl font-semibold text-slate-900 dark:text-white">Compose Yap</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-6 px-1">
           {/* User info */}
-          <div className="flex items-start space-x-3">
-            <Avatar className="w-12 h-12">
+          <div className="flex items-start space-x-4">
+            <Avatar className="w-12 h-12 flex-shrink-0">
               <AvatarImage src={currentUser?.avatar} alt={currentUser?.username} />
-              <AvatarFallback>{currentUser?.first_name?.[0] || 'U'}</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-br from-[#D29DF6]/20 to-[#C17FF2]/20 text-purple-700 dark:text-purple-300 font-medium">
+                {currentUser?.first_name?.[0] || 'U'}
+              </AvatarFallback>
             </Avatar>
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-4 min-w-0">
               {/* Content textarea */}
               <div className="relative">
                 <Textarea
@@ -261,22 +263,22 @@ export default function AddYap() {
                   placeholder="What's happening?"
                   value={yapContent}
                   onChange={handleContentChange}
-                  className="min-h-[120px] resize-none border-none p-0 text-lg placeholder:text-muted-foreground/60 focus-visible:ring-0"
+                  className="min-h-[120px] resize-none text-lg placeholder:text-purple-400 dark:placeholder:text-purple-300 focus-visible:ring-purple-500 border-purple-200 dark:border-purple-800/50"
                   maxLength={MAX_CHARACTERS}
                 />
                 
                 {/* Hashtag suggestions */}
                 {showHashtagSuggestions && hashtagSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1">
-                    <div className="bg-popover border rounded-md shadow-md max-h-40 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 z-50 mt-2">
+                    <div className="bg-white dark:bg-purple-950/20 backdrop-blur-sm border border-purple-200 dark:border-purple-800/50 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                       {hashtagSuggestions.map((suggestion, index) => (
                         <button
                           key={index}
-                          className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center justify-between"
+                          className="w-full text-left px-4 py-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-sm flex items-center justify-between first:rounded-t-xl last:rounded-b-xl transition-colors"
                           onClick={() => handleHashtagSelect(suggestion.name)}
                         >
-                          <span>#{suggestion.name}</span>
-                          <span className="text-muted-foreground text-xs">
+                          <span className="text-purple-600 dark:text-purple-400 font-medium">#{suggestion.name}</span>
+                          <span className="text-purple-400 dark:text-purple-500 text-xs">
                             {suggestion.usage_count} uses
                           </span>
                         </button>
@@ -288,9 +290,9 @@ export default function AddYap() {
 
               {/* Extracted hashtags display */}
               {extractedHashtags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-2">
                   {extractedHashtags.map((hashtag, index) => (
-                    <Badge key={index} variant="secondary" className="text-blue-500">
+                    <Badge key={index} variant="secondary" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50">
                       {hashtag}
                     </Badge>
                   ))}
@@ -417,15 +419,15 @@ export default function AddYap() {
           </div>
 
           {/* Action bar */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between pt-6 border-t border-purple-100 dark:border-purple-900/30">
+            <div className="flex items-center space-x-1">
               {/* Media upload */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={mediaFiles.length >= 4}
-                className="text-blue-500 hover:text-blue-600"
+                className="text-purple-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl h-10 w-10"
               >
                 <ImageIcon className="w-5 h-5" />
               </Button>
@@ -436,8 +438,8 @@ export default function AddYap() {
                 size="icon"
                 onClick={() => setIsPollMode(!isPollMode)}
                 className={cn(
-                  "text-blue-500 hover:text-blue-600",
-                  isPollMode && "bg-blue-100 dark:bg-blue-900/20"
+                  "text-purple-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl h-10 w-10",
+                  isPollMode && "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
                 )}
               >
                 <BarChartIcon className="w-5 h-5" />
@@ -447,13 +449,13 @@ export default function AddYap() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-blue-500 hover:text-blue-600"
+                className="text-purple-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl h-10 w-10"
               >
                 <SmileIcon className="w-5 h-5" />
               </Button>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               {/* Character count */}
               <div className="flex items-center space-x-2">
                 {characterCount > 0 && (
@@ -480,7 +482,7 @@ export default function AddYap() {
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitDisabled}
-                className="bg-[#92736C] hover:bg-[#92736C]/90 text-white font-medium rounded-full px-6"
+                className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium rounded-full px-8 py-2 h-10 shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 {isSubmitting ? 'Posting...' : 'Yap'}
               </Button>
