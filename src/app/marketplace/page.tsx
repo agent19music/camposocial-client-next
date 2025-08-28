@@ -16,6 +16,7 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [activeFilter, setActiveFilter] = useState("all")
 
   const router = useRouter();
   const { currentUser } = useContext(AuthContext);
@@ -69,19 +70,53 @@ export default function Marketplace() {
   }
 
   // Determine which products to display
-  const displayProducts = searchQuery.trim() ? searchResults : products
-  // Array to simulate 21 products
-  // console.log(products);
+  const getFilteredProducts = () => {
+    let filtered = searchQuery.trim() ? searchResults : products;
+    
+    if (activeFilter !== "all" && filtered) {
+      filtered = filtered.filter(product => 
+        product.category?.toLowerCase() === activeFilter.toLowerCase()
+      );
+    }
+    
+    return filtered;
+  };
+
+  const displayProducts = getFilteredProducts();
+
+  // Get filters for mobile header
+  const getFilters = () => [
+    { id: 'all', label: 'All', active: activeFilter === 'all' },
+    { id: 'art', label: 'Art', active: activeFilter === 'art' },
+    { id: 'food', label: 'Food', active: activeFilter === 'food' },
+    { id: 'books', label: 'Books', active: activeFilter === 'books' },
+    { id: 'clothing', label: 'Clothing', active: activeFilter === 'clothing' },
+    { id: 'tech', label: 'Tech', active: activeFilter === 'tech' },
+  ];
+
+  const handleMobileSearch = (query: string) => {
+    setSearchQuery(query);
+    debouncedSearch(query);
+  };
+
+  const handleMobileFilter = (filterId: string) => {
+    setActiveFilter(filterId);
+  };
   
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
-      <Header />
+      <Header 
+        onSearch={handleMobileSearch}
+        onFilterSelect={handleMobileFilter}
+        searchQuery={searchQuery}
+        activeFilter={activeFilter}
+      />
       <main className="mobile-content-padding lg:pb-4">
       <div className="flex flex-col md:flex-row">
-        {/* Left SideNav */}
+        {/* Left SideNav - Desktop Only */}
       
-        <div className="md:w-64 flex-shrink-0">
+        <div className="hidden md:block md:w-64 flex-shrink-0">
           <SideNav links = {marketplaceLinks} />
         </div>
  
@@ -89,8 +124,8 @@ export default function Marketplace() {
         {/* Right Content */}
         <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2">
           
-          {/* Search bar */}
-          <div className="w-full flex justify-center items-center">
+          {/* Desktop Search bar - Hidden on Mobile */}
+          <div className="hidden lg:flex w-full justify-center items-center">
             <div className="relative mx-auto">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -128,7 +163,6 @@ export default function Marketplace() {
         </div>
       </div>
       </main>
-      <CartComponent/>
     </div>
   );
 }

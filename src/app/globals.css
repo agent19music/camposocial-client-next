@@ -432,3 +432,26 @@ body{
     0 8px 32px rgba(210, 157, 246, 0.2),
     inset 0 1px 0 rgba(210, 157, 246, 0.3);
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile content padding to account for sticky header */
+.mobile-content-padding {
+  padding-top: 1rem;
+  padding-bottom: 5rem; /* Space for bottom navigation */
+}
+
+@media (min-width: 1024px) {
+  .mobile-content-padding {
+    padding-top: 0;
+    padding-bottom: 1rem;
+  }
+}

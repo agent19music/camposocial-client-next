@@ -2,7 +2,7 @@
 
 import { FC, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // Use usePathname for more reliable client-side routing
+import { usePathname } from "next/navigation";
 import {
   Bell,
   CircleUser,
@@ -49,240 +49,243 @@ import { AuthContext } from "@/context/authcontext";
 import {toast} from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-const Header: FC = () => {
-  const pathname = usePathname(); // Use usePathname to get the current route
-  const [activePage, setActivePage] = useState<string>("");
-  const router = useRouter()
+import MobileHeader from "@/components/mobile-header";
+import SmartFAB from "@/components/smart-fab";
+import EnhancedMobileSideNav from "@/components/enhanced-mobile-sidenav";
+interface HeaderProps {
+  onSearch?: (query: string) => void;
+  onFilterSelect?: (filterId: string) => void;
+  searchQuery?: string;
+  activeFilter?: string;
+}
 
-  const {currentUser, logout} = useContext(AuthContext)
+const Header: FC<HeaderProps> = ({ 
+  onSearch, 
+  onFilterSelect, 
+  searchQuery = "", 
+  activeFilter = "all" 
+}) => {
+  const pathname = usePathname();
+  const [activePage, setActivePage] = useState<string>("");
+  const router = useRouter();
+
+  const { currentUser, logout } = useContext(AuthContext);
+  
   useEffect(() => {
     if (pathname) {
-      setActivePage(pathname); // Set active page based on the current route
+      setActivePage(pathname);
     }
   }, [pathname]);
 
-  function headsup (){
-    toast.success('heads up !!')
-  }
-  function takeMeToLogin(){
-    router.push('/login')
+  function headsup() {
+    toast.success('heads up !!');
   }
 
-  function takeMeToSettings(){
-    router.push('/profilesettings')
+  function takeMeToLogin() {
+    router.push('/login');
   }
 
-  function takeMeToProfile(){
-    router.push('/userprofile')
+  function takeMeToSettings() {
+    router.push('/profilesettings');
   }
 
-  const navItems = [
-    { icon: Calendar, label: "Events", href: "/events" },
-    { icon: MessageSquare, label: "Yaps", href: "/yaps" },
-    { icon: Plus, label: "", href: "/777" },
-    { icon: ShoppingBag, label: "Marketplace", href: "/marketplace" },
-    { icon: UserPlus, label: "Friends", href: "/friends" },
-  ];
+  function takeMeToProfile() {
+    router.push('/userprofile');
+  }
+
+  // Get filters based on current page
+  const getPageFilters = () => {
+    if (pathname?.includes('/marketplace')) {
+      return [
+        { id: 'all', label: 'All', active: activeFilter === 'all' },
+        { id: 'art', label: 'Art', active: activeFilter === 'art' },
+        { id: 'food', label: 'Food', active: activeFilter === 'food' },
+        { id: 'books', label: 'Books', active: activeFilter === 'books' },
+        { id: 'clothing', label: 'Clothing', active: activeFilter === 'clothing' },
+        { id: 'tech', label: 'Tech', active: activeFilter === 'tech' },
+      ];
+    } else if (pathname?.includes('/yaps')) {
+      return [
+        { id: 'all', label: 'All', active: activeFilter === 'all' },
+        { id: 'trending', label: 'Trending', active: activeFilter === 'trending' },
+        { id: 'following', label: 'Following', active: activeFilter === 'following' },
+        { id: 'recent', label: 'Recent', active: activeFilter === 'recent' },
+      ];
+    } else if (pathname?.includes('/events')) {
+      return [
+        { id: 'all', label: 'All', active: activeFilter === 'all' },
+        { id: 'today', label: 'Today', active: activeFilter === 'today' },
+        { id: 'this-week', label: 'This Week', active: activeFilter === 'this-week' },
+        { id: 'free', label: 'Free', active: activeFilter === 'free' },
+        { id: 'paid', label: 'Paid', active: activeFilter === 'paid' },
+      ];
+    } else if (pathname?.includes('/friends')) {
+      return [
+        { id: 'all', label: 'All', active: activeFilter === 'all' },
+        { id: 'online', label: 'Online', active: activeFilter === 'online' },
+        { id: 'mutual', label: 'Mutual Friends', active: activeFilter === 'mutual' },
+        { id: 'nearby', label: 'Nearby', active: activeFilter === 'nearby' },
+      ];
+    }
+    return [];
+  };
+
+  // Get search placeholder based on current page
+  const getSearchPlaceholder = () => {
+    if (pathname?.includes('/marketplace')) return 'Search products...';
+    if (pathname?.includes('/yaps')) return 'Search yaps...';
+    if (pathname?.includes('/events')) return 'Search events...';
+    if (pathname?.includes('/friends')) return 'Search people...';
+    return 'Search...';
+  };
+
+  const handleSearch = (query: string) => {
+    onSearch?.(query);
+  };
+
+  const handleFilterSelect = (filterId: string) => {
+    onFilterSelect?.(filterId);
+  };
 
   return (
     <>
-      <header className="flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 mt-2.5 relative">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0 lg:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col bg-background">
-            <nav className="grid gap-2 text-lg font-medium">
-              <Link href="/" className="flex items-center gap-2 text-lg font-semibold mb-4">
-                <Package2 className="h-6 w-6" />
-                <span>CampoSocial</span>
-              </Link>
-              
-              <Link
-                href="/userprofile"
-                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
-                  activePage === "/userprofile" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Home className="h-5 w-5" />
-                Profile
-              </Link>
-              
-              <Link
-                href="/events"
-                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
-                  activePage.includes("/events") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Calendar className="h-5 w-5" />
-                Events
-              </Link>
-              
-              <Link
-                href="/yaps"
-                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
-                  activePage.includes("/yaps") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <MessageSquare className="h-5 w-5" />
-                Yaps
-              </Link>
-              
-              <Link
-                href="/marketplace"
-                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
-                  activePage.includes("/marketplace") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <ShoppingBag className="h-5 w-5" />
-                Marketplace
-              </Link>
-              
-              <Link
-                href="/friends"
-                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
-                  activePage.includes("/friends") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <UserPlus className="h-5 w-5" />
-                Friends
-              </Link>
-              
-              <div className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2">
-                <Plus className="h-5 w-5" />
-                <div className="flex flex-col gap-2 ml-2">
-                  <AddYap />
-                  <AddEvent />
-                </div>
-              </div>
-            </nav>
-            
-            <div className="mt-auto space-y-4">
-              {currentUser ? (
-                <div className="mx-[-0.65rem] px-3 py-2">
-                  <p className="text-sm font-medium text-foreground">{currentUser.username}</p>
-                  <div className="flex flex-col gap-2 mt-2">
-                    <Button variant="ghost" size="sm" onClick={takeMeToSettings} className="justify-start">
-                      Settings
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={logout} className="justify-start text-destructive">
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button onClick={takeMeToLogin} className="w-full">
-                  Login
-                </Button>
-              )}
-              <ThemeToggle />
-            </div>
-          </SheetContent>
-        </Sheet>
+      {/* Mobile Header with Search and Filters */}
+      <MobileHeader
+        searchPlaceholder={getSearchPlaceholder()}
+        filters={getPageFilters()}
+        onSearch={handleSearch}
+        onFilterSelect={handleFilterSelect}
+        showSearch={true}
+        showFilters={getPageFilters().length > 0}
+      />
+
+      {/* Smart FAB */}
+      <SmartFAB />
+
+      {/* Desktop Header */}
+      <header className="hidden lg:flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 mt-2.5 relative">
         <div className="hidden lg:flex items-center justify-center space-x-4 mx-auto text-center">
-        <Link href="/events">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`text-muted-foreground hover:text-foreground ${
-              activePage.includes("/events")  ? "text-foreground" : ""
-            }`}
-          >
-            <Calendar className="h-5 w-5 mr-2" />
-            Events
-          </Button>
-        </Link>
-
-        <Link href="/yaps">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`text-muted-foreground hover:text-foreground ${
-              activePage.includes("/yaps") ? "text-foreground" : ""
-            }`}
-          >
-            <MessageSquare className="h-5 w-5 mr-2" />
-            Yaps
-          </Button>
-        </Link>
-
-        {/* Plus Icon with Popover */}
-        <Popover>
-          <PopoverTrigger asChild>
+          <Link href="/events">
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground"
+              className={`text-muted-foreground hover:text-foreground ${
+                activePage.includes("/events") ? "text-foreground" : ""
+              }`}
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Calendar className="h-5 w-5 mr-2" />
+              Events
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2 flex flex-col justify-center place-items-center max-w-32">
-            <span className="pb-3">
-            <AddYap/>
-            </span>
-            <span> <AddEvent/></span>
-         
-          </PopoverContent>
-        </Popover>
+          </Link>
 
-        <Link href="/marketplace">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`text-muted-foreground hover:text-foreground ${
-              activePage.includes("/marketplace")  ? "text-foreground" : ""
-            }`}
-          >
-            <ShoppingBag className="h-5 w-5 mr-2" />
-            Marketplace
-          </Button>
-        </Link>
-
-        <Link href="/friends">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`text-muted-foreground hover:text-foreground ${
-              activePage.includes("/friends")  ? "text-foreground" : ""
-            }`}
-          >
-            <UserPlus className="h-5 w-5 mr-2" />
-            Friends
-          </Button>
-        </Link>
-      </div>
-      <div className="mt-auto hidden lg:flex items-center space-x-4">
-        <ThemeToggle />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="rounded-full">
-              <CircleUser className="h-5 w-5" />
-              <span className="sr-only">Toggle user menu</span>
+          <Link href="/yaps">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`text-muted-foreground hover:text-foreground ${
+                activePage.includes("/yaps") ? "text-foreground" : ""
+              }`}
+            >
+              <MessageSquare className="h-5 w-5 mr-2" />
+              Yaps
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-         
-  {currentUser ? <DropdownMenuLabel> {currentUser.username} </DropdownMenuLabel> :
-  <DropdownMenuLabel onClick={takeMeToLogin} className="hover:cursor-pointer">
-Login
-  </DropdownMenuLabel>
-}
-           <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={takeMeToProfile}>Profile Info</DropdownMenuItem>
-            <DropdownMenuItem onClick={takeMeToSettings}>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          </Link>
+
+          {/* Plus Icon with Popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-2 flex flex-col justify-center place-items-center max-w-32">
+              <span className="pb-3">
+                <AddYap />
+              </span>
+              <span>
+                <AddEvent />
+              </span>
+            </PopoverContent>
+          </Popover>
+
+          <Link href="/marketplace">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`text-muted-foreground hover:text-foreground ${
+                activePage.includes("/marketplace") ? "text-foreground" : ""
+              }`}
+            >
+              <ShoppingBag className="h-5 w-5 mr-2" />
+              Marketplace
+            </Button>
+          </Link>
+
+          <Link href="/friends">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`text-muted-foreground hover:text-foreground ${
+                activePage.includes("/friends") ? "text-foreground" : ""
+              }`}
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Friends
+            </Button>
+          </Link>
+        </div>
+
+        <div className="mt-auto hidden lg:flex items-center space-x-4">
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="rounded-full">
+                <CircleUser className="h-5 w-5" />
+                <span className="sr-only">Toggle user menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {currentUser ? (
+                <DropdownMenuLabel>{currentUser.username}</DropdownMenuLabel>
+              ) : (
+                <DropdownMenuLabel onClick={takeMeToLogin} className="hover:cursor-pointer">
+                  Login
+                </DropdownMenuLabel>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={takeMeToProfile}>Profile Info</DropdownMenuItem>
+              <DropdownMenuItem onClick={takeMeToSettings}>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
+      {/* Mobile Bottom Navigation - Simplified */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t flex justify-around items-center h-16 z-40 pb-safe">
+        {/* Mobile Side Nav Trigger */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Menu className="h-5 w-5 mb-1" />
+              <span className="text-xs">Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 bg-background">
+            <EnhancedMobileSideNav />
+          </SheetContent>
+        </Sheet>
+
         <Link href="/events">
           <Button
             variant="ghost"
@@ -308,26 +311,6 @@ Login
             <span className="text-xs">Yaps</span>
           </Button>
         </Link>
-
-        {/* Plus Icon with Popover */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Plus className="h-5 w-5 mb-1" />
-              <span className="text-xs">Add</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-3 mb-2 flex flex-col justify-center place-items-center max-w-36">
-            <div className="space-y-2">
-              <AddYap/>
-              <AddEvent/>
-            </div>
-          </PopoverContent>
-        </Popover>
 
         <Link href="/marketplace">
           <Button

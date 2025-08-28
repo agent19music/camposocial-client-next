@@ -162,16 +162,16 @@ export default function Dashboard() {
     <Header />
     <main className="mobile-content-padding lg:pb-4">
     <div className="flex flex-col md:flex-row ">
-      {/* Left SideNav */}
-      <div className="md:w-64 flex-shrink-0">
+      {/* Left SideNav - Desktop Only */}
+      <div className="hidden md:block md:w-64 flex-shrink-0">
           <SideNav links = {eventLinks} />
         </div>
 
     {/* Center content */}
     <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center ">
       
-      {/* Green area with centered input */}
-      <div className="w-full flex-1   flex justify-center items-center">
+      {/* Desktop Search - Hidden on Mobile */}
+      <div className="hidden lg:flex w-full flex-1 justify-center items-center">
         <form>
           <div className="relative mx-auto">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
