@@ -160,6 +160,7 @@ export default function Dashboard() {
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
     <Header />
+    <main className="mobile-content-padding lg:pb-4">
     <div className="flex flex-col md:flex-row ">
       {/* Left SideNav */}
       <div className="md:w-64 flex-shrink-0">
@@ -196,8 +197,8 @@ export default function Dashboard() {
 
     </div>
 
-
   </div>
+  </main>
 </div>
 
   )

@@ -216,6 +216,45 @@ body{
   .falling-icon:nth-child(even) {
     animation-delay: -4s;
   }
+
+  /* Mobile navigation utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  }
+  
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  /* Prevent content from going behind mobile nav */
+  .mobile-content-padding {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0.5rem));
+  }
+  
+  /* Smooth transitions for mobile interactions */
+  .mobile-nav-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Ensure proper viewport handling on mobile */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Enhanced mobile navigation support */
+@media (max-width: 1024px) {
+  /* Add padding to main content to avoid mobile nav overlap */
+  main {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0.5rem));
+  }
+  
+  /* Ensure proper spacing for pages with bottom nav */
+  .page-content {
+    min-height: calc(100vh - 4rem - env(safe-area-inset-bottom, 0.5rem));
+  }
 }
 
 /* Text sizing utility classes */

@@ -77,6 +77,7 @@ export default function Marketplace() {
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
+      <main className="mobile-content-padding lg:pb-4">
       <div className="flex flex-col md:flex-row">
         {/* Left SideNav */}
       
@@ -126,6 +127,7 @@ export default function Marketplace() {
 
         </div>
       </div>
+      </main>
       <CartComponent/>
     </div>
   );

@@ -39,39 +39,45 @@ export default function CartComponent() {
 
 
   const {currentUser} = useContext(AuthContext);
-  const {updateCart} = useContext(MarketplaceContext);
+  const {updateCart, setUpdateCart} = useContext(MarketplaceContext);
   
 
-  const getCartItems = async (userId: string): Promise<CartItem[]> => {
-    try {
-      const response = await fetch(`${apiEndpoint}/cart/${userId}`);
-      if (!response.ok) {
-        // Handle 404 gracefully - empty cart is normal
-        if (response.status === 404) {
-          return [];
-        }
-        throw new Error('Failed to fetch cart data');
-      }
-      const data: CartResponse = await response.json();
-      return data.cart_items || [];
-    } catch (error) {
-      console.error('Cart fetch error:', error);
-      return [];
-    }
-  };
-
   useEffect(() => {
-    
+    const getCartItems = async (userId: string): Promise<CartItem[]> => {
+      try {
+        const response = await fetch(`${apiEndpoint}/cart/${userId}`);
+        if (!response.ok) {
+          // Handle 404 gracefully - empty cart is normal
+          if (response.status === 404) {
+            return [];
+          }
+          throw new Error('Failed to fetch cart data');
+        }
+        const data: CartResponse = await response.json();
+        return data.cart_items || [];
+      } catch (error) {
+        console.error('Cart fetch error:', error);
+        return [];
+      }
+    };
+
     const fetchCartItems = async () => {
-      if (!currentUser?.id) return;
+      if (!currentUser?.id) {
+        setCartItems([]);
+        setTotalItems(0);
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
-      const items = await getCartItems(currentUser?.id);
+      const items = await getCartItems(currentUser.id);
       setCartItems(items);
+      const total = items.reduce((sum, item) => sum + item.quantity, 0);
+      setTotalItems(total);
       setLoading(false);
     };
     fetchCartItems();
-  }, [currentUser, updateCart]);
+  }, [apiEndpoint, currentUser?.id, updateCart]);
 
   const toggleCart = () => setIsCartOpen(!isCartOpen);
 
@@ -175,7 +181,7 @@ export default function CartComponent() {
     <div className="relative">
       <Button
         onClick={toggleCart}
-        className="fixed bottom-6 right-6 z-50 rounded-full w-16 h-16 shadow-lg  sm:bottom-12"
+        className="fixed bottom-20 right-6 z-50 rounded-full w-16 h-16 shadow-lg lg:bottom-6"
         aria-label={`Toggle cart, ${totalItems} items`}
       >
         <ShoppingCart className="h-6 w-6" />

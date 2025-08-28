@@ -96,10 +96,11 @@ const Header: FC = () => {
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col bg-background">
             <nav className="grid gap-2 text-lg font-medium">
-              <Link href="#" className="flex items-center gap-2 text-lg font-semibold">
+              <Link href="/" className="flex items-center gap-2 text-lg font-semibold mb-4">
                 <Package2 className="h-6 w-6" />
-                <span className="sr-only">Acme Inc</span>
+                <span>CampoSocial</span>
               </Link>
+              
               <Link
                 href="/userprofile"
                 className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
@@ -107,21 +108,76 @@ const Header: FC = () => {
                 }`}
               >
                 <Home className="h-5 w-5" />
-                Dashboard
+                Profile
               </Link>
+              
               <Link
-                href="#"
+                href="/events"
                 className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
-                  activePage === "/orders" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                  activePage.includes("/events") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <ShoppingCart className="h-5 w-5" />
-                Orders
-                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">6</Badge>
+                <Calendar className="h-5 w-5" />
+                Events
               </Link>
-              {/* Add more links as needed */}
+              
+              <Link
+                href="/yaps"
+                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
+                  activePage.includes("/yaps") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MessageSquare className="h-5 w-5" />
+                Yaps
+              </Link>
+              
+              <Link
+                href="/marketplace"
+                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
+                  activePage.includes("/marketplace") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ShoppingBag className="h-5 w-5" />
+                Marketplace
+              </Link>
+              
+              <Link
+                href="/friends"
+                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${
+                  activePage.includes("/friends") ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <UserPlus className="h-5 w-5" />
+                Friends
+              </Link>
+              
+              <div className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2">
+                <Plus className="h-5 w-5" />
+                <div className="flex flex-col gap-2 ml-2">
+                  <AddYap />
+                  <AddEvent />
+                </div>
+              </div>
             </nav>
-            <div className="mt-auto">
+            
+            <div className="mt-auto space-y-4">
+              {currentUser ? (
+                <div className="mx-[-0.65rem] px-3 py-2">
+                  <p className="text-sm font-medium text-foreground">{currentUser.username}</p>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <Button variant="ghost" size="sm" onClick={takeMeToSettings} className="justify-start">
+                      Settings
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={logout} className="justify-start text-destructive">
+                      Logout
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button onClick={takeMeToLogin} className="w-full">
+                  Login
+                </Button>
+              )}
               <ThemeToggle />
             </div>
           </SheetContent>
@@ -226,13 +282,13 @@ Login
       </div>
       </header>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t flex justify-around items-center h-14 z-50">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t flex justify-around items-center h-16 z-40 pb-safe">
         <Link href="/events">
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col text-muted-foreground hover:text-foreground ${
-              activePage === "/events" ? "text-foreground" : ""
+            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
+              activePage.includes("/events") ? "text-foreground bg-muted/50" : ""
             }`}
           >
             <Calendar className="h-5 w-5 mb-1" />
@@ -244,8 +300,8 @@ Login
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col text-muted-foreground hover:text-foreground ${
-              activePage === "/yaps" ? "text-foreground " : ""
+            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
+              activePage.includes("/yaps") ? "text-foreground bg-muted/50" : ""
             }`}
           >
             <MessageSquare className="h-5 w-5 mb-1" />
@@ -259,17 +315,17 @@ Login
             <Button
               variant="ghost"
               size="sm"
-              className="flex-col text-muted-foreground hover:text-foreground"
+              className="flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors"
             >
               <Plus className="h-5 w-5 mb-1" />
+              <span className="text-xs">Add</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="p-2 flex flex-col justify-center place-items-center max-w-32">
-            <span className="pb-3">
-            <AddYap/>
-            </span>
-            <span> <AddEvent/></span>
-         
+          <PopoverContent className="p-3 mb-2 flex flex-col justify-center place-items-center max-w-36">
+            <div className="space-y-2">
+              <AddYap/>
+              <AddEvent/>
+            </div>
           </PopoverContent>
         </Popover>
 
@@ -277,12 +333,12 @@ Login
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col text-muted-foreground hover:text-foreground ${
-              activePage === "/marketplace" ? "text-foreground " : ""
+            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
+              activePage.includes("/marketplace") ? "text-foreground bg-muted/50" : ""
             }`}
           >
             <ShoppingBag className="h-5 w-5 mb-1" />
-            <span className="text-xs">Marketplace</span>
+            <span className="text-xs">Shop</span>
           </Button>
         </Link>
 
@@ -290,8 +346,8 @@ Login
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col text-muted-foreground hover:text-foreground ${
-              activePage === "/friends" ? "text-foreground" : ""
+            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
+              activePage.includes("/friends") ? "text-foreground bg-muted/50" : ""
             }`}
           >
             <UserPlus className="h-5 w-5 mb-1" />
