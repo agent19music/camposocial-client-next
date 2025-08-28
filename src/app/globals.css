@@ -4,43 +4,42 @@
 
 @layer base {
   :root {
-    /* Updated to match landing page gradient theme */
-    --background: 0 0% 100%; /* Pure white base */
-    --background-gradient: linear-gradient(to bottom, rgb(255 255 255), rgb(250 245 255 / 0.3), rgb(245 243 255 / 0.5));
-    --foreground: 215 25% 27%; /* Darker slate for better contrast */
+    /* Light mode - clean and simple like landing page */
+    --background: 0 0% 100%; /* Pure white */
+    --foreground: 215 25% 27%; /* Dark slate text */
     --f-accent: 0, 0%, 71%;
     
-    /* Cards with purple tint to match landing page */
-    --card: 0 0% 100%; /* White background */
+    /* Cards - clean white */
+    --card: 0 0% 100%; /* Pure white */
     --card-foreground: 215 25% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 27%;
     
-    /* Primary colors using brand gradient */
-    --primary: 290 71% 73%; /* #D29DF6 - main brand color */
+    /* Primary colors using your brand purple */
+    --primary: 290 71% 73%; /* #D29DF6 */
     --primary-foreground: 0 0% 98%;
     
-    /* Secondary with purple tint */
-    --secondary: 270 30% 96%; /* Light purple background */
+    /* Secondary - very light purple tint */
+    --secondary: 270 100% 98%; /* Very subtle purple */
     --secondary-foreground: 215 25% 27%;
     --third: 200, 45%, 21%, 1;
     --third-foreground: 0 0% 98%;
     
-    /* Muted colors with purple undertones */
-    --muted: 270 30% 96%; /* Light purple instead of gray */
-    --muted-foreground: 215 15% 65%; /* Purple-tinted gray */
+    /* Muted - light gray with purple hint */
+    --muted: 270 20% 95%; /* Very light purple gray */
+    --muted-foreground: 215 15% 65%;
     
-    /* Accent colors matching brand */
-    --accent: 270 30% 96%; /* Light purple accent */
+    /* Accent */
+    --accent: 270 20% 95%;
     --accent-foreground: 215 25% 27%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Borders with purple tint */
-    --border: 270 20% 90%; /* Purple-tinted border */
-    --input: 270 20% 95%; /* Light purple input background */
-    --ring: 290 71% 73%; /* Brand color for focus rings */
+    /* Borders - subtle purple tint */
+    --border: 270 15% 92%; /* Light purple-gray border */
+    --input: 0 0% 100%; /* Pure white input background */
+    --ring: 290 71% 73%; /* Brand purple for focus */
     --radius: 0.5rem;
     
     --chart-1: 12 76% 61%;
@@ -49,53 +48,49 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     
-    /* Custom brand colors - matching landing page */
-    --blush: 325 47% 96%; /* #FDF1F5 */
-    --mocha: 20 14% 51%; /* #92736C */
-    --golden: 290 71% 73%; /* #D29DF6 */
-    --brand-primary: 290 71% 73%; /* Main purple brand */
-    --brand-secondary: 285 68% 70%; /* Slightly darker purple */
-    --brand-gradient-start: 290 71% 73%; /* #D29DF6 */
-    --brand-gradient-end: 285 68% 70%; /* #C17FF2 */
+    /* Brand colors */
+    --brand-primary: 290 71% 73%; /* #D29DF6 */
+    --brand-secondary: 285 68% 70%; /* #C17FF2 */
   }
 
   .dark {
-    /* Dark mode matching landing page gradient */
-    --background: 210 5% 8%; /* Very dark base */
-    --background-gradient: linear-gradient(to bottom, rgb(0 0 0), rgb(0 0 0), rgb(88 28 135 / 0.2));
+    /* Dark mode - deep black like landing page */
+    --background: 0 0% 0%; /* Pure black */
     --foreground: 0 0% 98%; /* Pure white text */
-    --card: 270 15% 12%; /* Dark purple tint for cards */
+    
+    /* Cards with purple-950/20 like landing page */
+    --card: 270 100% 3%; /* Very dark purple-black */
     --card-foreground: 0 0% 98%;
     --f-accent: 0, 0%, 71%;
     
-    --popover: 270 15% 8%; /* Darker popover */
+    --popover: 270 100% 3%;
     --popover-foreground: 0 0% 98%;
     
-    /* Primary colors maintained */
-    --primary: 290 71% 73%; /* #D29DF6 - brand color works in dark */
-    --primary-foreground: 210 5% 8%; /* Dark text on brand */
+    /* Primary colors - same brand colors */
+    --primary: 290 71% 73%; /* #D29DF6 */
+    --primary-foreground: 0 0% 0%; /* Black text on brand */
     
-    /* Secondary with dark purple theme */
-    --secondary: 270 25% 15%; /* Dark purple background */
+    /* Secondary - dark with purple hint */
+    --secondary: 270 100% 8%; /* Dark purple */
     --secondary-foreground: 0 0% 98%;
     --third: 220, 45%, 21%;
     --third-foreground: 0 0% 98%;
     
-    /* Muted colors with purple undertones in dark */
-    --muted: 270 20% 15%; /* Dark purple instead of gray */
-    --muted-foreground: 215 10% 65%; /* Muted purple-gray */
+    /* Muted - dark purple tones */
+    --muted: 270 30% 10%; /* Dark purple */
+    --muted-foreground: 0 0% 65%; /* Light gray */
     
-    /* Accent colors for dark mode */
-    --accent: 270 20% 15%; /* Dark purple accent */
+    /* Accent */
+    --accent: 270 30% 10%;
     --accent-foreground: 0 0% 98%;
     
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Dark borders and inputs with purple theme */
-    --border: 270 20% 20%; /* Dark purple border */
-    --input: 270 20% 15%; /* Dark purple input background */
-    --ring: 290 71% 73%; /* Brand color for focus rings */
+    /* Dark borders with purple */
+    --border: 270 50% 15%; /* Dark purple border */
+    --input: 270 100% 3%; /* Very dark purple input */
+    --ring: 290 71% 73%; /* Brand purple for focus */
     
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -103,14 +98,9 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     
-    /* Brand colors consistent in dark mode */
-    --blush: 325 47% 96%;
-    --mocha: 20 14% 51%; 
-    --brand-primary: 290 71% 73%; /* Main purple brand */
-    --brand-secondary: 285 68% 70%; /* Slightly darker purple */
-    --brand-gradient-start: 290 71% 73%; /* #D29DF6 */
-    --brand-gradient-end: 285 68% 70%; /* #C17FF2 */
-    --golden: 290 71% 73%; /* #D29DF6 */
+    /* Brand colors consistent */
+    --brand-primary: 290 71% 73%; /* #D29DF6 */
+    --brand-secondary: 285 68% 70%; /* #C17FF2 */
   }
 }
 
@@ -121,15 +111,16 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    /* Apply consistent gradient background matching landing page */
-    background: rgb(255, 255, 255);
-    background: linear-gradient(180deg, rgb(255, 255, 255) 0%, rgba(250, 245, 255, 0.3) 50%, rgba(245, 243, 255, 0.5) 100%);
+    /* Simple clean backgrounds like landing page */
   }
   
-  .dark body {
-    /* Dark mode gradient matching landing page */
-    background: rgb(0, 0, 0);
-    background: linear-gradient(180deg, rgb(0, 0, 0) 0%, rgb(0, 0, 0) 50%, rgba(88, 28, 135, 0.2) 100%);
+  /* Landing page style backgrounds for specific pages */
+  .landing-gradient {
+    background: linear-gradient(to bottom, rgb(255, 255, 255), rgba(250, 245, 255, 0.3), rgba(245, 243, 255, 0.5));
+  }
+  
+  .dark .landing-gradient {
+    background: linear-gradient(to bottom, rgb(0, 0, 0), rgb(0, 0, 0), rgba(88, 28, 135, 0.2));
   }
 }
 
@@ -178,25 +169,6 @@ body{
 
 .animate-fall {
   animation: fall linear infinite;
-}
-
-/* Add utility classes for consistent backgrounds */
-.app-background {
-  background: rgb(255, 255, 255);
-  background: linear-gradient(180deg, rgb(255, 255, 255) 0%, rgba(250, 245, 255, 0.3) 50%, rgba(245, 243, 255, 0.5) 100%);
-}
-
-.dark .app-background {
-  background: rgb(0, 0, 0);
-  background: linear-gradient(180deg, rgb(0, 0, 0) 0%, rgb(0, 0, 0) 50%, rgba(88, 28, 135, 0.2) 100%);
-}
-
-.app-card {
-  @apply bg-white dark:bg-purple-950/20 border-purple-100/50 dark:border-purple-900/30 backdrop-blur-sm;
-}
-
-.app-input {
-  @apply bg-white dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/50 focus-visible:ring-purple-500 focus-visible:border-purple-400 dark:focus-visible:border-purple-600;
 }
 
 /* Add smooth transitions for theme changes */
