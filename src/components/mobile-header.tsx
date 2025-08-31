@@ -1,35 +1,22 @@
 "use client";
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Search, ChevronDown } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface FilterPill {
-  id: string;
-  label: string;
-  active?: boolean;
-}
 
 interface MobileHeaderProps {
   searchPlaceholder?: string;
-  filters?: FilterPill[];
   onSearch?: (query: string) => void;
-  onFilterSelect?: (filterId: string) => void;
   showSearch?: boolean;
-  showFilters?: boolean;
   searchQuery?: string;
 }
 
 export default function MobileHeader({
   searchPlaceholder = "Search...",
-  filters = [],
   onSearch,
-  onFilterSelect,
   showSearch = true,
-  showFilters = true,
   searchQuery: externalSearchQuery = "",
 }: MobileHeaderProps) {
   const [isVisible, setIsVisible] = useState(true);
@@ -84,30 +71,6 @@ export default function MobileHeader({
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 rounded-full border-muted bg-muted/50 focus:bg-background"
             />
-          </div>
-        </div>
-      )}
-
-      {/* Filter Pills */}
-      {showFilters && filters.length > 0 && (
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {filters.map((filter) => (
-              <Button
-                key={filter.id}
-                variant={filter.active ? "default" : "outline"}
-                size="sm"
-                onClick={() => onFilterSelect?.(filter.id)}
-                className={cn(
-                  "rounded-full px-4 py-2 whitespace-nowrap text-sm transition-all",
-                  filter.active 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-background border-muted hover:bg-muted/50"
-                )}
-              >
-                {filter.label}
-              </Button>
-            ))}
           </div>
         </div>
       )}

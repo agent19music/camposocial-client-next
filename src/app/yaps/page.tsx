@@ -25,6 +25,7 @@ import { Heart, MessageCircle, MoreHorizontal, Repeat, Share2, Users, Calendar, 
 import { Home, PartyPopper } from "lucide-react";
 import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
+import FilterPills, { FilterPill } from '@/components/filter-pills'
 import { Input } from '@/components/ui/input'
 import { Repeat2 } from 'lucide-react'
 import Image from 'next/image';
@@ -168,10 +169,9 @@ export default function Component() {
   const { friends, users } = useContext(UserContext)
   const router = useRouter();
 
-  const eventLinks = [
-    { label: "Coming Soon", icon: <Home className="h-4 w-4" />, onClick: () => router.push("/comingsoon") },
-    { label: "Social Events", icon: <Calendar className="h-4 w-4" />, onClick: () => router.push("/social-events") },
-    { label: "Fun Events", icon: <PartyPopper className="h-4 w-4" />, onClick: () => router.push("/fun-events") },
+  // Only keep quick access links for desktop sidebar
+  const quickAccessLinks = [
+    { label: "Home", icon: <Home className="h-4 w-4" />, onClick: () => router.push("/") },
   ];
 
   // Check if user is new (no yaps, no friends, etc.)
@@ -181,7 +181,8 @@ export default function Component() {
   );
 
   // Handle feed type change
-  const handleFeedTypeChange = (newFeedType: 'chronological' | 'trending' | 'following') => {
+  const handleFeedTypeChange = (filterId: string) => {
+    const newFeedType = filterId as 'chronological' | 'trending' | 'following';
     setFeedType(newFeedType);
     // The context will automatically refetch with the new feed type
   };
@@ -193,18 +194,40 @@ export default function Component() {
     following: { icon: UsersIcon, label: "Following", description: "Yaps from people you follow" }
   };
 
+  // Filter pills for both mobile and desktop
+  const filterPills: FilterPill[] = Object.entries(feedTypeConfig).map(([key, config]) => ({
+    id: key,
+    label: config.label,
+    active: feedType === key
+  }));
+
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <main className="mobile-content-padding lg:pb-4">
+        {/* Filter Pills - Always visible on mobile and desktop */}
+        <FilterPills 
+          filters={filterPills}
+          onFilterSelect={handleFeedTypeChange}
+          className="lg:hidden"
+        />
+
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6"> 
-          {/* Left SideNav - Desktop Only */}
+          {/* Left SideNav - Desktop Only - Only Quick Access */}
           <div className="hidden lg:block lg:w-64 flex-shrink-0">
-            <SideNav links={eventLinks} />
+            <SideNav links={quickAccessLinks} />
           </div>
           
           {/* Center content */}
           <div className="flex-1 flex flex-col gap-4 lg:gap-6">
+            {/* Desktop Filter Pills */}
+            <div className="hidden lg:block">
+              <FilterPills 
+                filters={filterPills}
+                onFilterSelect={handleFeedTypeChange}
+              />
+            </div>
+
             {/* Desktop Search */}
             <div className="hidden lg:flex w-full justify-center">
               <form className="w-full max-w-2xl">
@@ -230,33 +253,13 @@ export default function Component() {
               <NewUserWelcome />
             ) : (
               <div className="w-full">
-                {/* Feed Type Selector */}
+                {/* Feed Header */}
                 <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-10">
-                  <div className="flex items-center justify-between p-4">
-                    <h2 className="text-xl font-bold">Home</h2>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 gap-2">
-                          {React.createElement(feedTypeConfig[feedType].icon, { className: "h-4 w-4" })}
-                          {feedTypeConfig[feedType].label}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {Object.entries(feedTypeConfig).map(([key, config]) => (
-                          <DropdownMenuItem 
-                            key={key}
-                            onClick={() => handleFeedTypeChange(key as any)}
-                            className="flex items-start gap-3 p-3"
-                          >
-                            <config.icon className="h-4 w-4 mt-0.5" />
-                            <div className="flex flex-col">
-                              <span className="font-medium">{config.label}</span>
-                              <span className="text-xs text-muted-foreground">{config.description}</span>
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="flex items-center justify-center p-4">
+                    <h2 className="text-xl font-bold">
+                      {React.createElement(feedTypeConfig[feedType].icon, { className: "h-5 w-5 mr-2 inline" })}
+                      {feedTypeConfig[feedType].label}
+                    </h2>
                   </div>
                 </div>
 
@@ -284,6 +287,7 @@ export default function Component() {
                           likes_count={yap.likes_count}
                           replies_count={yap.replies_count}
                           retweets_count={yap.retweets_count}
+                          badges={yap.badges}
                         />
                       ))}
                     </div>
@@ -328,64 +332,64 @@ export default function Component() {
                 )}
               </div>
             )}
-          </div>
-          
-          {/* Right sidebar - Trending/Suggestions */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
-            <div className="space-y-4">
-            {/* Trending hashtags */}
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold">Trending on Campus</h3>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">#StudyGroup</p>
-                    <p className="text-sm text-muted-foreground">142 yaps</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">#CampusLife</p>
-                    <p className="text-sm text-muted-foreground">89 yaps</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">#Finals</p>
-                    <p className="text-sm text-muted-foreground">67 yaps</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Who to follow */}
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold">Who to follow</h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {users.slice(0, 3).map((user, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback>{user.first_name?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{user.first_name} {user.last_name}</p>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">Follow</Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
             </div>
           </div>
-        </div>
+          
+          {/* Right sidebar - Trending/Suggestions - Properly positioned */}
+          <div className="hidden lg:block lg:w-80 flex-shrink-0">
+            <div className="sticky top-4 space-y-4">
+              {/* Trending hashtags */}
+              <Card>
+                <CardHeader>
+                  <h3 className="font-semibold">Trending on Campus</h3>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between py-2">
+                    <div>
+                      <p className="font-medium">#StudyGroup</p>
+                      <p className="text-sm text-muted-foreground">142 yaps</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <div>
+                      <p className="font-medium">#CampusLife</p>
+                      <p className="text-sm text-muted-foreground">89 yaps</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <div>
+                      <p className="font-medium">#Finals</p>
+                      <p className="text-sm text-muted-foreground">67 yaps</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Who to follow */}
+              <Card>
+                <CardHeader>
+                  <h3 className="font-semibold">Who to follow</h3>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {users.slice(0, 3).map((user, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={user.avatar} />
+                          <AvatarFallback>{user.first_name?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{user.first_name} {user.last_name}</p>
+                          <p className="text-xs text-muted-foreground">@{user.username}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline">Follow</Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </main>
     </div>

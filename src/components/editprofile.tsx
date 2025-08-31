@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect, useContext} from "react"
+import Image from "next/image"
 import { AuthContext } from "@/context/authcontext"
 import { FixedCropper, ImageRestriction } from 'react-advanced-cropper'
 import 'react-advanced-cropper/dist/style.css'
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Pencil } from "lucide-react"
+import { Pencil, Camera, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import toast from "react-hot-toast"
+
 export default function ProfileEditor() {
   const { currentUser, updateUserContext } = useContext(AuthContext) // Get current user from auth context
   
@@ -44,17 +46,23 @@ export default function ProfileEditor() {
     bio: "",
     phone_no: "",
     category: "",
+    yap_header_img: "",
   })
   
   // Image cropping state
-  const [isCropModalOpen, setIsCropModalOpen] = useState(false)
-  const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [cropModal, setCropModal] = useState({
+    isOpen: false,
+    type: null as 'avatar' | 'header' | null,
+    imageSrc: null as string | null
+  })
   const [avatarSrc, setAvatarSrc] = useState("")
+  const [headerSrc, setHeaderSrc] = useState("")
   const [imageFile, setImageFile] = useState<File | null>(null)
   const cropperRef = useRef<any>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null)
+  const headerFileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Initialize profile data from auth context when component mounts or user changes
+  // Initialize profile data from auth context
   useEffect(() => {
     if (currentUser) {
       setProfileData({
@@ -66,11 +74,14 @@ export default function ProfileEditor() {
         bio: currentUser.bio || "",
         phone_no: currentUser.phone_no || "",
         category: currentUser.category || "",
+        yap_header_img: (currentUser as any).yap_header_img || "",
       })
       
-      // Set avatar if available
       if (currentUser.avatar) {
         setAvatarSrc(currentUser.avatar)
+      }
+      if ((currentUser as any).yap_header_img) {
+        setHeaderSrc((currentUser as any).yap_header_img)
       }
     }
   }, [currentUser])
@@ -84,15 +95,18 @@ export default function ProfileEditor() {
   }
 
   // Handle image selection
-  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'header') => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
       setImageFile(file)
       
       const reader = new FileReader()
       reader.addEventListener('load', () => {
-        setImageSrc(reader.result as string)
-        setIsCropModalOpen(true)
+        setCropModal({
+          isOpen: true,
+          type: type,
+          imageSrc: reader.result as string
+        })
       })
       reader.readAsDataURL(file)
     }
@@ -103,13 +117,18 @@ export default function ProfileEditor() {
     if (cropperRef.current) {
       const canvas = cropperRef.current.getCanvas()
       if (canvas) {
-        // Get cropped image as data URL
-        const croppedImageUrl = canvas.toDataURL()
-        setAvatarSrc(croppedImageUrl)
-        setIsCropModalOpen(false)
+        const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9)
+        
+        if (cropModal.type === 'avatar') {
+          setAvatarSrc(croppedImageUrl)
+        } else if (cropModal.type === 'header') {
+          setHeaderSrc(croppedImageUrl)
+        }
+        
+        setCropModal({ isOpen: false, type: null, imageSrc: null })
       }
     }
-  }, [])
+  }, [cropModal.type])
 
   // Convert data URL to File object
   const dataURLtoFile = (dataUrl: string, filename: string): File => {
@@ -124,10 +143,24 @@ export default function ProfileEditor() {
     return new File([u8arr], filename, { type: mime })
   }
 
-  // Trigger file input click
-  const triggerFileUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
+  // Trigger file input clicks
+  const triggerAvatarUpload = () => {
+    if (avatarFileInputRef.current) {
+      avatarFileInputRef.current.click()
+    }
+  }
+
+  const triggerHeaderUpload = () => {
+    if (headerFileInputRef.current) {
+      headerFileInputRef.current.click()
+    }
+  }
+
+  // Remove header image
+  const removeHeaderImage = () => {
+    setHeaderSrc("")
+    if (headerFileInputRef.current) {
+      headerFileInputRef.current.value = ""
     }
   }
 
@@ -145,12 +178,22 @@ export default function ProfileEditor() {
         }
       })
       
-      // Add profile image if it was changed
+      // Add profile avatar if changed
       if (avatarSrc && avatarSrc !== currentUser?.avatar && !avatarSrc.startsWith('http')) {
-        // If we have an original file name, use it; otherwise create a default name
-        const originalFileName = imageFile?.name || "profile-image.jpg"
+        const originalFileName = imageFile?.name || "profile-avatar.jpg"
         const imageBlob = dataURLtoFile(avatarSrc, originalFileName)
         formData.append('profile_image', imageBlob)
+      }
+      
+      // Add header image if changed
+      if (headerSrc && headerSrc !== (currentUser as any)?.yap_header_img && !headerSrc.startsWith('http')) {
+        const headerBlob = dataURLtoFile(headerSrc, "header-image.jpg")
+        formData.append('header_image', headerBlob)
+      }
+      
+      // Handle header image removal
+      if (!headerSrc && (currentUser as any)?.yap_header_img) {
+        formData.append('remove_header', 'true')
       }
       
       // Send request to your API
@@ -193,11 +236,15 @@ export default function ProfileEditor() {
         bio: currentUser.bio || "",
         phone_no: currentUser.phone_no || "",
         category: currentUser.category || "",
+        yap_header_img: (currentUser as any).yap_header_img || "",
       })
       
       // Reset avatar to original
       if (currentUser.avatar) {
         setAvatarSrc(currentUser.avatar)
+      }
+      if ((currentUser as any).yap_header_img) {
+        setHeaderSrc((currentUser as any).yap_header_img)
       }
     }
     
@@ -220,34 +267,104 @@ export default function ProfileEditor() {
     return categories[code as keyof typeof categories] || "Select Course"
   }
 
+  // Get cropper configuration based on type
+  const getCropperConfig = () => {
+    if (cropModal.type === 'avatar') {
+      return {
+        stencilSize: { width: 280, height: 280 },
+        aspectRatio: 1,
+        cropAreaClassName: 'rounded-full'
+      }
+    } else {
+      return {
+        stencilSize: { width: 400, height: 133 }, // 3:1 aspect ratio (Twitter header)
+        aspectRatio: 3,
+        cropAreaClassName: 'rounded-lg'
+      }
+    }
+  }
+
   return (
     <>
       <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="bg-muted/20 p-6 flex flex-col items-center">
-          <div className="relative">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={avatarSrc} alt="User's profile picture" />
-              <AvatarFallback>{getInitials()}</AvatarFallback>
-            </Avatar>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute bottom-0 right-0 rounded-full"
-              onClick={triggerFileUpload}
-              disabled={!isEditing}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onSelectFile}
-            />
+        <CardHeader className="p-0 relative">
+          {/* Header Image Section */}
+          <div className="relative h-32 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-t-lg overflow-hidden">
+            {headerSrc && (
+              <Image 
+                src={headerSrc} 
+                alt="Header" 
+                width={400}
+                height={128}
+                className="w-full h-full object-cover"
+              />
+            )}
+            
+            {/* Header Image Controls */}
+            {isEditing && (
+              <div className="absolute top-2 right-2 flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full bg-black/50 hover:bg-black/70 text-white border-0"
+                  onClick={triggerHeaderUpload}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                {headerSrc && (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="rounded-full bg-black/50 hover:bg-black/70 text-white border-0"
+                    onClick={removeHeaderImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
-          <h2 className="text-2xl font-bold mt-4">{profileData.first_name} {profileData.last_name}</h2>
-          <p className="text-muted-foreground">@{profileData.username}</p>
+          
+          {/* Profile Section */}
+          <div className="px-6 pb-6 flex flex-col items-center">
+            <div className="relative -mt-12">
+              <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
+                <AvatarImage src={avatarSrc} alt="User's profile picture" />
+                <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-purple-500 to-violet-500 text-white">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              {isEditing && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute bottom-0 right-0 rounded-full"
+                  onClick={triggerAvatarUpload}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            
+            <h2 className="text-2xl font-bold mt-4">{profileData.first_name} {profileData.last_name}</h2>
+            <p className="text-muted-foreground">@{profileData.username}</p>
+          </div>
+          
+          {/* Hidden file inputs */}
+          <input
+            ref={avatarFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onSelectFile(e, 'avatar')}
+          />
+          <input
+            ref={headerFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onSelectFile(e, 'header')}
+          />
         </CardHeader>
         <CardContent className="p-6 grid gap-4">
           <div className="grid grid-cols-2 gap-4">
@@ -363,47 +480,61 @@ export default function ProfileEditor() {
         </CardContent>
       </Card>
 
-      {/* Image Cropping Modal */}
-      <Dialog open={isCropModalOpen} onOpenChange={setIsCropModalOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* Enhanced Image Cropping Modal */}
+      <Dialog open={cropModal.isOpen} onOpenChange={(open) => setCropModal(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Crop Profile Image</DialogTitle>
+            <DialogTitle>
+              Crop {cropModal.type === 'avatar' ? 'Profile Picture' : 'Header Image'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center p-2">
-            {imageSrc && (
-              <div className="w-full aspect-square">
-             <FixedCropper
-                ref={cropperRef}
-                src={imageSrc}
-                className="h-full"
-                stencilSize={{ width: 280, height: 280 }} // Add this line
-                stencilProps={{
-                    aspectRatio: 1,
-                    handlers: true,
-                    lines: true,
-                    movable: true,
-                    resizable: true,
-                    overlayClassName: 'bg-black/50',
-                    cropAreaClassName: 'rounded-full',
-                    cornersStyle: {
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    border: '3px solid #000000',
-                    width: '12px',
-                    height: '12px',
-                    },
-                }}
-                imageRestriction={ImageRestriction.stencil}
-                />
+          
+          <div className="flex-1 flex items-center justify-center p-4 min-h-0">
+            {cropModal.imageSrc && (
+              <div className="w-full h-full max-w-full max-h-[60vh] flex items-center justify-center">
+                <div className={`${cropModal.type === 'header' ? 'w-full aspect-[3/1] max-h-[300px]' : 'w-full aspect-square max-h-[400px] max-w-[400px]'}`}>
+                  <FixedCropper
+                    ref={cropperRef}
+                    src={cropModal.imageSrc}
+                    className="h-full w-full"
+                    stencilSize={getCropperConfig().stencilSize}
+                    stencilProps={{
+                      aspectRatio: getCropperConfig().aspectRatio,
+                      handlers: true,
+                      lines: true,
+                      movable: true,
+                      resizable: true,
+                      overlayClassName: 'bg-black/50',
+                      cropAreaClassName: getCropperConfig().cropAreaClassName,
+                      cornersStyle: {
+                        borderRadius: cropModal.type === 'avatar' ? '50%' : '4px',
+                        backgroundColor: '#FFFFFF',
+                        border: '3px solid #000000',
+                        width: '12px',
+                        height: '12px',
+                      },
+                    }}
+                    imageRestriction={ImageRestriction.stencil}
+                    backgroundWrapperProps={{
+                      scaleImage: true,
+                      moveImage: true,
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsCropModalOpen(false)}>
+          
+          <DialogFooter className="mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setCropModal({ isOpen: false, type: null, imageSrc: null })}
+            >
               Cancel
             </Button>
             <Button type="button" onClick={applyCrop}>
-              Apply
+              Apply Crop
             </Button>
           </DialogFooter>
         </DialogContent>

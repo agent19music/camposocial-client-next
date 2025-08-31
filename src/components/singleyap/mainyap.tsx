@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useContext } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { YapActions } from './yapactions'
@@ -9,9 +10,11 @@ import { MediaGrid } from '../yapmediagrid'
 import { Separator } from '../ui/separator'
 import { formatDate } from '@/lib/utils'
 import { YapContext } from '@/context/yapcontext'
+import Image from 'next/image'
 
 export const MainYap = () => {
   const {selectedYap} = useContext(YapContext)
+  const router = useRouter()
   
   if (!selectedYap) {
     return <div className="px-4 py-3 text-center text-muted-foreground">No yap selected</div>
@@ -37,10 +40,17 @@ export const MainYap = () => {
     }
   }
 
+  const handleUserClick = () => {
+    router.push(`/yaps/profile/${selectedYap?.username}`);
+  };
+
   return (
     <article className="px-4 pt-3 pb-3">
       <div className="flex gap-3">
-        <Avatar className="w-10 h-10 flex-shrink-0">
+        <Avatar 
+          className="w-10 h-10 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleUserClick}
+        >
           <AvatarImage src={selectedYap?.avatar} />
           <AvatarFallback className="text-sm font-semibold">
             {selectedYap?.display_name?.[0]?.toUpperCase() || selectedYap?.username?.[0]?.toUpperCase() || 'U'}
@@ -48,9 +58,28 @@ export const MainYap = () => {
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex flex-col">
-            <span className="font-bold text-[15px] leading-5">{selectedYap?.display_name}</span>
-            <span className="text-muted-foreground text-[15px] leading-5">@{selectedYap?.username}</span>
-          </div>
+            <span 
+              className="font-bold text-[15px] leading-5 cursor-pointer hover:underline"
+              onClick={handleUserClick}
+            >
+              {selectedYap?.display_name}
+            </span>
+            <span 
+              className="text-muted-foreground text-[15px] leading-5 cursor-pointer hover:underline"
+              onClick={handleUserClick}
+            >
+              @{selectedYap?.username}
+              {selectedYap?.username === "ufwsean" && (
+                <Image
+                  src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
+                  alt="Verified"
+                  className="inline-block ml-1 w-4 h-4 align-text-bottom"
+                  width={16}
+                  height={16}
+                />
+              )}
+            </span>
+          </div>  
         </div>
       </div>
       

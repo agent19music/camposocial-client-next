@@ -52,6 +52,9 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import MobileHeader from "@/components/mobile-header";
 import SmartFAB from "@/components/smart-fab";
 import EnhancedMobileSideNav from "@/components/enhanced-mobile-sidenav";
+import { AvatarImage } from "@/components/ui/avatar";
+import { AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";  
 interface HeaderProps {
   onSearch?: (query: string) => void;
   onFilterSelect?: (filterId: string) => void;
@@ -243,14 +246,31 @@ const Header: FC<HeaderProps> = ({
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
+              <Button 
+                variant="secondary" 
+                size="icon" 
+                className="rounded-full hover:opacity-80 transition-opacity"
+                onClick={() => currentUser && router.push(`/yaps/profile/${currentUser.username}`)}
+              >
+                {currentUser ? 
+                <Avatar className="w-10 h-10 mb-2 flex-shrink-0">
+                  <AvatarImage src={currentUser?.avatar} />
+                  <AvatarFallback>{currentUser?.display_name?.[0] || 'U'}</AvatarFallback>
+                </Avatar>
+                :
                 <CircleUser className="h-5 w-5" />
+                }
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {currentUser ? (
-                <DropdownMenuLabel>{currentUser.username}</DropdownMenuLabel>
+                <DropdownMenuLabel 
+                  className="hover:cursor-pointer"
+                  onClick={() => router.push(`/yaps/profile/${currentUser.username}`)}
+                >
+                  {currentUser.username}
+                </DropdownMenuLabel>
               ) : (
                 <DropdownMenuLabel onClick={takeMeToLogin} className="hover:cursor-pointer">
                   Login

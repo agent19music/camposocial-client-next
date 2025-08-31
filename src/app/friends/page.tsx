@@ -1,518 +1,307 @@
 "use client";
 
-import React, { useState, useContext } from 'react';
-import { motion } from 'framer-motion';
-import Header from '@/components/header';
-import SideNav from '@/components/sidenav';
-import { 
-  MessageSquare, 
-  UserPlus, 
-  Users, 
-  Search, 
-  Heart, 
-  MoreHorizontal,
-  Phone,
-  Video,
-  Send,
-  Star,
-  Clock,
-  MapPin,
-  Shield,
-  UserX
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { AuthContext } from '@/context/authcontext';
-import { toast } from 'react-hot-toast';
+import React, { useState, useContext, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-interface Friend {
-  id: number;
-  name: string;
-  username: string;
-  avatar?: string;
-  isOnline: boolean;
-  lastSeen: string;
-  mutualFriends: number;
-  course: string;
-  year: string;
-  bio: string;
-  isClose: boolean;
-  messagePreview: string;
-  messageTime: string;
-  unreadCount: number;
-}
+// UI Components
+import { Input } from "@/components/ui/input";
+import FilterPills, { FilterPill } from "@/components/filter-pills";
+import Header from "@/components/header";
+import SideNav from "@/components/sidenav";
 
-interface Suggestion {
-  id: number;
-  name: string;
-  username: string;
-  avatar?: string;
-  mutualFriends: number;
-  course: string;
-  year: string;
-  bio: string;
-  reason: string;
-}
+// Friend Components
+import { FriendCard } from "@/components/friends/FriendCard";
+import { RequestCard } from "@/components/friends/RequestCard";
+import { SearchableDiscover } from "@/components/friends/SearchableDiscover";
+import { EmptyState } from "@/components/friends/EmptyState";
+import { FriendCardSkeleton } from "@/components/friends/LoadingSkeletons";
 
-interface Request {
-  id: number;
-  name: string;
-  username: string;
-  avatar?: string;
-  mutualFriends: number;
-  course: string;
-  year: string;
-  requestTime: string;
-}
+// Contexts
+import { AuthContext } from "@/context/authcontext";
+import { UserContext } from "@/context/usercontext";
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
   const { currentUser } = useContext(AuthContext);
+  const { 
+    friends, 
+    users, 
+    receivedRequests, 
+    sendFriendRequest, 
+    addFriend, 
+    rejectFriendRequest, 
+    removeFriend,
+    blockUser,
+    isLoadingUsers,
+    isLoadingSearch
+  } = useContext(UserContext);
+  
+  const router = useRouter();
 
-  const friendsLinks = [
-    { label: "Messages", icon: <MessageSquare className="h-4 w-4" />, onClick: () => setActiveTab("messages") },
-    { label: "Find Friends", icon: <UserPlus className="h-4 w-4" />, onClick: () => setActiveTab("discover") },
-    { label: "Friend Requests", icon: <Users className="h-4 w-4" />, onClick: () => setActiveTab("requests") },
-    { label: "Activity", icon: <Heart className="h-4 w-4" />, onClick: () => setActiveTab("activity") },
+  // Quick access for desktop sidebar
+  const quickAccessLinks = [
+    { label: "Home", icon: <MessageSquare className="h-4 w-4" />, onClick: () => router.push("/") },
   ];
 
-  const friends = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      username: "sarahj",
-      avatar: "/yoruichipfp.jpg",
-      isOnline: true,
-      lastSeen: "2m ago",
-      mutualFriends: 5,
-      course: "Computer Science",
-      year: "3rd Year",
-      bio: "Love coding and coffee ☕",
-      isClose: true,
-      messagePreview: "Hey! How was your exam?",
-      messageTime: "2m ago",
-      unreadCount: 2
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      username: "mikechen",
-      avatar: "/wkndpfp.jpg",
-      isOnline: false,
-      lastSeen: "1h ago",
-      mutualFriends: 3,
-      course: "Engineering",
-      year: "4th Year",
-      bio: "Building the future 🚀",
-      isClose: false,
-      messagePreview: "See you at the event!",
-      messageTime: "1h ago",
-      unreadCount: 0
-    },
-    {
-      id: 3,
-      name: "Alex Rivera",
-      username: "alexr",
-      avatar: undefined,
-      isOnline: true,
-      lastSeen: "5m ago",
-      mutualFriends: 8,
-      course: "Design",
-      year: "2nd Year",
-      bio: "UI/UX enthusiast ✨",
-      isClose: true,
-      messagePreview: "Thanks for the help with the project!",
-      messageTime: "3h ago",
-      unreadCount: 1
-    },
+  // Filter pills
+  const filterPills: FilterPill[] = [
+    { id: "friends", label: "Friends", active: activeTab === "friends" },
+    { id: "messages", label: "Messages", active: activeTab === "messages" },
+    { id: "discover", label: "Discover", active: activeTab === "discover" },
+    { id: "requests", label: "Requests", active: activeTab === "requests" },
+    { id: "activity", label: "Activity", active: activeTab === "activity" },
   ];
-
-  const suggestions: Suggestion[] = [
-    {
-      id: 1,
-      name: "Emma Wilson",
-      username: "emmaw",
-      avatar: undefined,
-      mutualFriends: 2,
-      course: "Computer Science",
-      year: "3rd Year",
-      bio: "Full-stack developer in the making",
-      reason: "Same course"
-    },
-    {
-      id: 2,
-      name: "David Park",
-      username: "davidp",
-      avatar: undefined,
-      mutualFriends: 4,
-      course: "Engineering",
-      year: "3rd Year",
-      bio: "Robotics and AI researcher",
-      reason: "Mutual friends"
-    },
-  ];
-
-  const requests: Request[] = [
-    {
-      id: 1,
-      name: "Lisa Chang",
-      username: "lisac",
-      avatar: undefined,
-      mutualFriends: 1,
-      course: "Business",
-      year: "2nd Year",
-      requestTime: "2d ago"
-    }
-  ];
-
-  const activities = [
-    {
-      id: 1,
-      type: "like",
-      user: "Sarah Johnson",
-      action: "liked your yap",
-      content: "Great presentation today!",
-      time: "5m ago"
-    },
-    {
-      id: 2,
-      type: "comment",
-      user: "Mike Chen",
-      action: "commented on your event",
-      content: "Count me in for the study group!",
-      time: "1h ago"
-    }
-  ];
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
 
   const handleFilterSelect = (filterId: string) => {
-    console.log('Filter selected:', filterId);
+    setActiveTab(filterId);
   };
 
-  const FriendCard = ({ friend, showMessage = false }: { friend: Friend; showMessage?: boolean }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card className="glass-card hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-4">
-            <div className="relative">
-              <Avatar className="w-12 h-12 border-2 border-background shadow-md">
-                <AvatarImage src={friend.avatar} />
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-500 text-white font-semibold">
-                  {friend.name.split(' ').map((n: string) => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              {friend.isOnline && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-background shadow-sm"></div>
-              )}
-              {friend.isClose && (
-                <div className="absolute -top-1 -right-1">
-                  <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                </div>
-              )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-foreground truncate">{friend.name}</h3>
-                {friend.isOnline && (
-                  <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                    Online
-                  </Badge>
-                )}
-                {friend.unreadCount > 0 && (
-                  <Badge className="bg-purple-500 text-white text-xs px-1.5 py-0.5 min-w-[20px] h-5 rounded-full flex items-center justify-center">
-                    {friend.unreadCount}
-                  </Badge>
-                )}
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-1">@{friend.username}</p>
-              
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <span>{friend.course}</span>
-                <span>•</span>
-                <span>{friend.year}</span>
-                <span>•</span>
-                <span>{friend.mutualFriends} mutual friends</span>
-              </div>
-              
-              {friend.bio && (
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{friend.bio}</p>
-              )}
-              
-              {showMessage && friend.messagePreview && (
-                <div className="bg-muted/30 rounded-lg p-2 mb-3">
-                  <p className="text-sm line-clamp-1">{friend.messagePreview}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{friend.messageTime}</p>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2">
-                <Button size="sm" className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white border-0">
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Message
-                </Button>
-                <Button size="sm" variant="outline" className="border-muted hover:bg-muted/50">
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem>
-                      <Star className="h-4 w-4 mr-2" />
-                      {friend.isClose ? 'Remove from close friends' : 'Add to close friends'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Shield className="h-4 w-4 mr-2" />
-                      View Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <UserX className="h-4 w-4 mr-2" />
-                      Unfriend
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+  // Friend actions
+  const handleMessageFriend = (friend: any) => {
+    router.push(`/chat?user=${friend.username}`);
+  };
+
+  const handleAddFriend = async (userId: string | number) => {
+    await sendFriendRequest(userId.toString());
+  };
+
+  const handleAcceptRequest = async (requestId: string | number) => {
+    await addFriend(requestId.toString());
+  };
+
+  const handleDeclineRequest = async (requestId: string | number) => {
+    await rejectFriendRequest(requestId.toString());
+  };
+
+  const handleViewProfile = (user: any) => {
+    router.push(`/viewprofile/${user.username}`);
+  };
+
+  const handleRemoveFriend = async (friendId: string | number) => {
+    await removeFriend(friendId.toString());
+  };
+
+  // Filter friends based on search query
+  const filteredFriends = friends.filter(friend => 
+    !searchQuery || 
+    friend.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    `${friend.first_name || ''} ${friend.last_name || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
-      <Header onSearch={handleSearch} onFilterSelect={handleFilterSelect} searchQuery={searchQuery} />
+      <Header />
       <main className="mobile-content-padding lg:pb-4">
-        <div className="flex flex-col md:flex-row">
+        {/* Filter Pills - Mobile */}
+        <FilterPills 
+          filters={filterPills}
+          onFilterSelect={handleFilterSelect}
+          className="lg:hidden"
+        />
+
+        <div className="flex flex-col md:flex-row gap-6">
           {/* Left SideNav - Desktop Only */}
           <div className="hidden md:block md:w-64 flex-shrink-0">
-            <SideNav links={friendsLinks} />
+            <SideNav links={quickAccessLinks} />
           </div>
           
           {/* Center content */}
           <div className="flex-1 flex flex-col gap-6 p-4 lg:gap-6 lg:p-6">
             
-            {/* Desktop Search - Hidden on Mobile */}
-            <div className="hidden lg:flex w-full justify-center items-center">
-              <div className="relative max-w-md w-full">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search friends..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 rounded-full border-muted bg-muted/50 focus:bg-background"
-                />
-              </div>
+            {/* Desktop Filter Pills */}
+            <div className="hidden lg:block">
+              <FilterPills 
+                filters={filterPills}
+                onFilterSelect={handleFilterSelect}
+              />
             </div>
             
-            {/* Main Content */}
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="text-center md:text-left">
-                <motion.h1 
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent mb-2"
-                >
-                  Your Campus Network
-                </motion.h1>
-                <p className="text-muted-foreground">Connect, chat, and build meaningful relationships</p>
+            {/* Desktop Search */}
+            {(activeTab === 'friends' || activeTab === 'messages') && (
+              <div className="hidden lg:flex w-full justify-center items-center">
+                <div className="relative max-w-md w-full">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder={`Search ${activeTab}...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 rounded-full border-muted bg-muted/50 focus:bg-background"
+                  />
+                </div>
               </div>
-
-              {/* Tabs */}
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 lg:w-fit lg:grid-cols-4">
-                  <TabsTrigger value="friends" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span className="hidden sm:inline">Friends</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="messages" className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    <span className="hidden sm:inline">Messages</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="discover" className="flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Discover</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="requests" className="flex items-center gap-2">
-                    <Heart className="h-4 w-4" />
-                    <span className="hidden sm:inline">Requests</span>
-                    {requests.length > 0 && (
-                      <Badge className="bg-purple-500 text-white text-xs px-1.5 py-0.5 min-w-[18px] h-4 rounded-full">
-                        {requests.length}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="friends" className="mt-6 space-y-4">
+            )}
+            
+            {/* Content based on active tab */}
+            <AnimatePresence mode="wait">
+              {activeTab === "friends" && (
+                <motion.div
+                  key="friends"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-foreground">Your Friends ({friends.length})</h2>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent">
+                      Your Friends
+                    </h2>
+                    <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                      {friends.length} friends
+                    </span>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                    {friends.map((friend) => (
-                      <FriendCard key={friend.id} friend={friend} />
-                    ))}
-                  </div>
-                </TabsContent>
 
-                <TabsContent value="messages" className="mt-6 space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">Recent Messages</h2>
-                  <div className="grid gap-4 md:grid-cols-1">
-                    {friends
-                      .filter(friend => friend.messagePreview)
-                      .sort((a, b) => b.unreadCount - a.unreadCount)
-                      .map((friend) => (
-                        <FriendCard key={friend.id} friend={friend} showMessage={true} />
+                  {isLoadingUsers ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                      {[...Array(4)].map((_, index) => (
+                        <FriendCardSkeleton key={index} />
                       ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="discover" className="mt-6 space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">People You Might Know</h2>
-                  <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                    {suggestions.map((person) => (
-                      <motion.div
-                        key={person.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        whileHover={{ y: -2 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Card className="glass-card hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300">
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-12 h-12 border-2 border-background shadow-md">
-                                <AvatarImage src={person.avatar} />
-                                <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-500 text-white font-semibold">
-                                  {person.name.split(' ').map(n => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-foreground mb-1">{person.name}</h3>
-                                <p className="text-sm text-muted-foreground mb-2">@{person.username}</p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                  <span>{person.course}</span>
-                                  <span>•</span>
-                                  <span>{person.year}</span>
-                                  <span>•</span>
-                                  <span>{person.mutualFriends} mutual friends</span>
-                                </div>
-                                {person.bio && (
-                                  <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{person.bio}</p>
-                                )}
-                                <div className="flex items-center gap-2 mb-3">
-                                  <Badge variant="outline" className="text-xs">
-                                    {person.reason}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button size="sm" className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white border-0">
-                                    <UserPlus className="h-3 w-3 mr-1" />
-                                    Add Friend
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="border-muted hover:bg-muted/50">
-                                    <MessageSquare className="h-3 w-3 mr-1" />
-                                    Message
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="requests" className="mt-6 space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">Friend Requests ({requests.length})</h2>
-                  {requests.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                      {requests.map((request) => (
-                        <motion.div
-                          key={request.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          whileHover={{ y: -2 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <Card className="glass-card hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300">
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-4">
-                                <Avatar className="w-12 h-12 border-2 border-background shadow-md">
-                                  <AvatarImage src={request.avatar} />
-                                  <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white font-semibold">
-                                    {request.name.split(' ').map(n => n[0]).join('')}
-                                  </AvatarFallback>
-                                </Avatar>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="font-semibold text-foreground mb-1">{request.name}</h3>
-                                  <p className="text-sm text-muted-foreground mb-2">@{request.username}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                                    <span>{request.course}</span>
-                                    <span>•</span>
-                                    <span>{request.year}</span>
-                                    <span>•</span>
-                                    <span>{request.mutualFriends} mutual friends</span>
-                                    <span>•</span>
-                                    <span>{request.requestTime}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0">
-                                      Accept
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="border-muted hover:bg-muted/50">
-                                      Decline
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
+                    </div>
+                  ) : friends.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                      {filteredFriends.map((friend) => (
+                        <FriendCard
+                          key={friend.id || friend.username}
+                          friend={friend}
+                          onMessage={handleMessageFriend}
+                          onRemoveFriend={handleRemoveFriend}
+                          onViewProfile={handleViewProfile}
+                        />
                       ))}
                     </div>
                   ) : (
-                    <Card className="glass-card">
-                      <CardContent className="p-8 text-center">
-                        <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                        <h3 className="text-lg font-semibold mb-2">No friend requests</h3>
-                        <p className="text-muted-foreground">When someone sends you a friend request, it will appear here.</p>
-                      </CardContent>
-                    </Card>
+                    <EmptyState 
+                      type="friends" 
+                      onAction={() => setActiveTab('discover')}
+                    />
                   )}
-                </TabsContent>
-              </Tabs>
-            </div>
+                </motion.div>
+              )}
+
+              {activeTab === "discover" && (
+                <motion.div
+                  key="discover"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 bg-clip-text text-transparent">
+                      Discover People
+                    </h2>
+                  </div>
+
+                  <SearchableDiscover
+                    onAddFriend={handleAddFriend}
+                    onViewProfile={handleViewProfile}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === "requests" && (
+                <motion.div
+                  key="requests"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+                      Friend Requests
+                    </h2>
+                    {receivedRequests.length > 0 && (
+                      <span className="text-sm text-muted-foreground bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">
+                        {receivedRequests.length} pending
+                      </span>
+                    )}
+                  </div>
+
+                  {receivedRequests.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                      {receivedRequests.map((request) => (
+                        <RequestCard
+                          key={request.id || request.username}
+                          request={request}
+                          onAccept={handleAcceptRequest}
+                          onDecline={handleDeclineRequest}
+                          onViewProfile={handleViewProfile}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState 
+                      type="requests" 
+                      onAction={() => setActiveTab('discover')}
+                    />
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === "messages" && (
+                <motion.div
+                  key="messages"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                      Recent Conversations
+                    </h2>
+                  </div>
+
+                  {friends.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                      {filteredFriends
+                        .slice(0, 8)
+                        .map((friend) => (
+                          <FriendCard
+                            key={friend.id || friend.username}
+                            friend={friend}
+                            showMessage={true}
+                            onMessage={handleMessageFriend}
+                            onRemoveFriend={handleRemoveFriend}
+                            onViewProfile={handleViewProfile}
+                          />
+                        ))}
+                    </div>
+                  ) : (
+                    <EmptyState 
+                      type="messages" 
+                      onAction={() => setActiveTab('friends')}
+                    />
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === "activity" && (
+                <motion.div
+                  key="activity"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 dark:from-orange-400 dark:to-pink-400 bg-clip-text text-transparent">
+                      Recent Activity
+                    </h2>
+                  </div>
+
+                  <EmptyState 
+                    type="activity" 
+                    onAction={() => router.push('/')}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </main>

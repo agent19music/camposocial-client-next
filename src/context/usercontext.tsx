@@ -22,7 +22,9 @@ interface UserContextProps {
   rejectFriendRequest: (requesterId: string) => void;
   friends: any[];
   filteredFriends: any[];
-  
+  searchUsers: (query: string) => Promise<any[]>;
+  isLoadingUsers: boolean;
+  isLoadingSearch: boolean;
 }
 
 // Yap interface to define the structure of each yap
@@ -48,8 +50,10 @@ const defaultValue: UserContextProps = {
   onchange: () => {},
   rejectFriendRequest: () => {},
   friends: [],
-  filteredFriends: []
-  
+  filteredFriends: [],
+  searchUsers: async () => [],
+  isLoadingUsers: false,
+  isLoadingSearch: false
 };
 
 export const UserContext = createContext<UserContextProps>(defaultValue);
@@ -62,6 +66,8 @@ export default function UserProvider({ children }: UserProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const[users, setUsers] = useState<any[]>([]);
   const[friends, setFriends] = useState<any[]>([]);
@@ -99,7 +105,7 @@ export default function UserProvider({ children }: UserProviderProps) {
 
     fetchingUsersRef.current = true;
     lastUsersFetchRef.current = now;
-    setIsLoading(true);
+    setIsLoadingUsers(true);
 
     // Abort previous request if it exists
     if (usersAbortControllerRef.current) {
@@ -138,9 +144,42 @@ export default function UserProvider({ children }: UserProviderProps) {
       }
     } finally {
       fetchingUsersRef.current = false;
-      setIsLoading(false);
+      setIsLoadingUsers(false);
     }
   }, [authToken, isAuthenticated, apiEndpoint]);
+
+  // Search users function
+  const searchUsers = useCallback(async (query: string): Promise<any[]> => {
+    if (!authToken || !isAuthenticated || !apiEndpoint || !query.trim()) {
+      return [];
+    }
+
+    setIsLoadingSearch(true);
+
+    try {
+      const response = await fetch(`${apiEndpoint}/users/search?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.users || [];
+    } catch (error: any) {
+      console.error("Error searching users:", error);
+      return [];
+    } finally {
+      setIsLoadingSearch(false);
+    }
+  }, [authToken, isAuthenticated, apiEndpoint]);
+
+  console.log( "users", users);
 
   // Debounced fetch friends function
   const fetchFriends = useCallback(async () => {
@@ -265,19 +304,13 @@ export default function UserProvider({ children }: UserProviderProps) {
     }
   }, [authToken, isAuthenticated, apiEndpoint]);
 
-  // Effect to fetch data when auth state changes - but only once per session
+  // Effect to fetch data when auth state changes
   useEffect(() => {
     if (authToken && isAuthenticated && currentUser) {
-      // Only fetch if we don't have data yet or auth state actually changed
-      if (users.length === 0) {
-        fetchUsers();
-      }
-      if (friends.length === 0) {
-        fetchFriends();
-      }
-      if (receivedRequests.length === 0) {
-        fetchPendingRequests();
-      }
+      // Force refetch data when user logs in
+      fetchUsers();
+      fetchFriends();
+      fetchPendingRequests();
     }
   }, [authToken, isAuthenticated, currentUser, fetchUsers, fetchFriends, fetchPendingRequests]);
 
@@ -460,6 +493,9 @@ export default function UserProvider({ children }: UserProviderProps) {
     rejectFriendRequest,
     friends,
     filteredFriends,
+    searchUsers,
+    isLoadingUsers,
+    isLoadingSearch,
   };
 
   return (

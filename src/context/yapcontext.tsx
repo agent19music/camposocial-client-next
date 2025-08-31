@@ -19,6 +19,9 @@ interface Yap {
   display_name: string;
   avatar: string;
   original_yap_id?: string;
+  original_yap?: Yap; // The original yap data for retweets
+  is_retweet?: boolean;
+  is_quote?: boolean;
   replies_count: number;
   likes_count: number;
   retweets_count: number;
@@ -26,6 +29,7 @@ interface Yap {
   media: MediaItem[];
   hashtags: string[];
   replies: Reply[];
+  badges?: Array<{id: number, name: string, image_url: string, is_animated: boolean}>;
   // Client-side optimistic state
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
@@ -44,7 +48,7 @@ interface Reply {
   id: number;
   content: string;
   created_at: string;
-  user: {
+  user?: {
     id: string;
     username: string;
     display_name: string;
@@ -78,7 +82,8 @@ interface YapContextProps {
   // Social interactions with optimistic updates
   toggleLike: (yapId: string) => Promise<void>;
   addReply: (yapId: string, content: string, parentReplyId?: number) => Promise<void>;
-  retweet: (yapId: string, content?: string) => Promise<void>;
+  retweet: (yapId: string) => Promise<void>;  // Pure retweet (no content)
+  quoteRetweet: (yapId: string, content: string) => Promise<void>;  // Quote retweet with content
   
   // Feed management
   feedType: 'chronological' | 'trending' | 'following';
@@ -119,6 +124,7 @@ const defaultValue: YapContextProps = {
   toggleLike: async () => {},
   addReply: async () => {},
   retweet: async () => {},
+  quoteRetweet: async () => {},
   
   // Feed management
   feedType: 'chronological',
@@ -348,6 +354,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       router.refresh(); // Use router.refresh to reload the current page
     }
   }
+
   
   // Optimistic toggle like function
   const toggleLike = useCallback(async (yapId: string) => {
@@ -481,10 +488,10 @@ export default function YapProvider({ children }: YapProviderProps) {
       user: {
         id: currentUser.id,
         username: currentUser.username,
-        display_name: `${currentUser.first_name} ${currentUser.last_name}`,
+        display_name: currentUser.display_name,
         avatar: currentUser.avatar
       },
-      parent_reply_id: parentReplyId,
+      parent_reply_id: parentReplyId, 
       isOptimistic: true
     };
 
@@ -572,8 +579,8 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
   }, [authToken, isAuthenticated, apiEndpoint, currentUser]);
 
-  // Optimistic retweet function
-  const retweet = useCallback(async (yapId: string, content?: string) => {
+  // Optimistic pure retweet function (no content)
+  const retweet = useCallback(async (yapId: string) => {
     if (!isAuthenticated || !authToken || !currentUser) {
       toast.error('Please log in to retweet');
       return;
@@ -599,9 +606,6 @@ export default function YapProvider({ children }: YapProviderProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify({
-          content: content || ''
-        }),
       });
 
       if (!response.ok) {
@@ -650,6 +654,90 @@ export default function YapProvider({ children }: YapProviderProps) {
       toast.error(error.message || 'Failed to retweet. Please try again.');
     }
   }, [authToken, isAuthenticated, apiEndpoint, currentUser, onchange]);
+
+  // Optimistic quote retweet function (with content)
+  const quoteRetweet = useCallback(async (yapId: string, content: string) => {
+    if (!isAuthenticated || !authToken || !currentUser) {
+      toast.error('Please log in to quote tweet');
+      return;
+    }
+
+    if (!content.trim()) {
+      toast.error('Quote content is required');
+      return;
+    }
+
+    // Optimistic update
+    setYaps(prevYaps => 
+      prevYaps.map(yap => {
+        if (yap.id === yapId) {
+          return {
+            ...yap,
+            optimisticRetweetsCount: (yap.optimisticRetweetsCount ?? yap.retweets_count) + 1
+          };
+        }
+        return yap;
+      })
+    );
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/${yapId}/quote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          content: content.trim()
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to quote tweet');
+      }
+
+      const data = await response.json();
+      
+      // Update with server response
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              retweets_count: data.retweets_count,
+              optimisticRetweetsCount: data.retweets_count
+            };
+          }
+          return yap;
+        })
+      );
+
+      toast.success('Quote tweet posted successfully!');
+      
+      // Refresh feed to show new quote tweet
+      setTimeout(() => {
+        setOnchange(!onchange);
+      }, 1000);
+
+    } catch (error: any) {
+      // Revert optimistic update
+      setYaps(prevYaps => 
+        prevYaps.map(yap => {
+          if (yap.id === yapId) {
+            return {
+              ...yap,
+              optimisticRetweetsCount: undefined
+            };
+          }
+          return yap;
+        })
+      );
+
+      console.error('Quote retweet error:', error);
+      toast.error(error.message || 'Failed to quote tweet');
+    }
+  }, [isAuthenticated, authToken, currentUser, apiEndpoint, onchange, setOnchange]);
 
   // Get hashtag suggestions
   const getHashtagSuggestions = useCallback(async (query?: string): Promise<HashtagSuggestion[]> => {
@@ -880,6 +968,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     toggleLike,
     addReply,
     retweet,
+    quoteRetweet,
     
     // Feed management
     feedType,

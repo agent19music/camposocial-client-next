@@ -23,6 +23,7 @@ type currentUser = {
   category: string
   username: string
   display_name: string
+  yap_header_img?: string
 } | null
 
 

@@ -80,7 +80,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   retweets_count: number,
   badges?: Array<{id: number, name: string, image_url: string, is_animated: boolean}>
 }) => {
-  const { navigateToSingleYapView, toggleLike, addReply, retweet, quoteRetweet } = useContext(YapContext)
+  const { navigateToSingleYapView, toggleLike, addReply, retweet } = useContext(YapContext)
   const router = useRouter();
   
   // Determine if this is a retweet or quote tweet
@@ -167,18 +167,14 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const submitRetweet = async (isQuote: boolean) => {
     if (isSubmittingRetweet) return;
     
+    // For plain retweet, we pass empty string; for quote retweet, we need content
+    if (isQuote && !retweetContent.trim()) return;
+    
     setIsSubmittingRetweet(true);
     
     try {
-      if (isQuote) {
-        // For quote retweet, we need content
-        if (!retweetContent.trim()) return;
-        await quoteRetweet(targetYap.id, retweetContent.trim());
-      } else {
-        // For pure retweet, no content needed
-        await retweet(targetYap.id);
-      }
-      
+      // Always retweet the target yap
+      await retweet(targetYap.id, isQuote ? retweetContent.trim() : '');
       setRetweetContent('');
       setIsRetweetDialogOpen(false);
       setIsQuoteRetweetDialogOpen(false);
@@ -293,15 +289,6 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                 onClick={(e) => handleUserClick(e, displayUsername)}
               >
                 @{displayUsername}
-                {displayUsername === "ufwsean" && (
-                  <Image
-                    src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
-                    alt="Verified"
-                    className="inline-block ml-1 w-4 h-4 align-text-bottom"
-                    width={16}
-                    height={16}
-                  />
-                )}
               </p>
               {yap.isOptimistic && (
                 <span className="text-xs text-blue-500 ml-2">Posting...</span>
@@ -314,98 +301,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
             )}
             
             {/* Main content */}
-            {isQuoteTweet ? (
-              /* For quote tweets, show the original yap content */
-              yap.original_yap && (
-                <div
-                  className={cn(
-                    "mt-2 rounded-lg border border-gray-200 dark:border-foreground/10 bg-gray-50 dark:bg-foreground/5 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-foreground/10 cursor-pointer",
-                    "flex flex-row gap-3 p-3"
-                  )}
-                  onClick={e => {
-                    e.stopPropagation();
-                    if (yap.original_yap?.id) {
-                      router.push(`/yaps/${yap.original_yap.id}`);
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label="View original yap"
-                >
-                  <Avatar
-                    className="w-8 h-8 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={e => {
-                      e.stopPropagation();
-                      if (yap.original_yap?.username) {
-                        router.push(`/profile/${yap.original_yap.username}`);
-                      }
-                    }}
-                  >
-                    <AvatarImage src={yap.original_yap?.avatar} alt={yap.original_yap?.display_name} />
-                    <AvatarFallback>
-                      {yap.original_yap?.display_name?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 mb-1">
-                      <span
-                        className="font-bold text-[15px] truncate cursor-pointer hover:underline"
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (yap.original_yap?.username) {
-                            router.push(`/yaps/profile/${yap.original_yap.username}`);
-                          }
-                        }}
-                      >
-                        {yap.original_yap?.display_name}
-                      </span>
-                      <span className="text-[15px] text-muted-foreground truncate ml-1">
-                        @{yap.original_yap?.username}
-                        {yap.original_yap?.username === "ufwsean" && (
-                          <Image
-                            src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
-                            alt="Verified"
-                            className="inline-block ml-1 w-4 h-4 align-text-bottom"
-                            width={16}
-                            height={16}
-                          />
-                        )}
-                      </span>
-                      {yap.original_yap?.badges && yap.original_yap.badges.length > 0 && (
-                        <BadgeDisplay badges={yap.original_yap.badges} size="sm" />
-                      )}
-                    </div>
-                    <p className="text-[15px] break-words whitespace-pre-wrap">
-                      {yap.original_yap?.content}
-                    </p>
-                    {yap.original_yap.media && yap.original_yap.media.length > 0 && (
-                      <div className="mt-2">
-                        <MediaGrid
-                          media={yap.original_yap?.media}
-                          showInOriginalAspect={yap.original_yap.media.length === 1}
-                          enableFocusView={false}
-                        />
-                      </div>
-                    )}
-                    {yap.original_yap.location && (
-                      <p className="text-sm text-muted-foreground mt-1">📍 {yap.original_yap.location}</p>
-                    )}
-                    {yap.original_yap.hashtags && yap.original_yap.hashtags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {yap.original_yap.hashtags.map((hashtag: string, idx: number) => (
-                          <span key={idx} className="text-sm text-blue-500 hover:text-blue-600 cursor-pointer">
-                            #{hashtag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            ) : (
-              /* For regular yaps and pure retweets, show displayContent */
-              <p className="text-[15px] break-words whitespace-pre-wrap">{displayContent}</p>
-            )}
+            <p className="text-[15px] break-words whitespace-pre-wrap">{displayContent}</p>
             
             {displayLocation && (
               <p className="text-sm text-muted-foreground mt-1">📍 {displayLocation}</p>
@@ -548,15 +444,6 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                   <div className="flex items-center gap-1 mb-1">
                     <span className="font-medium text-sm">{displayName}</span>
                     <span className="text-sm text-muted-foreground">@{displayUsername}</span>
-                    {displayUsername === "ufwsean" && (
-                      <Image
-                        src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
-                        alt="Verified"
-                        className="inline-block ml-1 w-4 h-4 align-text-bottom"
-                        width={16}
-                        height={16}
-                      />
-                    )}
                   </div>
                   <p className="text-sm">{displayContent}</p>
                 </div>
@@ -617,13 +504,13 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                       <span className="text-sm text-muted-foreground">
                         @{displayUsername}
                         {displayUsername === "ufwsean" && (
-                           <Image
-                           src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
-                           alt="Verified"
-                           className="inline-block ml-1 w-4 h-4 align-text-bottom"
-                           width={16}
-                           height={16}
-                         />
+                          <Image
+                            src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
+                            alt="Verified"
+                            className="inline-block ml-1 w-4 h-4 align-text-bottom"
+                            width={16}
+                            height={16}
+                          />
                         )}
                       </span>
                   </div>
