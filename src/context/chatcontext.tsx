@@ -5,84 +5,9 @@ import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
 import { set } from "date-fns";
+import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
 
-interface Media {
-    url: string;
-    type: string;
-}
-
-interface Message {
-    id: number;
-    senderId: string; 
-    content: string;
-    timestamp: Date;
-    media: Media[] | null; 
-    reactions: { userId: string; reactionType: string }[]; 
-    replyTo?: number;
-    isSent: boolean;
-    isRead: boolean;
-    encrypted: boolean;
-}
-
-interface User {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-}
-
-interface Friend {
-    username: string;
-    avatar: string;
-    isOnline: boolean;
-    id: string;
-}
-
-interface Conversation {
-    id: string;
-    friendId: string;
-    friendName: string;
-    friendAvatar: string;
-    lastMessage: string | null;
-    lastMessageTime: Date | null;
-    unreadCount: number;
-    isEmpty: boolean;
-    isOnline: boolean;
-}
-
-interface ChatContextType {
-    sendMessage: (content: string, media: FileList | null, replyTo?: number) => Promise<void>;
-    getMessages: (friendId: string, batchSize: number, lastMessageId?: number) => Promise<Message[]>; 
-    editMessage: (messageId: number, newContent: string) => Promise<void>;
-    deleteMessage: (messageId: number) => Promise<void>;
-    addReaction: (messageId: number, reactionType: string) => Promise<void>;
-    uploadMedia: (files: FileList) => Promise<Media[]>;
-    authToken: string | null;
-    friendId: string | null; 
-    setFriendId: (friendId: string | null) => void; 
-    messages: Message[]; 
-    setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-    getChatList: () => Promise<ChatListUser[]>;
-    chatList: ChatListUser[] | undefined;
-    generateKeys: () => Promise<void>;
-    exportPublicKey: () => Promise<string | null>;
-    keyStatus: 'generating' | 'available' | 'unavailable';
-    generateConversationId: (userId1: string, userId2: string) => string;
-    fetchConversations: () => Promise<Conversation[]>;
-    checkIfConversationExists: (friendId: string) => Promise<boolean>;
-    conversations: Conversation[];
-    getFriendDetails: (friendId: string) => Promise<{name: string; avatar: string; isOnline: boolean} | null>;
-    friendDetails: Friend | null;
-    currentUser: User | null;
-    
-        }
-
-interface ChatListUser {
-    id: string;
-    firstName: string;
-    lastName: string;
-    avatar: string;
-}
+ 
 
 export const ChatContext = createContext<ChatContextType>({
     sendMessage: async () => { },
@@ -110,10 +35,6 @@ export const ChatContext = createContext<ChatContextType>({
     currentUser: null,
 });
 
-interface ChatProviderProps {
-    children: ReactNode;
-}
-
 export default function ChatProvider({ children }: ChatProviderProps) {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
@@ -128,18 +49,18 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
         : null, [rawCurrentUser?.id, rawCurrentUser?.first_name, rawCurrentUser?.last_name, rawCurrentUser?.email]);
         
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [friendId, setFriendId] = useState<string | null>(null); 
-    const [friendDetails, setFriendDetails] = useState<Friend | null>(null);
+    const [friendDetails, setFriendDetails] = useState<ChatFriend | null>(null);
 
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
-    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     
     // OpenPGP key management
     const [privateKey, setPrivateKey] = useState<openpgp.PrivateKey | null>(null);
     const [publicKey, setPublicKey] = useState<openpgp.PublicKey | null>(null);
-    const [keyStatus, setKeyStatus] = useState<'generating' | 'available' | 'unavailable'>('unavailable');
+    const [keyStatus, setKeyStatus] = useState<KeyStatus>('unavailable');
     const [friendPublicKeys, setFriendPublicKeys] = useState<Record<string, openpgp.PublicKey>>({});
 
     // Rate limiting and debouncing refs
@@ -216,7 +137,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     }, []);
 
     // Memoize setMessages to prevent unnecessary re-renders
-    const setMessagesCallback = useCallback((messages: React.SetStateAction<Message[]>) => {
+    const setMessagesCallback = useCallback((messages: React.SetStateAction<ChatMessage[]>) => {
         setMessages(messages);
     }, []);
 
@@ -512,12 +433,16 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
 
         try {
+            const message = await openpgp.createMessage({ text: content });
             const encrypted = await openpgp.encrypt({
-                message: await openpgp.createMessage({ text: content }),
+                message,
                 encryptionKeys: [publicKey, friendPublicKeys[recipientId]]
             });
 
-            return { encrypted: encrypted, isEncrypted: true };
+            // The openpgp.encrypt returns an armored string when used with armored keys
+            const encryptedString = String(encrypted);
+
+            return { encrypted: encryptedString, isEncrypted: true };     
         } catch (error) {
             console.error("Error encrypting message:", error);
             return { encrypted: content, isEncrypted: false };
@@ -536,7 +461,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 decryptionKeys: privateKey
             });
 
-            return decrypted;
+            // Convert the decrypted data to string
+            const decryptedString = String(decrypted);
+            return decryptedString;
         } catch (error) {
             console.error("Error decrypting message:", error);
             return content;
@@ -557,7 +484,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         try {
             const conversationId = generateConversationId(currentUser.id, friendId);
-            let uploadedMedia: Media[] = [];
+            let uploadedMedia: ChatMedia[] = [];
 
             if (media && media.length > 0) {
                 uploadedMedia = await uploadMedia(media);
@@ -599,9 +526,10 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('send_message');
         }
-    }, [friendId, currentUser, authToken, generateConversationId, encryptMessage]); // Simplified dependencies
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, encryptMessage]);
 
-    const getMessages = useCallback(async (friendId: string, batchSize: number, lastMessageId?: number): Promise<Message[]> => {
+    const getMessages = useCallback(async (friendId: string, batchSize: number, lastMessageId?: number): Promise<ChatMessage[]> => {
         if (!currentUser || !authToken || fetchingMessagesRef.current) {
             return [];
         }
@@ -876,7 +804,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [currentUser, authToken, canMakeRequest, markRequestStart, apiEndpoint, markEndpointAvailability, markRequestEnd]);
 
-    const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
+    const fetchConversations = useCallback(async (): Promise<ChatConversation[]> => { 
         // Don't proceed if required data is missing or already fetching
         if (!currentUser || !authToken || !isAuthenticated || !apiEndpoint || fetchingConversationsRef.current) {
             return [];

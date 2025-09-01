@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MobileHeaderProps {
@@ -11,6 +12,9 @@ interface MobileHeaderProps {
   onSearch?: (query: string) => void;
   showSearch?: boolean;
   searchQuery?: string;
+  filters?: Array<{ id: string; label: string; active: boolean; }>;
+  onFilterSelect?: (filterId: string) => void;
+  showFilters?: boolean;
 }
 
 export default function MobileHeader({
@@ -18,6 +22,9 @@ export default function MobileHeader({
   onSearch,
   showSearch = true,
   searchQuery: externalSearchQuery = "",
+  filters = [],
+  onFilterSelect,
+  showFilters = false,
 }: MobileHeaderProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -71,6 +78,30 @@ export default function MobileHeader({
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 rounded-full border-muted bg-muted/50 focus:bg-background"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Filter Buttons */}
+      {showFilters && filters.length > 0 && (
+        <div className="px-4 pb-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {filters.map((filter) => (
+              <Button
+                key={filter.id}
+                variant={filter.active ? "default" : "outline"}
+                size="sm"
+                onClick={() => onFilterSelect?.(filter.id)}
+                className={cn(
+                  "whitespace-nowrap flex-shrink-0 rounded-full text-xs",
+                  filter.active 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {filter.label}
+              </Button>
+            ))}
           </div>
         </div>
       )}

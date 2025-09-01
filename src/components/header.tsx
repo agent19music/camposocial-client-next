@@ -155,7 +155,7 @@ const Header: FC<HeaderProps> = ({
       {/* Mobile Header with Search and Filters */}
       <MobileHeader
         searchPlaceholder={getSearchPlaceholder()}
-        filters={getPageFilters()}
+        filters={getPageFilters()}    
         onSearch={handleSearch}
         onFilterSelect={handleFilterSelect}
         showSearch={true}

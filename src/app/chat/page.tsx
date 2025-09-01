@@ -155,7 +155,7 @@ export default function ChatPage() {
                       </p>
                     </div>
                     
-                    {conversation?.unreadCount > 0 && (
+                    {conversation?.unreadCount && conversation.unreadCount > 0 && (
                       <div className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         {conversation.unreadCount}
                       </div>
@@ -179,7 +179,7 @@ export default function ChatPage() {
       <div className={`${showChatWindow || !selectedFriend ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
         {selectedFriend ? (
           <ChatWindow
-            conversationId={currentUser && generateConversationId(currentUser.id, selectedFriend)}
+            conversationId  ={currentUser && generateConversationId(currentUser.id, selectedFriend) || undefined}    
             friendId={selectedFriend}
             onBack={() => setSelectedFriend(null)}
           />

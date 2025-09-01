@@ -47,6 +47,20 @@ export default function SingleYapView() {
       setYapReplies(selectedYap.replies);
     }
   }, [params?.slug, selectedYap, isAuthenticated, fetchYapById, setYapReplies])
+
+  interface Reply {
+    id: number;
+    content: string;
+    created_at: string;
+    user?: {
+      id: string;
+      username: string;
+      display_name: string;
+      avatar: string;
+    };
+    parent_reply_id?: number;
+    isOptimistic?: boolean;
+  }
   
   const eventLinks = [
     { 
@@ -161,7 +175,7 @@ export default function SingleYapView() {
           
           <Separator className="my-1" />
           
-          <ReplyList replies={yapReplies} />
+          <ReplyList replies={yapReplies.filter((r): r is Reply & { user: NonNullable<Reply['user']> } => r.user !== undefined)} />
         </main>
       </div>
     </div>

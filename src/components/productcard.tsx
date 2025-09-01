@@ -5,7 +5,8 @@ import { CardContent, Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Star } from 'lucide-react';
-import { MarketplaceContext, Product } from '@/context/marketplacecontext';
+import { MarketplaceContext } from '@/context/marketplacecontext';
+import { Product } from '@/utils/types';
 
 
 export default function  ProductCard  ({ product }: { product: Product })  {

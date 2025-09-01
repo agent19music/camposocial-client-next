@@ -193,7 +193,7 @@ export default function Component() {
       {replies.map((reply, index) => (
         <Reply
           key={index}
-          author={reply.user.display_name}
+          author={reply.user?.display_name || 'Anonymous'}
           content={reply.content}
           timestamp={reply.created_at}
         />

@@ -7,20 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { MessageCircle, Repeat2, Heart, Share2, MoreHorizontal } from "lucide-react"
 import { cn } from '@/lib/utils'
-
-interface Reply {
-  id: number;
-  content: string;
-  created_at: string;
-  user: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar: string;
-  };
-  parent_reply_id?: number;
-  isOptimistic?: boolean;
-}
+import { Reply } from '@/utils/types'
 
 export const ReplyComponent = ({ reply }: { reply: Reply }) => {
   const [isLiked, setIsLiked] = useState(false)
@@ -63,10 +50,10 @@ export const ReplyComponent = ({ reply }: { reply: Reply }) => {
     <article className="px-4 py-3 hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-colors">
       <div className="flex gap-3">
         <Avatar className="w-10 h-10 flex-shrink-0">
-          <AvatarImage src={reply.user.avatar || undefined} />
+          <AvatarImage src={reply.user?.avatar || undefined} />
           <AvatarFallback className="text-sm font-semibold">
-            {reply.user.display_name?.[0]?.toUpperCase() || 
-             reply.user.username?.[0]?.toUpperCase() || 
+            {reply.user?.display_name?.[0]?.toUpperCase() || 
+             reply.user?.username?.[0]?.toUpperCase() || 
              'U'}
           </AvatarFallback>
         </Avatar>
@@ -74,10 +61,10 @@ export const ReplyComponent = ({ reply }: { reply: Reply }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 text-[15px]">
               <span className="font-bold hover:underline cursor-pointer">
-                {reply.user.display_name}
+                {reply.user?.display_name || 'Anonymous'}
               </span>
               <span className="text-muted-foreground">
-                @{reply.user.username}
+                @{reply.user?.username || 'anonymous'}
               </span>
               <span className="text-muted-foreground">·</span>
               <span className="text-muted-foreground hover:underline cursor-pointer">
@@ -105,7 +92,7 @@ export const ReplyComponent = ({ reply }: { reply: Reply }) => {
                     )
                   }
                 >
-                  Block @{reply.user.username}
+                  Block @{reply.user?.username || 'anonymous'}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="dark:hover:bg-gray-700"

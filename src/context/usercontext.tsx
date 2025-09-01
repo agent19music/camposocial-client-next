@@ -6,35 +6,9 @@ import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { send } from "process";
 import {toast} from "react-hot-toast";
+import { UserContextProps } from "../utils/types";
 
-interface UserContextProps {
-  user: any[];
-  users: any[];
-  sendFriendRequest: (receipientId:string) => void;
-  receivedRequests: any[];
-  setReceivedRequests: (receivedRequests: any[]) => void;
-  removeFriend: (friendId: string) => void;
-  addFriend: (requesterId: string) => void;
-  blockUser: (targetId: string, action: 'block' | 'unblock') => void;
-  setUsers: (users: any[]) => void;
-  setFilteredUsers: (users: any[]) => void;
-  onchange: (onchange: boolean) => void;
-  rejectFriendRequest: (requesterId: string) => void;
-  friends: any[];
-  filteredFriends: any[];
-  searchUsers: (query: string) => Promise<any[]>;
-  isLoadingUsers: boolean;
-  isLoadingSearch: boolean;
-}
-
-// Yap interface to define the structure of each yap
-interface Event {
-  id: string;
-  avatar: string;
-  course: string;
-  email: string;
-  
-}
+ 
 
 const defaultValue: UserContextProps = {
   user: [],
@@ -58,11 +32,7 @@ const defaultValue: UserContextProps = {
 
 export const UserContext = createContext<UserContextProps>(defaultValue);
 
-interface UserProviderProps {
-  children: ReactNode;
-}
-
-export default function UserProvider({ children }: UserProviderProps) {
+export default function UserProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   const [isLoading, setIsLoading] = useState(false);

@@ -3,39 +3,16 @@
 import { createContext, ReactNode, useState, useContext } from "react";
 import { AuthContext } from "./authcontext";
 import { toast } from "react-hot-toast";
+import { FriendshipContextType, FriendshipFriend, FriendshipFriendRequest } from "../utils/types";
 
-interface FriendshipContextType {
-  sendFriendRequest: (recipientId: string) => Promise<void>;
-  acceptFriendRequest: (requesterId: string) => Promise<void>;
-  rejectFriendRequest: (requesterId: string) => Promise<void>;
-  blockUser: (userId: string) => Promise<void>;
-  unfriend: (friendId: string) => Promise<void>;
-  getFriendRequests: () => Promise<void>;
-  pendingRequests: FriendRequest[];
-  friends: Friend[];
-}
-
-interface Friend {
-  id: string;
-  username: string;
-  photoUrl: string;
-  course?: string;
-  isOnline: boolean;
-}
-
-interface FriendRequest {
-  id: string;
-  username: string;
-  photoUrl: string;
-  timestamp: Date;
-}
+ 
 
 export const FriendshipContext = createContext<FriendshipContextType>({} as FriendshipContextType);
 
 export function FriendshipProvider({ children }: { children: ReactNode }) {
   const { authToken, isAuthenticated } = useContext(AuthContext);
-  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<FriendshipFriendRequest[]>([]);
+  const [friends, setFriends] = useState<FriendshipFriend[]>([]);
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   // Helper function to check authentication

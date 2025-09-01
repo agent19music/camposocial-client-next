@@ -5,32 +5,9 @@ import {nanoid} from 'nanoid';
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { toast } from "react-hot-toast";
+import { EventContextProps, AppEvent, EventProviderProps } from "../utils/types";
 
-interface EventContextProps {
-  events: any[];
-  setCategory: (category: string) => void;
-  isLoading: boolean;
-  onchange: boolean;
-  setOnchange: (value: boolean) => void;
-  navigateToSingleEventView : (event: Event) => void;
-  selectedEvent: Event | null;
-}
-
-// Event interface to define the structure of each event
-interface Event {
-  id: string;
-  eventId?: string;
-  poster: string;
-  entry_fee: number;
-  date: string;
-  comments: [];
-  user: [];
-  title: string;
-  description : string;
-  category: string;
-  username: string;
-  userimage: string;
-}
+ 
 
 const defaultValue: EventContextProps = {
   events: [],
@@ -44,10 +21,6 @@ const defaultValue: EventContextProps = {
 
 export const EventContext = createContext<EventContextProps>(defaultValue);
 
-interface EventProviderProps {
-  children: ReactNode;
-}
-
 export default function EventProvider({ children }: EventProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const { authToken, isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
@@ -57,7 +30,7 @@ export default function EventProvider({ children }: EventProviderProps) {
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [onchange, setOnchange] = useState(false);
   const [category, setCategory] = useState("Fun"); // Default category
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null); // Initially no event is selected
+  const [selectedEvent, setSelectedEvent] = useState<AppEvent | null>(null); // Initially no event is selected
 
   const router = useRouter();
 
@@ -242,7 +215,7 @@ export default function EventProvider({ children }: EventProviderProps) {
   }
 
   // Function to navigate to a single Event view
-  function navigateToSingleEventView(event: Event) { 
+  function navigateToSingleEventView(event: AppEvent) { 
     const eventId = event.eventId || event.id;
     const slug = slugify(eventId);
     

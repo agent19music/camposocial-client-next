@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isYesterday } from 'date-fns';
+import Image from 'next/image';
 import { 
   Send, 
   Paperclip, 
@@ -25,7 +26,7 @@ import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { secureDB } from '@/utils/secureStorage';
 import { toast } from 'react-hot-toast';
-
+import { ChatMessage, ChatMedia    } from '@/utils/types';
 interface ChatWindowProps {
   conversationId?: string;
   friendId: string;
@@ -62,11 +63,65 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load cached messages on mount
+  const loadCachedMessages = useCallback(async () => {
+    if (!conversationId) return;
+    
+    const cached = await secureDB.getCachedMessages(conversationId, 50);
+    if (cached.length > 0) {
+      const formattedMessages = cached.map(msg => ({
+        id: parseInt(msg.id),
+        senderId: msg.senderId,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        encrypted: msg.encrypted,
+        isSent: msg.isSent ?? false,
+        isDelivered: msg.isDelivered ?? false,
+        isRead: msg.isRead ?? false,
+        reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type })),
+        media: [] as ChatMedia[]
+      }));
+      setMessages(formattedMessages as ChatMessage[]);
+    }
+    
+    // Fetch latest messages from server
+    if (friendId) {
+      await getMessages(friendId, 50);
+    }
+  }, [conversationId, friendId, getMessages, setMessages]);
+
   useEffect(() => {
     loadCachedMessages();
-  }, [conversationId]);
+  }, [loadCachedMessages]);
 
   // WebSocket event handlers
+  const handleReactionUpdate = useCallback((data: any) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === data.message_id
+        ? {
+            ...msg,
+            reactions: [
+              ...(msg.reactions || []).filter(r => r.userId !== data.user_id),
+              { userId: data.user_id, reactionType: data.reaction_type }
+            ]
+          }
+        : msg as ChatMessage
+    ));
+  }, [setMessages]);
+
+  // Handle message edit
+  const handleMessageEdit = useCallback((data: any) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === data.message_id
+        ? { ...msg, content: data.new_content, isEdited: true }
+        : msg
+    ));
+  }, [setMessages]);
+
+  // Handle message delete
+  const handleMessageDelete = useCallback((data: any) => {
+    setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
+  }, [setMessages]);
+
   useEffect(() => {
     if (!socket) return;
 
@@ -79,10 +134,13 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
         timestamp: new Date(data.timestamp),
         encrypted: data.encrypted,
         isSent: true,
-        isDelivered: true
+        isDelivered: true,
+        media: data.media,
+        reactions: data.reactions,
+        isRead: data.is_read
       };
       
-      setMessages(prev => [...prev, newMessage]);
+      setMessages(prev => [...prev, newMessage as ChatMessage]);
       
       // Cache the message
       await secureDB.cacheMessage({
@@ -135,7 +193,7 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       off('message_edited', handleMessageEdit);
       off('message_deleted', handleMessageDelete);
     };
-  }, [socket, friendId, conversationId, on, off]);
+  }, [socket, friendId, conversationId, on, off, handleReactionUpdate, handleMessageEdit, handleMessageDelete, setMessages]);
 
   // Auto-scroll to bottom for new messages
   useEffect(() => {
@@ -143,32 +201,6 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
-
-  // Load cached messages
-  const loadCachedMessages = async () => {
-    if (!conversationId) return;
-    
-    const cached = await secureDB.getCachedMessages(conversationId, 50);
-    if (cached.length > 0) {
-      const formattedMessages = cached.map(msg => ({
-        id: msg.id,
-        senderId: msg.senderId,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        encrypted: msg.encrypted,
-        isSent: msg.isSent,
-        isDelivered: msg.isDelivered,
-        isRead: msg.isRead,
-        reactions: msg.reactions
-      }));
-      setMessages(formattedMessages);
-    }
-    
-    // Fetch latest messages from server
-    if (friendId) {
-      await getMessages(friendId, 50);
-    }
-  };
 
   // Handle typing indicator
   const handleTyping = useCallback(() => {
@@ -209,16 +241,18 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       
       if (cached.length > 0) {
         const formattedMessages = cached.map(msg => ({
-          id: msg.id,
+          id: parseInt(msg.id),
           senderId: msg.senderId,
           content: msg.content,
           timestamp: msg.timestamp,
           encrypted: msg.encrypted,
-          isSent: msg.isSent,
-          isDelivered: msg.isDelivered,
-          isRead: msg.isRead
+          isSent: msg.isSent ?? false,
+          isDelivered: msg.isDelivered ?? false,
+          isRead: msg.isRead ?? false,
+          media: [] as ChatMedia[],
+          reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type }))   
         }));
-        setMessages(prev => [...formattedMessages, ...prev]);
+        setMessages(prev => [...formattedMessages as ChatMessage[], ...prev] as ChatMessage[]);
       } else {
         // Fetch from server
         const olderMessages = await getMessages(friendId, 20, oldestMessage.id);
@@ -240,7 +274,7 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
         }, 0);
       }
     }
-  }, [messages, isLoadingMore, hasMoreMessages, friendId, conversationId, getMessages]);
+  }, [messages, isLoadingMore, hasMoreMessages, friendId, conversationId, getMessages, setMessages]);
 
   // Send message handler
   const handleSend = async () => {
@@ -252,17 +286,20 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
     
     // Optimistic update
     const tempMessage = {
-      id: `temp_${Date.now()}`,
+      id: Date.now(), // Use number instead of string
       senderId: currentUser?.id || '',
       content: messageContent,
       timestamp: new Date(),
       isSent: false,
       isDelivered: false,
       isRead: false,
-      replyTo: replyingTo
+      replyTo: replyingTo?.id,
+      media: [] as ChatMedia[],
+      reactions: [] as { userId: string; reactionType: string }[],
+      encrypted: true
     };
     
-    setMessages(prev => [...prev, tempMessage]);
+    setMessages(prev => [...prev, tempMessage as ChatMessage]);
     
     try {
       if (editingMessage) {
@@ -278,13 +315,16 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       
       // Cache the message
       await secureDB.cacheMessage({
-        id: tempMessage.id,
+        id: String(tempMessage.id),
         conversationId: conversationId || '',
         content: messageContent,
         senderId: currentUser?.id || '',
         timestamp: new Date(),
         encrypted: true,
-        isSent: true
+        isSent: true,
+        isDelivered: true,
+        isRead: false,
+        reactions: []
       });
       
       // Play send sound
@@ -301,35 +341,6 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
         timestamp: new Date()
       });
     }
-  };
-
-  // Handle reactions
-  const handleReactionUpdate = (data: any) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === data.message_id
-        ? {
-            ...msg,
-            reactions: [
-              ...(msg.reactions || []).filter(r => r.userId !== data.user_id),
-              { userId: data.user_id, type: data.reaction_type }
-            ]
-          }
-        : msg
-    ));
-  };
-
-  // Handle message edit
-  const handleMessageEdit = (data: any) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === data.message_id
-        ? { ...msg, content: data.new_content, isEdited: true }
-        : msg
-    ));
-  };
-
-  // Handle message delete
-  const handleMessageDelete = (data: any) => {
-    setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
   };
 
   const vibrate = () => {
@@ -385,10 +396,12 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
             </button>
           )}
           <div className="relative">
-            <img 
+            <Image 
               src={friendDetails?.avatar || '/default-avatar.png'} 
-              alt={friendDetails?.username}
-              className="w-10 h-10 rounded-full"
+              alt={friendDetails?.username || 'User avatar'}
+              className="w-10 h-10 rounded-full object-cover"
+              width={40}
+              height={40}
             />
             {friendDetails?.isOnline && (
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />

@@ -1,49 +1,12 @@
 "use client";
 
 import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
+import { AuthContextType, AuthProviderProps } from "../utils/types";
 import { useRouter } from "next/navigation";
 import { MarketplaceContext } from "./marketplacecontext";
 import {toast} from 'react-hot-toast'
 
-interface User {
-  username: string;
-  password: string;
-  onAuthChange: boolean;
-}
-type currentUser = {
-  id: string
-  first_name: string
-  last_name: string
-  address: string
-  phone_no: string
-  email: string
-  avatar: string
-  is_seller: boolean
-  bio: string
-  category: string
-  username: string
-  display_name: string
-  yap_header_img?: string
-} | null
-
-
-// Define the AuthContext interface
-interface AuthContextType {
-  login: (username: string, password: string, apiEndpoint: string) => void;
-  socialLogin: (provider: string, data: any) => Promise<void>;
-  completeProfile: (profileData: any) => Promise<void>;
-  logout: () => void;
-  currentUser: currentUser | null;
-  authToken: string | null;
-  updateUserContext: () => void;
-  onAuthChange: boolean;
-  isProfileComplete: boolean;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  showSocialModal: boolean;
-  setShowSocialModal: (show: boolean) => void;
-  sellerlogin: (email: string, password: string) => Promise<void>;
-}
+ 
 
 // Create the AuthContext with a default value (null user initially)
 export const AuthContext = createContext<AuthContextType>({
@@ -62,11 +25,6 @@ export const AuthContext = createContext<AuthContextType>({
     setShowSocialModal: () => {},
     sellerlogin: async () => {}
 });
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
 
 export default function AuthProvider({ children }: AuthProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 

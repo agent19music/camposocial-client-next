@@ -6,88 +6,11 @@ import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { get } from "http";
 import { set } from "date-fns";
-
-// Product interface to define the structure of each product
-export interface Variation {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  value: string;
-}
-
-export interface Product {
-  id: string;
-  average_rating: number;
-  category: string;
-  created_at: string;
-  images: string[];
-  title: string;
-  brand: string;
-  price: number;
-  sellerAvatar: string| null;
-  sellerIsVerified: boolean;
-  sellerName:string;
-  seller_id: string;
-  description: string;
-  rating: number;
-  reviewsCount: number;
-  seller:Seller;
-  reviews: {
-      username: string;
-      rating: number;
-      text: string;
-      id: number;
-      avatar: string;
-  }[];
-  variations: Variation[];
-  isBestseller?: boolean;
-  isNew?: boolean;
-}
-
-export interface Seller {
-  name: string;
-  avatar: string;
-  id: string;
-  sales: number;
-  rating: number;
-  is_verified: boolean;
-
-  // Optional fields used by seller page
-  location?: string;
-  products?: Product[];
-  reviews?: any;
-  joinedDate?: string;
-  about?: string;
+import { Variation, Product, Seller, MarketplaceContextProps } from "../utils/types";
 
 
-}
 
-// MarketplaceContextProps to define the types used in the context
-interface MarketplaceContextProps {
-  products: Product[];
-  isLoading: boolean;
-  onchange: boolean;
-  isPayed: boolean;
-  setOnchange: (value: boolean) => void;
-  setIsPayed : (value: boolean) => void;
-  selectedProduct: Product | null; // Null when no product is selected
-  setSelectedProduct: (product: Product | null) => void; // Setter function for selectedProduct
-  navigateToSingleProductView: (product: Product) => void; // Add this to the interface
-  navigateToSingleSellerView: (seller: Seller) => void; // Add this to the interface
-  setSelectedSeller : (seller: Seller | null) => void;
-  selectedSeller: Seller | null;
-  updateCart: boolean;
-  setUpdateCart: (value: boolean) => void;
-  getLatestOrderId: () => Promise<number | null>;
-  setOrderId: (value: string | null) => void;
-  orderId: string | null;
-  sellerStatusChange: boolean;
-  setSellerStausChange: (value: boolean) => void;
-  addToCart: (productId: string, quantity?: number, variationId?: string) => Promise<any | void>;
-  deslugify: (slug: string) => string;
-
-}
+// MarketplaceContextProps moved to src/utils/types
 
 // Default values for the context
 const defaultValue: MarketplaceContextProps = {

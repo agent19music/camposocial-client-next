@@ -13,7 +13,8 @@ import Header from '@/components/header'
 import SideNav from '@/components/sidenav'
 import { Paintbrush, Cookie, Book, Shirt, Monitor } from "lucide-react"
 import { useContext } from 'react'
-import { MarketplaceContext, Seller, Product } from '@/context/marketplacecontext'
+import { MarketplaceContext } from '@/context/marketplacecontext'
+import { Seller, Product } from '@/utils/types'
 import { toast } from 'react-hot-toast'
 import { useParams } from 'next/navigation'
 import { Skeleton } from "@/components/ui/skeleton"

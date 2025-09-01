@@ -2,17 +2,8 @@
 
 import React from 'react'
 import { ReplyComponent } from './reply'
-interface Reply {
-  id: number;
-  content: string;
-  created_at: string;
-  user: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar: string;
-  };
-}
+import { Reply } from '@/utils/types'
+
 export const ReplyList = ({ replies }: { replies: Reply[] }) => {
   return (
     <div className="divide-y divide-border">
