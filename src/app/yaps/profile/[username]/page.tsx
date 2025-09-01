@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect, useContext, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -135,20 +135,16 @@ interface Yap {
     isOptimistic?: boolean;
   }
 
-interface ProfilePageProps {
-  user?: User
-}
-
-export default function ProfilePage({ user: propUser }: ProfilePageProps) {
+export default function ProfilePage() {
   const params = useParams()
   const router = useRouter()
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
   const { currentUser, authToken } = useContext(AuthContext)
   // const { fetchYaps } = useContext(YapContext)  // Commented out as not used
   
-  const [user, setUser] = useState<User | null>(propUser || null)
+  const [user, setUser] = useState<User | null>(null)
   const [yaps, setYaps] = useState<Yap[]>([])
-  const [isLoading, setIsLoading] = useState(!propUser)
+  const [isLoading, setIsLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [activeTab, setActiveTab] = useState("yaps")
@@ -175,20 +171,26 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
     }
   }, [])
 
-  useEffect(() => {
-    if (propUser) {
-      setUser(propUser)
-      setIsOwnProfile(currentUser?.username === propUser.username)
-      fetchUserYaps(propUser.username)
-      if (currentUser?.username !== propUser.username) {
-        fetchFollowStatus(propUser.id)
-      }
-    } else if (username && isOnline) {
-      fetchUserData(username)
-    }
-  }, [propUser, username, currentUser, isOnline])
+  const fetchFollowStatus = useCallback(async (userId: number) => {
+    if (!isOnline) return
 
-  const fetchUserData = async (username: string) => {
+    try {
+      const response = await fetch(`${apiEndpoint}/users/${userId}/follow-status`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsFollowing(data.is_following)
+      }
+    } catch (error) {
+      console.error('Error fetching follow status:', error)
+    }
+  }, [apiEndpoint, authToken, isOnline])
+
+  const fetchUserData = useCallback(async (username: string) => {
     if (!isOnline) {
       setNetworkError(true)
       return
@@ -212,7 +214,7 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
         setYaps(data.yaps?.items || [])
         
         // Fetch follow status if not own profile
-        if (!isOwnProfile) {
+        if (currentUser?.username !== userData.username) {
           fetchFollowStatus(userData.id)
         }
       } else if (response.status === 404) {
@@ -230,28 +232,9 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [apiEndpoint, authToken, currentUser, isOnline, fetchFollowStatus])
 
-  const fetchFollowStatus = async (userId: number) => {
-    if (!isOnline) return
-
-    try {
-      const response = await fetch(`${apiEndpoint}/users/${userId}/follow-status`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setIsFollowing(data.is_following)
-      }
-    } catch (error) {
-      console.error('Error fetching follow status:', error)
-    }
-  }
-
-  const fetchUserYaps = async (username: string) => {
+  const fetchUserYaps = useCallback(async (username: string) => {
     if (!isOnline) return
 
     setYapsLoading(true)
@@ -271,7 +254,7 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
     } finally {
       setYapsLoading(false)
     }
-  }
+  }, [apiEndpoint, authToken, isOnline])
 
   const handleFollow = async () => {
     if (!user || !isOnline) {
@@ -330,6 +313,12 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase()
   }
+
+  useEffect(() => {
+    if (username && isOnline) {
+      fetchUserData(username)
+    }
+  }, [username, isOnline, fetchUserData])
 
   // Show offline alert
   if (!isOnline) {
