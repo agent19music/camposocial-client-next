@@ -16,7 +16,6 @@ import {
   Users,
   Calendar,
   MessageSquare,
-  Sparkles,
   ShoppingBag,
   UserPlus,
   Plus,
@@ -46,6 +45,8 @@ import AddYap from '@/components/addyap'
 import AddEvent from "@/components/addevent";
 import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
+import { useWebSocket } from "@/context/websocket-context";
+import { NotificationDot, NotificationCounter, YapNotificationBanner } from "@/components/notification-indicators";
 import {toast} from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -73,6 +74,15 @@ const Header: FC<HeaderProps> = ({
   const router = useRouter();
 
   const { currentUser, logout } = useContext(AuthContext);
+  const { 
+    notificationCounts, 
+    yapCounts, 
+    hasNewNotifications, 
+    hasNewYaps, 
+    markYapsAsSeen, 
+    markFriendRequestsAsSeen,
+    isConnected 
+  } = useWebSocket();
   
   useEffect(() => {
     if (pathname) {
@@ -150,8 +160,37 @@ const Header: FC<HeaderProps> = ({
     onFilterSelect?.(filterId);
   };
 
+  // Handle navigation to yaps page and mark yaps as seen
+  const handleYapsNavigation = () => {
+    if (hasNewYaps) {
+      markYapsAsSeen();
+    }
+    router.push('/yaps');
+  };
+
+  // Handle navigation to friends page and mark friend requests as seen if on requests tab
+  const handleFriendsNavigation = () => {
+    router.push('/friends');
+  };
+
+  // Mark friend requests as seen when user visits friends page with requests
+  const handleFriendRequestsViewed = () => {
+    if (notificationCounts.friend_requests > 0) {
+      markFriendRequestsAsSeen();
+    }
+  };
+
   return (
     <>
+      {/* Yap notification banner - shown when there are new yaps */}
+      {hasNewYaps && !activePage.includes("/yaps") && (
+        <YapNotificationBanner
+          count={yapCounts.new_yaps_count}
+          authors={yapCounts.recent_authors}
+          onViewNew={handleYapsNavigation}
+        />
+      )}
+
       {/* Mobile Header with Search and Filters */}
       <MobileHeader
         searchPlaceholder={getSearchPlaceholder()}
@@ -181,18 +220,24 @@ const Header: FC<HeaderProps> = ({
             </Button>
           </Link>
 
-          <Link href="/yaps">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`text-muted-foreground hover:text-foreground ${
-                activePage.includes("/yaps") ? "text-foreground" : ""
-              }`}
-            >
-              <MessageSquare className="h-5 w-5 mr-2" />
-              Yaps
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleYapsNavigation}
+            className={`relative text-muted-foreground hover:text-foreground ${
+              activePage.includes("/yaps") ? "text-foreground" : ""
+            }`}
+          >
+            <MessageSquare className="h-5 w-5 mr-2" />
+            Yaps
+            {/* Purple notification dot for new yaps */}
+            <NotificationDot 
+              show={hasNewYaps} 
+              size="sm" 
+              position="top-right"
+              className="ml-2"
+            />
+          </Button>
 
           {/* Plus Icon with Popover */}
           <Popover>
@@ -228,18 +273,24 @@ const Header: FC<HeaderProps> = ({
             </Button>
           </Link>
 
-          <Link href="/friends">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`text-muted-foreground hover:text-foreground ${
-                activePage.includes("/friends") ? "text-foreground" : ""
-              }`}
-            >
-              <UserPlus className="h-5 w-5 mr-2" />
-              Friends
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleFriendsNavigation}
+            className={`relative text-muted-foreground hover:text-foreground ${
+              activePage.includes("/friends") ? "text-foreground" : ""
+            }`}
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Friends
+            {/* Purple notification dot for friend requests */}
+            <NotificationDot 
+              show={notificationCounts.friend_requests > 0} 
+              size="sm" 
+              position="top-right"
+              className="ml-2"
+            />
+          </Button>
         </div>
 
         <div className="mt-auto hidden lg:flex items-center space-x-4">
@@ -319,18 +370,25 @@ const Header: FC<HeaderProps> = ({
           </Button>
         </Link>
 
-        <Link href="/yaps">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
-              activePage.includes("/yaps") ? "text-foreground bg-muted/50" : ""
-            }`}
-          >
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleYapsNavigation}
+          className={`relative flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
+            activePage.includes("/yaps") ? "text-foreground bg-muted/50" : ""
+          }`}
+        >
+          <div className="relative">
             <MessageSquare className="h-5 w-5 mb-1" />
-            <span className="text-xs">Yaps</span>
-          </Button>
-        </Link>
+            {/* Purple notification dot for mobile */}
+            <NotificationDot 
+              show={hasNewYaps} 
+              size="sm" 
+              position="top-right"
+            />
+          </div>
+          <span className="text-xs">Yaps</span>
+        </Button>
 
         <Link href="/marketplace">
           <Button
@@ -345,18 +403,25 @@ const Header: FC<HeaderProps> = ({
           </Button>
         </Link>
 
-        <Link href="/friends">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
-              activePage.includes("/friends") ? "text-foreground bg-muted/50" : ""
-            }`}
-          >
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleFriendsNavigation}
+          className={`relative flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
+            activePage.includes("/friends") ? "text-foreground bg-muted/50" : ""
+          }`}
+        >
+          <div className="relative">
             <UserPlus className="h-5 w-5 mb-1" />
-            <span className="text-xs">Friends</span>
-          </Button>
-        </Link>
+            {/* Purple notification dot for mobile */}
+            <NotificationDot 
+              show={notificationCounts.friend_requests > 0} 
+              size="sm" 
+              position="top-right"
+            />
+          </div>
+          <span className="text-xs">Friends</span>
+        </Button>
       </nav>
     </>
   );

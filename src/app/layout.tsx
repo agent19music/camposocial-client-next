@@ -3,9 +3,11 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/themecontext";
 import AuthProvider from "@/context/authcontext";
+import { WebSocketProvider } from "@/context/websocket-context";
 import AuthenticatedWrapper from "@/components/AuthenticatedWrapper";
 import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import StructuredData, { websiteSchema, organizationSchema } from "@/components/StructuredData";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -19,32 +21,109 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "CampoSocial - Your Campus Connected",
-  description: "The social platform designed for university life",
-  authors: [{ name: "CampoSocial" }],
-  icons: {
-    icon: "/camposocial_logo.png",
-    shortcut: "/camposocial_logo.png",
-    apple: "/camposocial_logo.png"
+  metadataBase: new URL('https://camposocial.com'),
+  title: {
+    default: "CampoSocial - Your Campus Connected",
+    template: "%s | CampoSocial"
   },
-  openGraph: {
-    title: "CampoSocial - Your Campus Connected",
-    description: "The social platform designed for university life",
-    type: "website",
-    images: [
-      {
-        url: "/camposocial_logo.png",
-        width: 1200,
-        height: 630,
-        alt: "CampoSocial - Your Campus Connected"
-      }
+  description: "The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships. Join thousands of students already using CampoSocial.",
+  keywords: [
+    "campus social network",
+    "university social platform",
+    "student community",
+    "campus events",
+    "student marketplace",
+    "college social app",
+    "university life",
+    "student networking",
+    "campus hangouts",
+    "student marketplace"
+  ],
+  authors: [{ 
+    name: "CampoSocial Team",
+    url: "https://camposocial.com"
+  }],
+  creator: "CampoSocial",
+  publisher: "CampoSocial",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+    yahoo: 'your-yahoo-verification-code',
+  },
+  alternates: {
+    canonical: 'https://camposocial.com',
+  },
+  icons: {
+    icon: [
+      { url: '/camposocial_logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/camposocial_logo.png', sizes: '16x16', type: 'image/png' }
+    ],
+    shortcut: '/camposocial_logo.png',
+    apple: [
+      { url: '/camposocial_logo.png', sizes: '180x180', type: 'image/png' }
+    ],
+    other: [
+      { rel: 'mask-icon', url: '/camposocial_logo.png', color: '#8B5CF6' }
     ]
   },
+  manifest: '/manifest.json',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://camposocial.com',
+    siteName: 'CampoSocial',
+    title: 'CampoSocial - Your Campus Connected',
+    description: 'The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships.',
+    images: [
+      {
+        url: '/camposocial_logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'CampoSocial - Your Campus Connected',
+        type: 'image/png',
+      },
+      {
+        url: '/camposocial_logo.png',
+        width: 800,
+        height: 600,
+        alt: 'CampoSocial - Campus Social Platform',
+        type: 'image/png',
+      }
+    ],
+  },
   twitter: {
-    card: "summary_large_image",
-    site: "@camposocial",
-    images: ["/camposocial_logo.png"]
-  }
+    card: 'summary_large_image',
+    site: '@camposocial',
+    creator: '@camposocial',
+    title: 'CampoSocial - Your Campus Connected',
+    description: 'The ultimate social platform designed for university life. Connect with your campus community!',
+    images: ['/camposocial_logo.png'],
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'CampoSocial',
+    'application-name': 'CampoSocial',
+    'msapplication-TileColor': '#8B5CF6',
+    'msapplication-config': '/browserconfig.xml',
+    'theme-color': '#8B5CF6',
+  },
 };
 
 export default function RootLayout({
@@ -56,6 +135,10 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <StructuredData type="website" data={websiteSchema} />
+        <StructuredData type="organization" data={organizationSchema} />
+      </head>
       <body className={`${inter.variable} ${playfair.variable} ${inter.className}`}>
         <ThemeProvider>   
           <AuthProvider>
@@ -79,9 +162,11 @@ export default function RootLayout({
             />
             {googleClientId && googleClientId !== 'your_google_client_id_here' ? (
               <GoogleOAuthProvider clientId={googleClientId}>
-                <AuthenticatedWrapper>
-                  {children}
-                </AuthenticatedWrapper>
+                <WebSocketProvider>
+                  <AuthenticatedWrapper>
+                    {children}
+                  </AuthenticatedWrapper>
+                </WebSocketProvider>
               </GoogleOAuthProvider>
             ) : (
               <>
@@ -91,9 +176,11 @@ export default function RootLayout({
                     <p>Please set GOOGLE_CLIENT_ID in your .env.local file</p>
                   </div>
                 )}
-                <AuthenticatedWrapper>
-                  {children}
-                </AuthenticatedWrapper>
+                <WebSocketProvider>
+                  <AuthenticatedWrapper>
+                    {children}
+                  </AuthenticatedWrapper>
+                </WebSocketProvider>
               </>
             )}
           </AuthProvider>

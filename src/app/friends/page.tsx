@@ -14,17 +14,22 @@ import SideNav from "@/components/sidenav";
 // Friend Components
 import { FriendCard } from "@/components/friends/FriendCard";
 import { RequestCard } from "@/components/friends/RequestCard";
+import { EnhancedRequestCard } from "@/components/friends/EnhancedRequestCard";
 import { SearchableDiscover } from "@/components/friends/SearchableDiscover";
 import { EmptyState } from "@/components/friends/EmptyState";
 import { FriendCardSkeleton } from "@/components/friends/LoadingSkeletons";
-
 // Contexts
 import { AuthContext } from "@/context/authcontext";
 import { UserContext } from "@/context/usercontext";
+import { useWebSocket } from "@/context/websocket-context";
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // State for managing request status updates
+  const [requestStates, setRequestStates] = useState<Record<string, 'accepting' | 'declining' | 'accepted' | 'declined'>>({});
+  
   const { currentUser } = useContext(AuthContext);
   const { 
     friends, 
@@ -38,6 +43,11 @@ export default function FriendsPage() {
     isLoadingUsers,
     isLoadingSearch
   } = useContext(UserContext);
+
+  console.log('receivedRequests', receivedRequests);
+  
+  // Get WebSocket context for notification counts
+  const { notificationCounts, markFriendRequestsAsSeen } = useWebSocket();
   
   const router = useRouter();
 
@@ -46,17 +56,26 @@ export default function FriendsPage() {
     { label: "Home", icon: <MessageSquare className="h-4 w-4" />, onClick: () => router.push("/") },
   ];
 
-  // Filter pills
+  // Filter pills with notification counts
   const filterPills: FilterPill[] = [
     { id: "friends", label: "Friends", active: activeTab === "friends" },
     { id: "messages", label: "Messages", active: activeTab === "messages" },
     { id: "discover", label: "Discover", active: activeTab === "discover" },
-    { id: "requests", label: "Requests", active: activeTab === "requests" },
+    { 
+      id: "requests", 
+      label: "Requests", 
+      active: activeTab === "requests",
+      badge: notificationCounts.friend_requests > 0 ? notificationCounts.friend_requests : undefined
+    },
     { id: "activity", label: "Activity", active: activeTab === "activity" },
   ];
 
   const handleFilterSelect = (filterId: string) => {
     setActiveTab(filterId);
+    // Mark friend requests as seen when user clicks on requests tab
+    if (filterId === "requests" && notificationCounts.friend_requests > 0) {
+      markFriendRequestsAsSeen();
+    }
   };
 
   // Friend actions
@@ -69,11 +88,59 @@ export default function FriendsPage() {
   };
 
   const handleAcceptRequest = async (requestId: string | number) => {
-    await addFriend(requestId.toString());
+    const reqId = requestId.toString();
+    setRequestStates(prev => ({ ...prev, [reqId]: 'accepting' }));
+    
+    try {
+      await addFriend(reqId);
+      
+      // Show success state briefly
+      setRequestStates(prev => ({ ...prev, [reqId]: 'accepted' }));
+      
+      // Remove the request after showing success
+      setTimeout(() => {
+        setRequestStates(prev => {
+          const newState = { ...prev };
+          delete newState[reqId];
+          return newState;
+        });
+      }, 2000);
+    } catch (error) {
+      // Remove loading state on error
+      setRequestStates(prev => {
+        const newState = { ...prev };
+        delete newState[reqId];
+        return newState;
+      });
+    }
   };
 
   const handleDeclineRequest = async (requestId: string | number) => {
-    await rejectFriendRequest(requestId.toString());
+    const reqId = requestId.toString();
+    setRequestStates(prev => ({ ...prev, [reqId]: 'declining' }));
+    
+    try {
+      await rejectFriendRequest(reqId);
+      
+      // Show declined state briefly
+      setRequestStates(prev => ({ ...prev, [reqId]: 'declined' }));
+      
+      // Remove the request after showing decline message
+      setTimeout(() => {
+        setRequestStates(prev => {
+          const newState = { ...prev };
+          delete newState[reqId];
+          return newState;
+        });
+      }, 1500);
+    } catch (error) {
+      // Remove loading state on error
+      setRequestStates(prev => {
+        const newState = { ...prev };
+        delete newState[reqId];
+        return newState;
+      });
+    }
   };
 
   const handleViewProfile = (user: any) => {
@@ -147,7 +214,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
                       Your Friends
                     </h2>
                     <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
@@ -191,7 +258,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
                       Discover People
                     </h2>
                   </div>
@@ -212,27 +279,30 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
                       Friend Requests
                     </h2>
                     {receivedRequests.length > 0 && (
                       <span className="text-sm text-muted-foreground bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">
                         {receivedRequests.length} pending
                       </span>
-                    )}
+                    )}  
                   </div>
 
                   {receivedRequests.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      {receivedRequests.map((request) => (
-                        <RequestCard
-                          key={request.id || request.username}
-                          request={request}
-                          onAccept={handleAcceptRequest}
-                          onDecline={handleDeclineRequest}
-                          onViewProfile={handleViewProfile}
-                        />
-                      ))}
+                      <AnimatePresence mode="popLayout">
+                        {receivedRequests.map((request) => (
+                          <EnhancedRequestCard
+                            key={request.id || request.username}
+                            request={request.user}
+                            onAccept={handleAcceptRequest}
+                            onDecline={handleDeclineRequest}
+                            onViewProfile={handleViewProfile}
+                            requestState={requestStates[request.id?.toString()]}
+                          />
+                        ))}
+                      </AnimatePresence>
                     </div>
                   ) : (
                     <EmptyState 
@@ -252,7 +322,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
                       Recent Conversations
                     </h2>
                   </div>
@@ -269,6 +339,7 @@ export default function FriendsPage() {
                             onMessage={handleMessageFriend}
                             onRemoveFriend={handleRemoveFriend}
                             onViewProfile={handleViewProfile}
+                            
                           />
                         ))}
                     </div>
@@ -290,7 +361,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 dark:from-orange-400 dark:to-pink-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
                       Recent Activity
                     </h2>
                   </div>

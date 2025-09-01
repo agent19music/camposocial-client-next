@@ -8,6 +8,7 @@ export interface FilterPill {
   id: string;
   label: string;
   active?: boolean;
+  badge?: number; // For notification counts
 }
 
 interface FilterPillsProps {
@@ -58,13 +59,19 @@ export default function FilterPills({ filters, onFilterSelect, className }: Filt
               size="sm"
               onClick={() => onFilterSelect(filter.id)}
               className={cn(
-                "rounded-full px-4 py-2 whitespace-nowrap text-sm transition-all",
+                "relative rounded-full px-4 py-2 whitespace-nowrap text-sm transition-all",
                 filter.active 
                   ? "bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white border-0 shadow-sm" 
                   : "bg-background border-muted hover:bg-muted/50 hover:border-purple-300 dark:hover:border-purple-700"
               )}
             >
               {filter.label}
+              {/* Badge for notification count */}
+              {filter.badge && filter.badge > 0 && (
+                <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                  {filter.badge > 99 ? '99+' : filter.badge}
+                </span>
+              )}
             </Button>
           ))}
         </div>

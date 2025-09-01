@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { toast } from "react-hot-toast";
-import { FriendshipContext } from "@/context/friendshipcontext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { UserContext } from "@/context/usercontext";
 
 interface FriendRequest {
   id: string;
@@ -13,11 +13,11 @@ interface FriendRequest {
 }
 
 export function ReceivedRequestsModal({ requests }: { requests: FriendRequest[] }) {
-  const { acceptFriendRequest, rejectFriendRequest } = useContext(FriendshipContext);
+  const { addFriend, rejectFriendRequest} = useContext(UserContext);
 
   const handleAccept = async (id: string, name: string) => {
     try {
-      await acceptFriendRequest(id);
+      await addFriend(id);
       toast.success(`${name} is now your friend!`);
     } catch (error) {
       console.error(error);

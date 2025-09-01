@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useUserContext } from '@/context/usercontext';
 import { 
   UserPlus, 
   Shield, 
@@ -53,10 +54,10 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     return suggestion.display_name || `${suggestion.first_name} ${suggestion.last_name}`;
   };
 
-  const handleAddFriend = async () => {
+  const handleAddFriend = async (suggestionId: string | number) => {
     setIsAdding(true);
     try {
-      await onAddFriend?.(suggestion.id);
+      await sendFriendRequest(suggestionId.toString());
     } finally {
       setIsAdding(false);
     }
@@ -66,6 +67,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     idle: { scale: 1, y: 0 },
     hover: { scale: 1.02, y: -4 }
   };
+
+  const { sendFriendRequest } = useUserContext();
 
   const reasonColors = {
     'Same course': 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
@@ -169,13 +172,19 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                   {suggestion.bio}
                 </p>
               )}
+              {suggestion.id && (
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
+                  {suggestion.id}
+                </p>
+              )}
               
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <Button 
                   size="sm" 
                   className="flex-1 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={handleAddFriend}
+                  onClick={() => handleAddFriend(suggestion.id)}
+                  
                   disabled={isAdding || isLoading}
                 >
                   <motion.div

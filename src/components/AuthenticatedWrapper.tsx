@@ -5,7 +5,6 @@ import { AuthContext } from '@/context/authcontext';
 import YapProvider from "@/context/yapcontext";
 import EventProvider from "@/context/eventcontext";
 import MarketplaceProvider from "@/context/marketplacecontext";
-import { FriendshipProvider } from "@/context/friendshipcontext";
 import UserProvider from "@/context/usercontext";
 import ChatProvider from "@/context/chatcontext";
 
@@ -30,7 +29,6 @@ export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperP
   return (
     <UserProvider>
       <MarketplaceProvider>
-        <FriendshipProvider>
             <EventProvider>
               <YapProvider>
                 <ChatProvider>
@@ -38,7 +36,6 @@ export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperP
                 </ChatProvider>
               </YapProvider>
             </EventProvider>
-        </FriendshipProvider>
       </MarketplaceProvider>
     </UserProvider>
   );

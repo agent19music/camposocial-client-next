@@ -1,0 +1,112 @@
+{
+  "name": "CampoSocial - Your Campus Connected",
+  "short_name": "CampoSocial",
+  "description": "The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["social", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Events",
+      "short_name": "Events",
+      "description": "Discover campus events",
+      "url": "/events",
+      "icons": [
+        {
+          "src": "/camposocial_logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Marketplace",
+      "short_name": "Marketplace",
+      "description": "Buy and sell campus items",
+      "url": "/marketplace",
+      "icons": [
+        {
+          "src": "/camposocial_logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Yaps",
+      "short_name": "Yaps",
+      "description": "Share your thoughts",
+      "url": "/yaps",
+      "icons": [
+        {
+          "src": "/camposocial_logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CampoSocial Desktop Experience"
+    },
+    {
+      "src": "/camposocial_logo.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "CampoSocial Mobile Experience"
+    }
+  ]
+}
+

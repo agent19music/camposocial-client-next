@@ -4,6 +4,7 @@ import { createContext, ReactNode, useState, useEffect, useContext, useRef, useC
 import {nanoid} from 'nanoid';
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
+import { useWebSocket } from "./websocket-context";
 import { send } from "process";
 import {toast} from "react-hot-toast";
 import { UserContextProps } from "../utils/types";
@@ -34,6 +35,7 @@ export const UserContext = createContext<UserContextProps>(defaultValue);
 
 export default function UserProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const { pendingRequests } = useWebSocket(); // Get real-time pending requests
 
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -284,15 +286,22 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [authToken, isAuthenticated, currentUser, fetchUsers, fetchFriends, fetchPendingRequests]);
 
+  // Sync WebSocket pending requests with local state
+  useEffect(() => {
+    if (pendingRequests && pendingRequests.length >= 0) {
+      setReceivedRequests(pendingRequests);
+    }
+  }, [pendingRequests]);
+
   async function sendFriendRequest(receipientId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/send-request`, {
+      const response = await fetch(`${apiEndpoint}/friends/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ recipient_id: receipientId }),
+        body: JSON.stringify({ user_id: receipientId }),
       });
   
       if (!response.ok) {
@@ -343,13 +352,12 @@ export default function UserProvider({ children }: { children: ReactNode }) {
 
   async function addFriend(requesterId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/accept-request`, {
+      const response = await fetch(`${apiEndpoint}/friends/request/${requesterId}/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ requester_id: requesterId }),
       });
   
       if (!response.ok) {
@@ -405,13 +413,12 @@ export default function UserProvider({ children }: { children: ReactNode }) {
 
   async function rejectFriendRequest(requesterId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/reject-request`, {
+      const response = await fetch(`${apiEndpoint}/friends/request/${requesterId}/decline`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ requester_id: requesterId }),
       });
   
       if (!response.ok) {

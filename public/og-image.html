@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampoSocial OG Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .og-container {
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .og-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 1;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .brand {
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .main-content {
+            text-align: center;
+            z-index: 1;
+        }
+        
+        .title {
+            font-size: 64px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .subtitle {
+            font-size: 28px;
+            font-weight: 400;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1;
+        }
+        
+        .features {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            opacity: 0.8;
+        }
+        
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .url {
+            font-size: 20px;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 1200px) {
+            .og-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .title {
+                font-size: 48px;
+            }
+            
+            .subtitle {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="og-container">
+        <div class="header">
+            <div class="logo">CS</div>
+            <div class="brand">CampoSocial</div>
+        </div>
+        
+        <div class="main-content">
+            <h1 class="title">Your Campus Connected</h1>
+            <p class="subtitle">The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships.</p>
+        </div>
+        
+        <div class="footer">
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🎓</div>
+                    <span>Campus Events</span>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🛍️</div>
+                    <span>Marketplace</span>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💬</div>
+                    <span>Social Network</span>
+                </div>
+            </div>
+            
+            <div class="url">camposocial.com</div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -20,8 +20,6 @@ import {
   Users,
   MapPin,
   Bell,
-  Home,
-  Package2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import Image from "next/image";
 
 interface EnhancedMobileSideNavProps {
   className?: string;
@@ -92,7 +91,7 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
     <nav className={cn("grid gap-2 text-lg font-medium p-4", className)}>
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 text-lg font-semibold mb-6">
-        <Package2 className="h-6 w-6" />
+        <Image src="/camposocial_logo.png" alt="CampoSocial" width={32} height={32} />
         <span>CampoSocial</span>
       </Link>
 

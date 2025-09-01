@@ -1,5 +1,5 @@
 "use client"
-import React, { useContext } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -35,6 +35,7 @@ import YapCardSkeleton from '@/components/yapskeleton'
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '@/context/authcontext'
 import { UserContext } from '@/context/usercontext'
+import { useWebSocket } from '@/context/websocket-context'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import AddYap from '@/components/addyap'
@@ -167,6 +168,7 @@ export default function Component() {
   const { yaps, isLoading, feedType, setFeedType, refreshFeed } = useContext(YapContext)
   const { currentUser, isLoading: authLoading } = useContext(AuthContext)
   const { friends, users } = useContext(UserContext)
+  const { markYapsAsSeen, hasNewYaps } = useWebSocket()
   const router = useRouter();
 
   // Only keep quick access links for desktop sidebar
@@ -179,6 +181,17 @@ export default function Component() {
     (yaps.length === 0) &&
     (friends.length === 0)
   );
+
+  // Mark yaps as seen when user visits the page (after a delay to ensure they actually viewed it)
+  useEffect(() => {
+    if (hasNewYaps && currentUser) {
+      const timer = setTimeout(() => {
+        markYapsAsSeen();
+      }, 3000); // Mark as seen after 3 seconds on the page
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasNewYaps, currentUser, markYapsAsSeen]);
 
   // Handle feed type change
   const handleFeedTypeChange = (filterId: string) => {

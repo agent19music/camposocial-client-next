@@ -99,75 +99,24 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
   return (
     <div className="space-y-6">
       {/* Enhanced Search Bar */}
-      <Card className="glass-card border-muted/50 bg-gradient-to-r from-white/50 to-purple-50/30 dark:from-gray-900/50 dark:to-purple-950/30">
-        <CardContent className="p-4">
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-              <motion.div
-                animate={{ rotate: isSearching ? 360 : 0 }}
-                transition={{ duration: 1, repeat: isSearching ? Infinity : 0, ease: "linear" }}
-              >
-                <Search className="h-5 w-5 text-muted-foreground" />
-              </motion.div>
+      <div className="flex w-full justify-center items-center">
+        <div className="relative max-w-md w-full">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search by name or username..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="pl-8 rounded-full border-muted bg-muted/50 focus:bg-background"
+          />
+          {isSearching && (
+            <div className="absolute right-2.5 top-2.5">
+              <div className="animate-spin h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full"></div>
             </div>
-            
-            <Input
-              type="text"
-              placeholder="Search by name or username..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-10 pr-10 h-12 text-lg bg-background/50 border-muted focus:border-purple-300 dark:focus:border-purple-700 transition-all duration-300"
-            />
-            
-            <AnimatePresence>
-              {searchQuery && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSearch}
-                    className="p-1 h-auto hover:bg-red-100 dark:hover:bg-red-900/50"
-                  >
-                    <X className="h-4 w-4 text-red-500" />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          
-          {/* Search Status */}
-          <AnimatePresence>
-            {(searchQuery || isSearching) && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-3 text-sm text-muted-foreground"
-              >
-                {isSearching ? (
-                  <div className="flex items-center gap-2">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"
-                    />
-                    Searching for &ldquo;{searchQuery}&rdquo;...
-                  </div>
-                ) : hasSearched ? (
-                  <span>
-                    Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;
-                  </span>
-                ) : null}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
+      
 
       {/* Results Section */}
       <div className="space-y-4">
