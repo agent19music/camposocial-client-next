@@ -358,7 +358,7 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
             <Alert className="mb-4">
               <WifiOff className="h-4 w-4" />
               <AlertDescription>
-                You're currently offline. Please reconnect to view the full profile and interact with content.    
+                 You&apos;re currently offline. Please reconnect to view the full profile and interact with content.      
               </AlertDescription>
             </Alert>
             
@@ -487,7 +487,7 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
               <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">User not found</h2>
               <p className="text-muted-foreground mb-4">
-                The user @{username} doesn't exist or has been removed.
+                The user @{username} doesn&apos;t exist or has been removed.
               </p>
               <Button onClick={() => router.push('/yaps')}>Go back to Yaps</Button>
             </div>
@@ -539,7 +539,7 @@ export default function ProfilePage({ user: propUser }: ProfilePageProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Block @{user.username}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          They won't be able to see your yaps or follow you. You can unblock them at any time.
+                          They won&apos;t be able to see your yaps or follow you. You can unblock them at any time.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
