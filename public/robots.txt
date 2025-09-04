@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://camposocial.com/sitemap.xml
+Sitemap: https://camposocial.app/sitemap.xml
 
 # Disallow admin and private areas
 Disallow: /api/

@@ -36,11 +36,11 @@ export const websiteSchema = {
   "@type": "WebSite",
   "name": "CampoSocial",
   "alternateName": "CampoSocial - Your Campus Connected",
-  "url": "https://camposocial.com",
+  "url": "https://camposocial.app",
   "description": "The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships.",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://camposocial.com/search?q={search_term_string}",
+    "target": "https://camposocial.app/search?q={search_term_string}",
     "query-input": "required name=search_term_string"
   },
   "sameAs": [
@@ -54,8 +54,8 @@ export const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "CampoSocial",
-  "url": "https://camposocial.com",
-  "logo": "https://camposocial.com/camposocial_logo.png",
+  "url": "https://camposocial.app",
+  "logo": "https://camposocial.app/camposocial_logo.png",
   "description": "The ultimate social platform designed for university life",
   "foundingDate": "2024",
   "sameAs": [
@@ -66,7 +66,7 @@ export const organizationSchema = {
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer service",
-    "email": "support@camposocial.com"
+    "email": "support@camposocial.app"
   }
 };
 
@@ -132,7 +132,7 @@ export const articleSchema = (articleData: any) => ({
     "name": "CampoSocial",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://camposocial.com/camposocial_logo.png"
+      "url": "https://camposocial.app/camposocial_logo.png"
     }
   },
   "datePublished": articleData.publishedDate,

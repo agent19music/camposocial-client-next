@@ -23,7 +23,7 @@ export default function SEOHead({
   description = "The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships.",
   keywords = [],
   image = "/camposocial_logo.png",
-  url = "https://camposocial.com",
+  url = "https://camposocial.app",
   type = "website",
   publishedTime,
   modifiedTime,

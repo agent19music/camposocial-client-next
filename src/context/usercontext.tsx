@@ -28,7 +28,9 @@ const defaultValue: UserContextProps = {
   filteredFriends: [],
   searchUsers: async () => [],
   isLoadingUsers: false,
-  isLoadingSearch: false
+  isLoadingSearch: false,
+  fetchFriends: async () => {},
+  fetchUsers: async () => {}
 };
 
 export const UserContext = createContext<UserContextProps>(defaultValue);
@@ -152,6 +154,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   }, [authToken, isAuthenticated, apiEndpoint]);
 
   console.log( "users", users);
+  console.log( "friends", friends);
 
   // Debounced fetch friends function
   const fetchFriends = useCallback(async () => {
@@ -216,6 +219,8 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [authToken, isAuthenticated, apiEndpoint]);
+
+  
 
   // Debounced fetch pending requests function
   const fetchPendingRequests = useCallback(async () => {
@@ -480,6 +485,8 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     searchUsers,
     isLoadingUsers,
     isLoadingSearch,
+    fetchFriends,
+    fetchUsers,
   };
 
   return (

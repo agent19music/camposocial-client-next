@@ -83,17 +83,13 @@ export default function Home() {
                     </Avatar>
                 </Link>
               ) : (
-                <Link href="/login">
+                <Link href="/sigup">
                   <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium px-4">
                     Sign In
                   </Button>
                 </Link>
               )}
-              <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium px-4">
-                  Sign In
-                </Button>
-              </Link>
+          
               <Link href="/signup">
                 <Button size="sm" className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium px-6 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200">
                   Get Started

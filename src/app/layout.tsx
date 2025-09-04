@@ -21,7 +21,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://camposocial.com'),
+  metadataBase: new URL('https://camposocial.app'),
   title: {
     default: "CampoSocial - Your Campus Connected",
     template: "%s | CampoSocial"
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ 
     name: "CampoSocial Team",
-    url: "https://camposocial.com"
+    url: "https://camposocial.app"
   }],
   creator: "CampoSocial",
   publisher: "CampoSocial",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     yahoo: 'your-yahoo-verification-code',
   },
   alternates: {
-    canonical: 'https://camposocial.com',
+    canonical: 'https://camposocial.app',
   },
   icons: {
     icon: [
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://camposocial.com',
+    url: 'https://camposocial.app',
     siteName: 'CampoSocial',
     title: 'CampoSocial - Your Campus Connected',
     description: 'The ultimate social platform designed for university life. Connect with your campus community, discover epic events, trade in the marketplace, and build lasting friendships.',

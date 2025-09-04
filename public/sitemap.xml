@@ -6,7 +6,7 @@
 
   <!-- Homepage -->
   <url>
-    <loc>https://camposocial.com/</loc>
+    <loc>https://camposocial.app/</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -14,35 +14,35 @@
 
   <!-- Main sections -->
   <url>
-    <loc>https://camposocial.com/events</loc>
+    <loc>https://camposocial.app/events</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/marketplace</loc>
+    <loc>https://camposocial.app/marketplace</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/yaps</loc>
+    <loc>https://camposocial.app/yaps</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/friends</loc>
+    <loc>https://camposocial.app/friends</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/chat</loc>
+    <loc>https://camposocial.app/chat</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -50,21 +50,21 @@
 
   <!-- Authentication pages -->
   <url>
-    <loc>https://camposocial.com/login</loc>
+    <loc>https://camposocial.app/login</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/signup</loc>
+    <loc>https://camposocial.app/signup</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/welcome</loc>
+    <loc>https://camposocial.app/welcome</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -72,21 +72,21 @@
 
   <!-- Seller pages -->
   <url>
-    <loc>https://camposocial.com/sellerdashboard</loc>
+    <loc>https://camposocial.app/sellerdashboard</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/sellerlogin</loc>
+    <loc>https://camposocial.app/sellerlogin</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/sellersignup</loc>
+    <loc>https://camposocial.app/sellersignup</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -94,21 +94,21 @@
 
   <!-- Profile and settings -->
   <url>
-    <loc>https://camposocial.com/userprofile</loc>
+    <loc>https://camposocial.app/userprofile</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/profilesettings</loc>
+    <loc>https://camposocial.app/profilesettings</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/complete-profile</loc>
+    <loc>https://camposocial.app/complete-profile</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -116,7 +116,7 @@
 
   <!-- Add event -->
   <url>
-    <loc>https://camposocial.com/addevent</loc>
+    <loc>https://camposocial.app/addevent</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -124,14 +124,14 @@
 
   <!-- Checkout and receipts -->
   <url>
-    <loc>https://camposocial.com/marketplace/checkout</loc>
+    <loc>https://camposocial.app/marketplace/checkout</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://camposocial.com/marketplace/checkout/receipts</loc>
+    <loc>https://camposocial.app/marketplace/checkout/receipts</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

@@ -41,7 +41,9 @@ export default function FriendsPage() {
     removeFriend,
     blockUser,
     isLoadingUsers,
-    isLoadingSearch
+    isLoadingSearch,
+    fetchFriends,
+    fetchUsers
   } = useContext(UserContext);
 
   console.log('receivedRequests', receivedRequests);
@@ -50,6 +52,12 @@ export default function FriendsPage() {
   const { notificationCounts, markFriendRequestsAsSeen } = useWebSocket();
   
   const router = useRouter();
+
+  // Fetch friends and users on mount
+  useEffect(() => {
+    fetchFriends();
+    fetchUsers();
+  }, [fetchFriends, fetchUsers]);
 
   // Quick access for desktop sidebar
   const quickAccessLinks = [

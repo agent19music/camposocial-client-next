@@ -278,6 +278,8 @@ export interface UserContextProps {
   searchUsers: (query: string) => Promise<any[]>;
   isLoadingUsers: boolean;
   isLoadingSearch: boolean;
+  fetchFriends: () => Promise<void>;
+  fetchUsers: () => Promise<void>;
 }
 
 export interface UserEvent {
