@@ -18,7 +18,9 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { FloatingBackground } from "@/components/ui/floating-background";
-
+import { useContext } from "react";
+import { AuthContext } from "@/context/authcontext";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 const features = [
   {
     icon: Users,
@@ -50,6 +52,7 @@ const stats = [
 ];
 
 export default function Home() {
+  const { currentUser } = useContext(AuthContext);
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20">
       {/* Subtle floating background */}
@@ -72,6 +75,20 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              {currentUser ? (
+                <Link href="/yaps">
+                    <Avatar>
+                      <AvatarImage src={currentUser.avatar} alt={currentUser.username} />
+                      <AvatarFallback>{currentUser.username.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
+              ) : (
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium px-4">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
               <Link href="/login">
                 <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium px-4">
                   Sign In
@@ -154,6 +171,7 @@ export default function Home() {
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
+                
                 <Link href="/login">
                   <Button size="lg" variant="ghost" className="text-[#D29DF6] hover:text-[#C17FF2] font-medium px-8 py-3 rounded-full transition-colors duration-200 text-[1.0625rem] hover:bg-[#D29DF6]/5">
                     Sign In

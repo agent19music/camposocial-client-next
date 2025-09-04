@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import { AuthContext } from './authcontext';
+import { toast } from 'react-hot-toast';
 
 interface NotificationCounts {
   friend_requests: number;
@@ -263,6 +264,59 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Handle errors
     newSocket.on('error', (error: any) => {
       console.error('WebSocket error:', error);
+    });
+
+    // Live friend request notifications
+    newSocket.on('friend_request', (data: any) => {
+      console.log('Live friend request received:', data);
+      
+      // Update pending requests immediately
+      setPendingRequests(prev => [data, ...prev]);
+      
+      // Show toast notification
+      toast.success(`${data.sender.display_name} sent you a friend request!`);
+    });
+
+    // Live friend request responses (accept/decline)  
+    newSocket.on('friend_request_response', (data: any) => {
+      console.log('Friend request response received:', data);
+      
+      if (data.action === 'accepted') {
+        toast.success(`${data.recipient.display_name} accepted your friend request!`);
+      }
+      // Note: declined responses don't show notifications as per requirements
+    });
+
+    // Live follower notifications
+    newSocket.on('new_follower', (data: any) => {
+      console.log('New follower notification:', data);
+      toast(`${data.follower_name} started following you`, {
+        icon: '👤',
+      });
+    });
+
+    // Live reply notifications
+    newSocket.on('new_reply', (data: any) => {
+      console.log('New reply notification:', data);
+      toast(`${data.reply_author_name} replied to your yap`, {
+        icon: '💬',
+      });
+    });
+
+    // Live yap like notifications
+    newSocket.on('yap_liked', (data: any) => {
+      console.log('Yap liked notification:', data);
+      toast(`${data.liker_name} liked your yap`, {
+        icon: '❤️',
+      });
+    });
+
+    // New yap from followed users
+    newSocket.on('new_yap_from_following', (data: any) => {
+      console.log('New yap from following:', data);
+      toast(`${data.author_name} posted a new yap`, {
+        icon: '📝',
+      });
     });
 
     setSocket(newSocket);

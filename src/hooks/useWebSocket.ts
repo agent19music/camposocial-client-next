@@ -1,11 +1,11 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import io, { Socket } from 'socket.io-client';
+import io, { type Socket } from 'socket.io-client';
 import { useContext } from 'react';
 import { AuthContext } from '@/context/authcontext';
 import { toast } from 'react-hot-toast';
 
 interface WebSocketHook {
-  socket: Socket | null;
+  socket: typeof Socket | null;
   isConnected: boolean;
   emit: (event: string, data: any) => void;
   on: (event: string, handler: (data: any) => void) => void;
@@ -13,7 +13,7 @@ interface WebSocketHook {
 }
 
 export function useWebSocket(): WebSocketHook {
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<typeof Socket | null>(null);
   const { authToken } = useContext(AuthContext);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectAttemptsRef = useRef(0);
@@ -46,7 +46,7 @@ export function useWebSocket(): WebSocketHook {
       socket.emit('authenticate', { token: authToken });
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', (reason: any) => {
       console.log('WebSocket disconnected:', reason);
       setIsConnected(false);
       
@@ -56,7 +56,7 @@ export function useWebSocket(): WebSocketHook {
       }
     });
 
-    socket.on('connect_error', (error) => {
+    socket.on('connect_error', (error: any) => {
       console.error('Connection error:', error);
       reconnectAttemptsRef.current++;
       
@@ -65,12 +65,12 @@ export function useWebSocket(): WebSocketHook {
       }
     });
 
-    socket.on('authenticated', (data) => {
+    socket.on('authenticated', (data: any) => {
       console.log('Socket authenticated:', data);
       toast.success('Connected to chat');
     });
 
-    socket.on('error', (error) => {
+    socket.on('error', (error: any) => {
       console.error('Socket error:', error);
       toast.error(error.message || 'Connection error');
     });

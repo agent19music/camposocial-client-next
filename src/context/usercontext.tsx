@@ -369,9 +369,13 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       const responseData = await response.json();
       toast.success('Friend request accepted!');
       
-      // Refresh both friends list and pending requests
+      // Remove from pending requests immediately (optimistic update)
+      setReceivedRequests(prev => prev.filter(req => req.user.id.toString() !== requesterId));
+      
+      // Refresh friends list to include new friend
       fetchFriends();
-      fetchPendingRequests();
+      
+      // The WebSocket will notify the requester in real-time
       
       return responseData.message;
     } catch (error) {
@@ -428,10 +432,13 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       }
   
       const responseData = await response.json();
-      toast.success('Friend request rejected!');
       
-      // Refresh pending requests
-      fetchPendingRequests();
+      // Remove from pending requests immediately (optimistic update)
+      setReceivedRequests(prev => prev.filter(req => req.user.id.toString() !== requesterId));
+      
+      // No toast notification for rejection as per requirements
+      
+      // The WebSocket will clear this from the requester's outgoing requests
       
       return responseData.message;
     } catch (error) {
