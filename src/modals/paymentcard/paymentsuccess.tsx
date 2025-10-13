@@ -88,7 +88,8 @@ export default function CurrencyTransfer() {
         >
           <div className="relative">
             <motion.div
-              className="absolute inset-0 blur-xl bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full"
+              className="absolute inset-0 blur-xl rounded-full"
+              style={{ backgroundColor: 'rgba(137,184,160,0.08)' }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{
@@ -159,7 +160,7 @@ export default function CurrencyTransfer() {
                     <span className="font-medium text-zinc-100 dark:text-zinc-900 tracking-tight">500.00 USD</span>
                   </div>
                 </div>
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-zinc-700 dark:via-zinc-300 to-transparent" />
+                <div className="w-full h-px" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }} />
                 <div className="space-y-1.5">
                   <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                     <svg

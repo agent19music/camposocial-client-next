@@ -6,6 +6,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Colors as Palette } from "@/constants/Colors";
+
+const C = Palette;
+
+const hexToRgba = (hex: string, alpha = 1) => {
+  const clean = hex.replace('#', '');
+  const bigint = parseInt(clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 import { 
   MessageSquare, 
   Phone, 
@@ -97,14 +109,14 @@ export const FriendCard: React.FC<FriendCardProps> = ({
     hover: { scale: 1.02, y: -4 }
   };
 
-  const statusColors = {
-    online: 'bg-green-500 shadow-green-500/50',
-    recently: 'bg-yellow-500 shadow-yellow-500/50',
-    today: 'bg-blue-500 shadow-blue-500/50',
-    offline: 'bg-gray-400'
-  };
-
   const onlineStatus = getOnlineStatus();
+
+  const statusColor = ((): string => {
+    if (onlineStatus === 'online') return C.success;
+    if (onlineStatus === 'recently') return C.warning;
+    if (onlineStatus === 'today') return C.info;
+    return C.grayLight || C.gray;
+  })();
 
   return (
     <motion.div
@@ -115,7 +127,10 @@ export const FriendCard: React.FC<FriendCardProps> = ({
       onHoverEnd={() => setIsHovered(false)}
       className="group cursor-pointer"
     >
-      <Card className="glass-card hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 overflow-hidden bg-gradient-to-br from-white/80 to-purple-50/50 dark:from-gray-900/80 dark:to-purple-950/50">
+      <Card
+        className="glass-card hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 overflow-hidden"
+        style={{ backgroundColor: C.card }}
+      >
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             {/* Avatar with Status and Badges */}
@@ -128,15 +143,19 @@ export const FriendCard: React.FC<FriendCardProps> = ({
               >
                 <Avatar className="w-14 h-14 border-3 border-white dark:border-gray-800 shadow-lg">
                   <AvatarImage src={friend.avatar} alt={getDisplayName()} />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-500 text-white font-semibold text-lg">
+                  <AvatarFallback
+                    className="text-white font-semibold text-lg"
+                    style={{ backgroundColor: C.accentDark || C.accent }}
+                  >
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
               </motion.div>
               
               {/* Online Status */}
-              <motion.div 
-                className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 shadow-lg ${statusColors[onlineStatus]}`}
+              <motion.div
+                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 shadow-lg"
+                style={{ backgroundColor: statusColor }}
                 animate={{ scale: friend.isOnline ? [1, 1.2, 1] : 1 }}
                 transition={{ repeat: friend.isOnline ? Infinity : 0, duration: 2 }}
               />
@@ -149,7 +168,10 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                     animate={{ scale: 1, rotate: 0 }}
                     className="absolute -top-1 -right-1"
                   >
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-1">
+                    <div
+                      className="rounded-full p-1"
+                      style={{ backgroundColor: C.warning }}
+                    >
                       <Star className="h-3 w-3 text-white fill-current" />
                     </div>
                   </motion.div>
@@ -172,7 +194,8 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full min-w-[1.25rem] h-5 flex items-center justify-center text-xs font-medium shadow-lg"
+                        className="text-white rounded-full min-w-[1.25rem] h-5 flex items-center justify-center text-xs font-medium shadow-lg"
+                        style={{ backgroundColor: C.error }}
                       >
                         {friend.unreadCount > 99 ? '99+' : friend.unreadCount}
                       </motion.div>
@@ -267,7 +290,11 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="bg-gradient-to-r from-purple-500/10 to-violet-500/10 rounded-lg p-3 mb-3 border border-purple-200 dark:border-purple-800"
+                    className="rounded-lg p-3 mb-3 border"
+                    style={{
+                      backgroundColor: hexToRgba(C.accent, 0.06),
+                      borderColor: C.border || '#E3E3E1'
+                    }}
                   >
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {friend.messagePreview}
@@ -281,10 +308,11 @@ export const FriendCard: React.FC<FriendCardProps> = ({
               
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                <Button
+                  size="sm"
+                  className="flex-1 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                   onClick={() => onMessage?.(friend)}
+                  style={{ backgroundColor: C.accent }}
                 >
                   <MessageSquare className="h-3 w-3 mr-1" />
                   Message

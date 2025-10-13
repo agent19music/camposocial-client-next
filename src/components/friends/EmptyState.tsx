@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, UserPlus, MessageSquare, Activity,  } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Colors as Palette } from '@/constants/Colors';
 
 interface EmptyState {
   type: 'friends' | 'discover' | 'requests' | 'messages' | 'activity';
@@ -63,7 +64,7 @@ export const EmptyState: React.FC<EmptyState> = ({ type, onAction }) => {
         transition={{ delay: 0.3 }}
         className="max-w-sm space-y-4"
       >
-        <h3 className="text-2xl font-bold bg-gradient-to-r bg-foreground bg-clip-text text-transparent">
+        <h3 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
           {state.title}
         </h3>
         
@@ -79,7 +80,8 @@ export const EmptyState: React.FC<EmptyState> = ({ type, onAction }) => {
           >
             <Button
               onClick={onAction}
-              className={`bg-primary hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
+              className={`text-white shadow-lg hover:shadow-xl transition-all duration-300`}
+              style={{ backgroundColor: Palette.primary }}
             >
               <IconComponent className="h-4 w-4 mr-2" />
               {state.actionText}

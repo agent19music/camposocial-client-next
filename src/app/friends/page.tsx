@@ -22,6 +22,7 @@ import { FriendCardSkeleton } from "@/components/friends/LoadingSkeletons";
 import { AuthContext } from "@/context/authcontext";
 import { UserContext } from "@/context/usercontext";
 import { useWebSocket } from "@/context/websocket-context";
+import { Colors as Palette } from '@/constants/Colors';
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState("friends");
@@ -222,7 +223,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
                       Your Friends
                     </h2>
                     <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
@@ -266,7 +267,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
                       Discover People
                     </h2>
                   </div>
@@ -287,7 +288,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
                       Friend Requests
                     </h2>
                     {receivedRequests.length > 0 && (
@@ -330,7 +331,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
                       Recent Conversations
                     </h2>
                   </div>
@@ -369,7 +370,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold bg-foreground bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
                       Recent Activity
                     </h2>
                   </div>

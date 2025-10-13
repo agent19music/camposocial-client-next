@@ -37,6 +37,7 @@ import { AuthContext } from '@/context/authcontext'
 import { UserContext } from '@/context/usercontext'
 import { useWebSocket } from '@/context/websocket-context'
 import { motion } from 'framer-motion'
+import { Colors as Palette } from '@/constants/Colors'
 import Link from 'next/link'
 import AddYap from '@/components/addyap'
 
@@ -99,7 +100,7 @@ const NewUserWelcome = () => {
               priority
             />
           </motion.div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent mb-3">
+          <h1 className="text-3xl font-bold mb-3" style={{ color: Palette.primaryDark }}>
             Welcome to CampoSocial, {currentUser?.first_name || 'friend'}!
           </h1>
           <p className="text-lg text-muted-foreground">
@@ -152,7 +153,8 @@ const NewUserWelcome = () => {
             <Button 
               onClick={() => router.push('/friends')}
               size="lg"
-              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              className="text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              style={{ backgroundColor: Palette.primary }}
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Start Exploring

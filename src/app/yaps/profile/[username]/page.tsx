@@ -546,7 +546,7 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="relative">
           {/* Cover Image */}
-          <div className="h-32 bg-gradient-to-r from-purple-500/20 to-violet-500/20">
+    <div className="h-32" style={{ backgroundColor: 'rgba(181,168,209,0.04)' }}>
             {user.yap_header_img && (
               <Image 
                 src={user.yap_header_img} 
@@ -563,7 +563,7 @@ export default function ProfilePage() {
             <div className="flex items-end gap-4 -mt-16 mb-4">
               <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
                 <AvatarImage src={user.avatar} alt={user.display_name} />
-                <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-purple-500 to-violet-500 text-white">
+                <AvatarFallback className="text-lg font-semibold text-white" style={{ backgroundColor: '#8B7BA8' }}>
                   {getInitials(user.display_name || user.first_name + ' ' + user.last_name)}
                 </AvatarFallback>
               </Avatar>
@@ -636,7 +636,8 @@ export default function ProfilePage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowBadgeModal(true)}
-                      className="text-xs h-6 px-2 bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white hover:text-white"
+                      className="text-xs h-6 px-2 text-white hover:text-white"
+                      style={{ backgroundColor: '#B5A8D1' }}
                     >
                       <BadgeCheck className="h-4 w-4 mr-1" />
                       Get Badge

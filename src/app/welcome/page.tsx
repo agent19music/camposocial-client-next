@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { motion } from 'framer-motion';``
+import { Colors as Palette } from "@/constants/Colors";
 
 
 interface FeatureCard {
@@ -47,6 +48,7 @@ const features: FeatureCard[] = [
 export default function WelcomePage() {
   const { currentUser, isAuthenticated } = useContext(AuthContext);
   const router = useRouter();
+  const C = Palette;
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -69,18 +71,18 @@ export default function WelcomePage() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#B16FE8]"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.background }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: C.accent }}></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 overflow-hidden">
+    <div className="min-h-screen overflow-hidden" style={{ backgroundColor: C.background }}>
       {/* Background decoration - matching landing page */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-[#D29DF6]/20 dark:from-[#B16FE8]/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-[#C17FF2]/20 dark:from-[#C17FF2]/30 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(181,168,209,0.08)' }} />
+        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.06)' }} />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-screen">
@@ -102,7 +104,7 @@ export default function WelcomePage() {
             />
           </motion.div>
           
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ color: C.primaryDark }}>
             Welcome, {currentUser?.first_name}!
           </h1>
           
@@ -153,9 +155,10 @@ export default function WelcomePage() {
           transition={{ duration: 0.6, delay: 1.0 }}
           className="flex flex-col sm:flex-row gap-4 mb-8"
         >
-          <Button 
+            <Button 
             onClick={handleGetStarted}
-            className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            className="text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            style={{ backgroundColor: C.accent }}>
             <Icons.messageCircle className="w-5 h-5 mr-2" />
             Start Exploring
           </Button>
@@ -163,7 +166,8 @@ export default function WelcomePage() {
           <Button 
             onClick={handleExploreMarketplace}
             variant="outline"
-            className="border-2 border-[#D29DF6]/50 text-[#B16FE8] hover:bg-[#D29DF6]/10 dark:border-[#B16FE8]/50 dark:text-[#D29DF6] dark:hover:bg-[#B16FE8]/10 font-semibold px-8 py-3 rounded-full transition-all duration-300">
+            className="border-2 text-[#B16FE8] font-semibold px-8 py-3 rounded-full transition-all duration-300"
+            style={{ borderColor: `${C.accent}80`, color: C.accent }}>
             <Icons.shoppingBag className="w-5 h-5 mr-2" />
             Browse Marketplace
           </Button>
@@ -171,7 +175,8 @@ export default function WelcomePage() {
           <Button 
             onClick={handleDiscoverEvents}
             variant="outline"
-            className="border-2 border-[#C17FF2]/50 text-[#C17FF2] hover:bg-[#C17FF2]/10 dark:border-[#C17FF2]/50 dark:text-[#C17FF2] dark:hover:bg-[#C17FF2]/10 font-semibold px-8 py-3 rounded-full transition-all duration-300">
+            className="border-2 text-[#C17FF2] font-semibold px-8 py-3 rounded-full transition-all duration-300"
+            style={{ borderColor: `${C.primary}80`, color: C.primary }}>
             <Icons.calendar className="w-5 h-5 mr-2" />
             Discover Events
           </Button>

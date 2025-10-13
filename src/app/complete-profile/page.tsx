@@ -16,6 +16,9 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import { Colors as Palette } from '@/constants/Colors';
+
+const C = Palette;
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { FloatingBackground } from '@/components/ui/floating-background';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
@@ -135,7 +138,7 @@ export default function CompleteProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: C.background }}>
       <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
       </div>
@@ -144,8 +147,8 @@ export default function CompleteProfile() {
       
       {/* Decorative gradient orbs - matching landing page */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-[#D29DF6]/20 dark:from-[#B16FE8]/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-[#C17FF2]/20 dark:from-[#C17FF2]/30 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(210,157,246,0.06)' }} />
+        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.06)' }} />
       </div>
       
       <motion.div
@@ -177,7 +180,7 @@ export default function CompleteProfile() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent">
+              <CardTitle className="text-3xl font-bold" style={{ color: C.primaryDark }}>
                 Complete Your Profile
               </CardTitle>
             </motion.div>
@@ -333,7 +336,8 @@ export default function CompleteProfile() {
               >
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  style={{ backgroundColor: '#B5A8D1' }}
                   disabled={isLoading || (formData.username && usernameStatus !== 'available') || !formData.username || !formData.category || !formData.display_name}
                 >
                   {isLoading ? 'Completing...' : 'Complete Profile'}

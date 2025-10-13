@@ -14,6 +14,18 @@ const nextConfig = {
             port: '',
             pathname: '/**', // This allows all paths under this hostname
           },
+            {
+            protocol: 'https',
+            hostname: 'pub-0a313ba028f9423cba4b9803d081b5db.r2.dev', // Cloudflare R2 hostname
+            port: '',
+            pathname: '/**', // This allows all paths under this hostname
+          },
+                     {
+            protocol: 'https',
+            hostname: 'pub-abe4a6405e724602a7fac9bf761e290c.r2.dev', // Cloudflare R2 hostname
+            port: '',
+            pathname: '/**', // This allows all paths under this hostname
+          },
         ],
         domains: ['m.media-amazon.com', 'ke.jumia.is',  'www.maccosmetics.com',
           'blushbox.store',

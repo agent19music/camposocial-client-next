@@ -60,8 +60,8 @@ export default function FilterPills({ filters, onFilterSelect, className }: Filt
               onClick={() => onFilterSelect(filter.id)}
               className={cn(
                 "relative rounded-full px-4 py-2 whitespace-nowrap text-sm transition-all",
-                filter.active 
-                  ? "bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white border-0 shadow-sm" 
+                  filter.active 
+                    ? "text-white border-0 shadow-sm" 
                   : "bg-background border-muted hover:bg-muted/50 hover:border-purple-300 dark:hover:border-purple-700"
               )}
             >

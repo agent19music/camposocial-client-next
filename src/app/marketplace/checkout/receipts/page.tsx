@@ -201,7 +201,7 @@ export default function Receipt() {
           </CardFooter>
         </div>
         <div className="h-3 sm:h-4 bg-gray-100 relative">
-          <div className="absolute bottom-full left-0 right-0 h-2 sm:h-3 bg-[repeating-linear-gradient(45deg,transparent,transparent_8px,#e5e7eb_8px,#e5e7eb_16px)]"></div>
+          <div className="absolute bottom-full left-0 right-0 h-2 sm:h-3" style={{ backgroundImage: 'linear-gradient(90deg, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0) 50%)', backgroundSize: '8px 8px' }}></div>
         </div>
       </Card>
       <Button onClick={handleDownload} className="mt-4 sm:mt-6 gap-2" variant="outline">

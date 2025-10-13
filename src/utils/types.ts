@@ -114,6 +114,9 @@ export interface ChatContextType {
   getFriendDetails: (friendId: string) => Promise<{name: string; avatar: string; isOnline: boolean} | null>;
   friendDetails: ChatFriend | null;
   currentUser: ChatUser | null;
+  sendTypingIndicator: (isTyping: boolean) => void;
+  isTyping: boolean;
+  isConnected: boolean;
 }
 
 export interface ChatProviderProps { children: ReactNode }

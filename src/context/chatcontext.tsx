@@ -4,6 +4,7 @@ import { createContext, ReactNode, useState, useEffect, useContext, useRef, useC
 import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
+import { useWebSocket } from "../hooks/useWebSocket";
 import { set } from "date-fns";
 import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
 
@@ -33,6 +34,9 @@ export const ChatContext = createContext<ChatContextType>({
     getFriendDetails: async () => null,
     friendDetails: null,
     currentUser: null,
+    sendTypingIndicator: () => { },
+    isTyping: false,
+    isConnected: false,
 });
 
 export default function ChatProvider({ children }: ChatProviderProps) {
@@ -55,7 +59,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    
+    // WebSocket integration
+    const { socket, isConnected } = useWebSocket();
     
     // OpenPGP key management
     const [privateKey, setPrivateKey] = useState<openpgp.PrivateKey | null>(null);
@@ -205,6 +213,49 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
     }, []);
 
+    // WebSocket effect for real-time messaging
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleNewMessage = (messageData: any) => {
+            console.log('Received new message:', messageData);
+            
+            // Add message to current conversation if it matches
+            if (friendId && messageData.conversation_id === parseInt(friendId)) {
+                setMessages(prev => [messageData, ...prev]);
+            }
+            
+            // Update conversations list
+            fetchConversations();
+        };
+
+        const handleMessageSent = (data: any) => {
+            console.log('Message sent confirmation:', data);
+            // Message already added optimistically, just confirm delivery
+        };
+
+        const handleUserTyping = (data: any) => {
+            if (data.user_id === friendId) {
+                setIsTyping(data.is_typing);
+                
+                if (data.is_typing) {
+                    // Clear typing indicator after 3 seconds
+                    setTimeout(() => setIsTyping(false), 3000);
+                }
+            }
+        };
+
+        socket.on('new_message', handleNewMessage);
+        socket.on('message_sent', handleMessageSent);
+        socket.on('user_typing', handleUserTyping);
+
+        return () => {
+            socket.off('new_message', handleNewMessage);
+            socket.off('message_sent', handleMessageSent);
+            socket.off('user_typing', handleUserTyping);
+        };
+    }, [socket, isConnected, friendId, currentUser?.id]);
+
     // Generate a unique conversation ID from two user IDs
     const generateConversationId = useCallback((userId1: string, userId2: string): string => {
         // Sort IDs to ensure the same conversation ID regardless of order
@@ -237,6 +288,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             if (convResponse.ok) {
                 const convData = await convResponse.json();
+                console.log('Conversation data:', convData);
                 const friendDetails = {
                     username: `${convData.first_name} ${convData.last_name}`,
                     avatar: convData.avatar || '',
@@ -492,6 +544,22 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             const { encrypted, isEncrypted } = await encryptMessage(content, friendId);
 
+            // Optimistically add message to UI
+            const optimisticMessage: ChatMessage = {
+                id: Date.now(), // Temporary ID
+                senderId: currentUser.id,
+                content: encrypted,
+                timestamp: new Date(),
+                media: uploadedMedia,
+                reactions: [],
+                replyTo: replyTo,
+                isSent: false, // Will be updated when response comes
+                isRead: false,
+                encrypted: isEncrypted
+            };
+
+            setMessages(prev => [optimisticMessage, ...prev]);
+
             const response = await fetch(`${apiEndpoint}/messages`, {
                 method: 'POST',
                 headers: {
@@ -509,6 +577,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             });
 
             if (!response.ok) {
+                // Remove optimistic message on failure
+                setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+                
                 if (response.status === 404) {
                     markEndpointAvailability('messages', false);
                     throw new Error('Messaging endpoint not available');
@@ -516,18 +587,34 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 throw new Error('Failed to send message');
             }
 
+            const result = await response.json();
+            
+            // Update optimistic message with real data
+            setMessages(prev => prev.map(msg => 
+                msg.id === optimisticMessage.id 
+                    ? { ...msg, id: result.message_id, isSent: true }
+                    : msg
+            ));
+
             markEndpointAvailability('messages', true);
             
-            // Refresh messages
-            await getMessages(friendId, 20);
         } catch (error) {
             console.error("Error sending message:", error);
             toast.error("Failed to send message");
         } finally {
             markRequestEnd('send_message');
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, encryptMessage]);
+
+    // Send typing indicator
+    const sendTypingIndicator = useCallback((isTyping: boolean) => {
+        if (socket && isConnected && friendId) {
+            socket.emit('typing', {
+                recipient_id: friendId,
+                is_typing: isTyping
+            });
+        }
+    }, [socket, isConnected, friendId]);
 
     const getMessages = useCallback(async (friendId: string, batchSize: number, lastMessageId?: number): Promise<ChatMessage[]> => {
         if (!currentUser || !authToken || fetchingMessagesRef.current) {
@@ -1030,7 +1117,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     return (
         <ChatContext.Provider
             value={{
-                
                 sendMessage,
                 getMessages,
                 editMessage,
@@ -1054,6 +1140,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 getFriendDetails,
                 friendDetails,
                 currentUser,
+                sendTypingIndicator,
+                isTyping,
+                isConnected: isConnected && socket !== null
             }}
         >
             {children}

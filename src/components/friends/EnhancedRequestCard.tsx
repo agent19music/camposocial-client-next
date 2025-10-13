@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Colors as Palette } from '@/constants/Colors';
+
+const C = Palette;
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -90,12 +93,13 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
         exit={{ opacity: 0, scale: 0.95, y: -20 }}
         transition={{ duration: 1.5 }}
       >
-        <Card className="border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-l-green-500">
+          <Card className="border-green-300 border-l-4 border-l-green-500">
+            <div style={{ backgroundColor: '#f0fbf6' }} />
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-14 h-14 border-3 border-green-300">
                 <AvatarImage src={request.avatar} alt={getDisplayName()} />
-                <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white font-semibold text-lg">
+                <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: C.success }}>
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
@@ -133,12 +137,13 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
         exit={{ opacity: 0, scale: 0.95, x: -50 }}
         transition={{ duration: 1.0 }}
       >
-        <Card className="border-red-200 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/10 dark:to-rose-900/10">
+          <Card className="border-red-200">
+            <div style={{ backgroundColor: '#fff6f6' }} />
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-14 h-14 opacity-50">
                 <AvatarImage src={request.avatar} alt={getDisplayName()} />
-                <AvatarFallback className="bg-gradient-to-br from-gray-400 to-gray-500 text-white font-semibold text-lg">
+                <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: C.grayLight || '#e5e7eb' }}>
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
@@ -177,7 +182,8 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
       onHoverEnd={() => setIsHovered(false)}
       className="group cursor-pointer"
     >
-      <Card className={`glass-card hover:border-green-300 dark:hover:border-green-700 transition-all duration-300 overflow-hidden bg-gradient-to-br from-white/80 to-green-50/50 dark:from-gray-900/80 dark:to-green-950/50 border-l-4 border-l-green-500 ${isLoading ? 'opacity-70' : ''}`}>
+        <Card className={`glass-card hover:border-green-300 dark:hover:border-green-700 transition-all duration-300 overflow-hidden border-l-4 border-l-green-500 ${isLoading ? 'opacity-70' : ''}`}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.8)' }} />
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             {/* Avatar */}
@@ -188,7 +194,7 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
               >
                 <Avatar className="w-14 h-14 border-3 border-white dark:border-gray-800 shadow-lg">
                   <AvatarImage src={request.avatar} alt={getDisplayName()} />
-                  <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white font-semibold text-lg">
+                  <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: C.success }}>
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
@@ -198,7 +204,8 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full p-1 shadow-lg"
+                  className="absolute -top-1 -right-1 rounded-full p-1 shadow-lg"
+                  style={{ backgroundColor: C.success }}
               >
                 <div className="w-3 h-3 bg-white rounded-full"></div>
               </motion.div>
@@ -222,7 +229,7 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
                 </div>
                 
                 {/* New Request Badge */}
-                <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-md">
+                  <Badge className="text-white border-0 shadow-md" style={{ backgroundColor: C.success }}>
                   New Request
                 </Badge>
               </div>
@@ -260,9 +267,10 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
               <div className="flex items-center gap-2">
                 <Button 
                   size="sm" 
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex-1 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                   onClick={handleAccept}
                   disabled={isLoading}
+                  style={{ backgroundColor: C.success }}
                 >
                   <motion.div
                     animate={{ scale: requestState === 'accepting' ? [1, 1.2, 1] : 1 }}

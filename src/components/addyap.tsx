@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { YapContext } from "@/context/yapcontext"
+import { Colors as Palette } from "@/constants/Colors"
 import { AuthContext } from "@/context/authcontext"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -237,7 +238,7 @@ export default function AddYap() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200">
+  <Button className="w-full text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200" style={{ backgroundColor: Palette.accent }}>
           What&apos;s happening?
         </Button>
       </DialogTrigger>
@@ -251,7 +252,7 @@ export default function AddYap() {
           <div className="flex items-start space-x-4">
             <Avatar className="w-12 h-12 flex-shrink-0">
               <AvatarImage src={currentUser?.avatar} alt={currentUser?.username} />
-              <AvatarFallback className="bg-gradient-to-br from-[#D29DF6]/20 to-[#C17FF2]/20 text-primary font-medium">
+              <AvatarFallback className="text-primary font-medium" style={{ backgroundColor: Palette.accentLight }}>
                 {currentUser?.first_name?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
@@ -482,7 +483,8 @@ export default function AddYap() {
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitDisabled}
-                className="bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-medium rounded-full px-8 py-2 h-10 shadow-lg hover:shadow-xl transition-all duration-200"
+                className="text-white font-medium rounded-full px-8 py-2 h-10 shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{ backgroundColor: Palette.accent }}
               >
                 {isSubmitting ? 'Posting...' : 'Yap'}
               </Button>

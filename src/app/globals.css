@@ -4,103 +4,140 @@
 
 @layer base {
   :root {
-    /* Light mode - clean and simple like landing page */
-    --background: 0 0% 100%; /* Pure white */
-    --foreground: 215 25% 27%; /* Dark slate text */
-    --f-accent: 0, 0%, 71%;
+    /* Pastel color palette from constants/Colors.ts */
+    --color-primary: #7B8FA8;
+    --color-primary-light: #D4E4F0;
+    --color-primary-dark: #5A6F85;
+    --color-heading: #5A6F85;
+    --color-secondary: #A89BA3;
+    --color-accent: #B5A8D1;
+    --color-accent-light: #E8DDF5;
+    --color-accent-dark: #8B7BA8;
+    --color-text-primary: #2A2A2A;
+    --color-text-secondary: #5F5F5E;
+    --color-text-tertiary: #8B8B8B;
+    --color-background-hex: #FAFAF9;
+    --color-surface: #F5F5F3;
+    --color-card: #FFFFFF;
+    --color-border: #E3E3E1;
+    --color-divider: #F0F0EE;
+    --color-like: #E8B4C4;
+    --color-like-filled: #D999AC;
+    --color-share: #B5D4E8;
+    --color-comment: #D4C9B5;
+    --color-success: #89B8A0;
+    --color-warning: #D4A574;
+    --color-error: #C9929D;
+    --color-info: #9DBFD4;
+
+    /* Light mode - clean and minimal */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 16%;
     
     /* Cards - clean white */
-    --card: 0 0% 100%; /* Pure white */
-    --card-foreground: 215 25% 27%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
+    --popover-foreground: 0 0% 16%;
     
-    /* Primary colors using your brand purple */
-    --primary: 290 71% 73%; /* #D29DF6 */
+    /* Primary colors using muted blue */
+    --primary: 280 15% 82%;
     --primary-foreground: 0 0% 98%;
     
-    /* Secondary - very light purple tint */
-    --secondary: 270 100% 98%; /* Very subtle purple */
-    --secondary-foreground: 215 25% 27%;
-    --third: 200, 45%, 21%, 1;
-    --third-foreground: 0 0% 98%;
+    /* Secondary - muted mauve */
+    --secondary: 280 10% 66%;
+    --secondary-foreground: 0 0% 16%;
     
-    /* Muted - light gray with purple hint */
-    --muted: 270 20% 95%; /* Very light purple gray */
-    --muted-foreground: 215 15% 65%;
+    /* Muted - light neutral */
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 55%;
     
-    /* Accent */
-    --accent: 270 20% 95%;
-    --accent-foreground: 215 25% 27%;
+    /* Accent - soft lavender */
+    --accent: 280 15% 82%;
+    --accent-foreground: 0 0% 16%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Borders - subtle purple tint */
-    --border: 270 15% 92%; /* Light purple-gray border */
-    --input: 0 0% 100%; /* Pure white input background */
-    --ring: 290 71% 73%; /* Brand purple for focus */
+    /* Borders - subtle neutral */
+    --border: 0 0% 89%;
+    --input: 0 0% 100%;
+    --ring: 210 20% 53%;
     --radius: 0.5rem;
     
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    
-    /* Brand colors */
-    --brand-primary: 290 71% 73%; /* #D29DF6 */
-    --brand-secondary: 285 68% 70%; /* #C17FF2 */
+    --chart-1: 210 20% 53%;
+    --chart-2: 280 15% 82%;
+    --chart-3: 40 40% 60%;
+    --chart-4: 160 25% 62%;
+    --chart-5: 280 20% 70%;
   }
 
   .dark {
-    /* Dark mode - deep black like landing page */
-    --background: 0 0% 0%; /* Pure black */
-    --foreground: 0 0% 98%; /* Pure white text */
+    /* Dark mode pastel palette */
+    --color-primary: #B5D4E8;
+    --color-primary-light: #D4E4F0;
+    --color-primary-dark: #8FA8C4;
+    --color-heading: #D4E4F0;
+    --color-secondary: #C9B5C4;
+    --color-accent: #D4C9E8;
+    --color-accent-light: #3A2F50;
+    --color-accent-dark: #E8DDF5;
+    --color-text-primary: #F0F0EE;
+    --color-text-secondary: #C0C0BE;
+    --color-text-tertiary: #9B9B99;
+    --color-background-hex: #1A1A19;
+    --color-surface: #242423;
+    --color-card: #2D2D2B;
+    --color-border: #3A3A38;
+    --color-divider: #2F2F2D;
+    --color-like: #E8B4C4;
+    --color-like-filled: #F0D4E0;
+    --color-share: #B5D4E8;
+    --color-comment: #D4C9B5;
+    --color-success: #A8D4B8;
+    --color-warning: #E8C999;
+    --color-error: #E8B4C4;
+    --color-info: #B5D4E8;
+
+    /* Dark mode - deep, refined */
+    --background: 0 0% 10%;
+    --foreground: 0 0% 94%;
     
-    /* Cards with purple-950/20 like landing page */
-    --card: 270 100% 3%; /* Very dark purple-black */
-    --card-foreground: 0 0% 98%;
-    --f-accent: 0, 0%, 71%;
+    /* Cards - dark gray */
+    --card: 0 0% 18%;
+    --card-foreground: 0 0% 94%;
+    --popover: 0 0% 18%;
+    --popover-foreground: 0 0% 94%;
     
-    --popover: 270 100% 3%;
-    --popover-foreground: 0 0% 98%;
+    /* Primary colors - soft blue */
+    --primary: 210 30% 72%;
+    --primary-foreground: 0 0% 8%;
     
-    /* Primary colors - same brand colors */
-    --primary: 290 71% 73%; /* #D29DF6 */
-    --primary-foreground: 0 0% 0%; /* Black text on brand */
+    /* Secondary - muted mauve */
+    --secondary: 280 15% 82%;
+    --secondary-foreground: 0 0% 10%;
     
-    /* Secondary - dark with purple hint */
-    --secondary: 270 100% 8%; /* Dark purple */
-    --secondary-foreground: 0 0% 98%;
-    --third: 220, 45%, 21%;
-    --third-foreground: 0 0% 98%;
+    /* Muted - dark neutral */
+    --muted: 0 0% 23%;
+    --muted-foreground: 0 0% 75%;
     
-    /* Muted - dark purple tones */
-    --muted: 270 30% 10%; /* Dark purple */
-    --muted-foreground: 0 0% 65%; /* Light gray */
-    
-    /* Accent */
-    --accent: 270 30% 10%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent - soft lavender */
+    --accent: 280 20% 85%;
+    --accent-foreground: 0 0% 10%;
     
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Dark borders with purple */
-    --border: 270 50% 15%; /* Dark purple border */
-    --input: 270 100% 3%; /* Very dark purple input */
-    --ring: 290 71% 73%; /* Brand purple for focus */
+    /* Dark borders */
+    --border: 0 0% 23%;
+    --input: 0 0% 18%;
+    --ring: 210 30% 72%;
     
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    
-    /* Brand colors consistent */
-    --brand-primary: 290 71% 73%; /* #D29DF6 */
-    --brand-secondary: 285 68% 70%; /* #C17FF2 */
+    --chart-1: 210 30% 72%;
+    --chart-2: 280 20% 85%;
+    --chart-3: 40 50% 65%;
+    --chart-4: 160 35% 70%;
+    --chart-5: 280 25% 75%;
   }
 }
 
@@ -111,20 +148,32 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    /* Simple clean backgrounds like landing page */
   }
   
-  /* Landing page style backgrounds for specific pages */
+  /* Clean solid backgrounds */
   .landing-gradient {
-    background: linear-gradient(to bottom, rgb(255, 255, 255), rgba(250, 245, 255, 0.3), rgba(245, 243, 255, 0.5));
+    background: var(--color-background-hex);
   }
-  
+
   .dark .landing-gradient {
-    background: linear-gradient(to bottom, rgb(0, 0, 0), rgb(0, 0, 0), rgba(88, 28, 135, 0.2));
+    background: var(--color-background-hex);
+  }
+
+  /* Remove all gradient utilities - use solid colors only */
+  [class*="bg-gradient-to-"],
+  [class*="bg-gradient"],
+  [class*="bg-clip-text"],
+  [class*="repeating-linear-gradient"],
+  [class*="linear-gradient"] {
+    background-image: none !important;
+    background: var(--color-surface) !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    color: var(--color-text-primary) !important;
   }
 }
 
-body{
+body {
   max-width: 100vw;
   overflow-x: hidden;
 }
@@ -199,8 +248,8 @@ body{
   }
   /* Hide scrollbar for IE, Edge and Firefox */
   .no-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   .falling-icon {
@@ -246,12 +295,10 @@ body{
 
 /* Enhanced mobile navigation support */
 @media (max-width: 1024px) {
-  /* Add padding to main content to avoid mobile nav overlap */
   main {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0.5rem));
   }
   
-  /* Ensure proper spacing for pages with bottom nav */
   .page-content {
     min-height: calc(100vh - 4rem - env(safe-area-inset-bottom, 0.5rem));
   }
@@ -290,147 +337,37 @@ body{
   @apply text-[10px] md:text-xs leading-tight;
 }
 
-/* Grain texture background */
-.grain-bg {
-  position: relative;
-  overflow: hidden;
-}
-
-.grain-bg::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(circle at 25% 25%, rgba(210, 157, 246, 0.2) 0%, transparent 25%),
-    radial-gradient(circle at 75% 75%, rgba(210, 157, 246, 0.15) 0%, transparent 25%),
-    radial-gradient(circle at 50% 0%, rgba(210, 157, 246, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 0% 50%, rgba(210, 157, 246, 0.1) 0%, transparent 50%);
-  background-size: 400px 400px, 600px 600px, 800px 800px, 500px 500px;
-  background-position: 0 0, 200px 200px, 0 100px, 50px 0;
-  animation: grain-move 20s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.grain-bg::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(210, 157, 246, 0.03) 2px,
-      rgba(210, 157, 246, 0.03) 4px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(210, 157, 246, 0.03) 2px,
-      rgba(210, 157, 246, 0.03) 4px
-    );
-  animation: grain-shift 15s linear infinite;
-  pointer-events: none;
-  z-index: 2;
-}
-
-@keyframes grain-move {
-  0%, 100% { 
-    background-position: 0 0, 200px 200px, 0 100px, 50px 0; 
-  }
-  25% { 
-    background-position: 100px 50px, 300px 150px, 50px 200px, 100px 25px; 
-  }
-  50% { 
-    background-position: 200px 100px, 100px 300px, 100px 50px, 150px 50px; 
-  }
-  75% { 
-    background-position: 50px 150px, 250px 100px, 150px 150px, 25px 75px; 
-  }
-}
-
-@keyframes grain-shift {
-  0% { 
-    transform: translate(0, 0); 
-  }
-  100% { 
-    transform: translate(4px, 4px); 
-  }
-}
-
-/* Glassmorphism utilities */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.glass-dark {
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.glass-golden {
-  background: rgba(210, 157, 246, 0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(210, 157, 246, 0.3);
-  box-shadow: 
-    0 8px 32px rgba(210, 157, 246, 0.2),
-    inset 0 1px 0 rgba(210, 157, 246, 0.2);
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+/* Clean card styles - no glass or gradients */
+.card-clean {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
   transition: all 0.3s ease;
 }
 
-.glass-card:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(210, 157, 246, 0.4);
-  box-shadow: 
-    0 8px 32px rgba(210, 157, 246, 0.15),
-    inset 0 1px 0 rgba(210, 157, 246, 0.2);
-  transform: translateY(-2px);
+.card-clean:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(123, 143, 168, 0.08);
 }
 
-.dark .glass-card {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+.dark .card-clean {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
 }
 
-.dark .glass-card:hover {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(210, 157, 246, 0.5);
-  box-shadow: 
-    0 8px 32px rgba(210, 157, 246, 0.2),
-    inset 0 1px 0 rgba(210, 157, 246, 0.3);
+.dark .card-clean:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(181, 212, 232, 0.12);
+}
+
+/* Surface backgrounds */
+.surface-bg {
+  background: var(--color-surface);
+}
+
+.dark .surface-bg {
+  background: var(--color-surface);
 }
 
 /* Hide scrollbar utility */
@@ -446,7 +383,7 @@ body{
 /* Mobile content padding to account for sticky header */
 .mobile-content-padding {
   padding-top: 1rem;
-  padding-bottom: 5rem; /* Space for bottom navigation */
+  padding-bottom: 5rem;
 }
 
 @media (min-width: 1024px) {
@@ -454,4 +391,14 @@ body{
     padding-top: 0;
     padding-bottom: 1rem;
   }
+}
+
+/* Scrollbar hiding for all browsers */
+::-webkit-scrollbar {
+  display: none;
+}
+
+element {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }

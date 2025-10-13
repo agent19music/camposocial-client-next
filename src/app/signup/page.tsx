@@ -2,13 +2,15 @@
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { Colors as Palette } from "@/constants/Colors";
 import { SocialLoginModal } from '@/modals/signup/socialsbuttons'
 import { FallingIcons } from '@/components/ui/falling-icons'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function SignUpPage() {
+  const C = Palette;
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: C.background }}>
       {/* Theme toggle */}
       <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
@@ -19,8 +21,8 @@ export default function SignUpPage() {
 
       {/* Background decoration - matching landing page */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-[#D29DF6]/20 dark:from-[#B16FE8]/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-[#C17FF2]/20 dark:from-[#C17FF2]/30 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(181,168,209,0.06)' }} />
+        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.08)' }} />
       </div>
 
       {/* Main content */}
@@ -50,7 +52,7 @@ export default function SignUpPage() {
             </motion.div>
           </div>
 
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent mb-2">
+          <h2 className="text-4xl font-bold mb-2" style={{ color: C.primaryDark }}>
             Join CampoSocial
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-8 text-lg">

@@ -149,15 +149,15 @@ export function SocialLoginModal() {
     }
   ];
 
-  if (!showSocialModal) {
+    if (!showSocialModal) {
     return (
       <div className="text-center">
         <Button 
           onClick={() => setShowSocialModal(true)}
-          className="w-full h-14 bg-gradient-to-r from-[#D29DF6] to-[#C17FF2] hover:from-[#C17FF2] hover:to-[#B16FE8] text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+            className="w-full h-14 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+            style={{ backgroundColor: '#B5A8D1' }}
         >
           <div className="flex items-center justify-center space-x-3">
-            <span className="text-lg">🚀</span>
             <span>Get Started</span>
           </div>
         </Button>

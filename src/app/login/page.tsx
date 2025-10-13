@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Colors as Palette } from "@/constants/Colors";
 import { motion } from "framer-motion";
 import { SocialLoginModal } from "@/modals/signup/socialsbuttons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -17,7 +18,7 @@ import { FloatingBackground } from "@/components/ui/floating-background";
 
 export default function LoginForm() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-violet-50/50 dark:from-black dark:via-black dark:to-purple-950/20 transition-colors duration-500 flex items-center justify-center p-4">
+    <div className="min-h-screen transition-colors duration-500 flex items-center justify-center p-4" >
       {/* Theme toggle */}
       <div className="absolute top-4 right-4">
         <ThemeToggle />
@@ -28,8 +29,8 @@ export default function LoginForm() {
 
       {/* Decorative gradient orbs - matching landing page */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-gradient-to-br from-[#D29DF6]/20 dark:from-[#B16FE8]/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-gradient-to-tl from-[#C17FF2]/20 dark:from-[#C17FF2]/30 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(181,168,209,0.06)' }} />
+        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.05)' }} />
       </div>
 
       <motion.div
@@ -38,7 +39,7 @@ export default function LoginForm() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md relative z-10"
       >
-        <Card className="bg-white/80 dark:bg-black/70 backdrop-blur-xl border border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-2xl">
+        <Card className="bg-background dark:bg-background backdrop-blur-xl shadow-2xl">
           <CardHeader className="text-center space-y-4">
             {/* Logo */}
             <motion.div
@@ -61,7 +62,7 @@ export default function LoginForm() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#D29DF6] via-[#C17FF2] to-[#B16FE8] bg-clip-text text-transparent">
+              <CardTitle className="text-3xl font-bold" style={{ color: 'var(--color-heading)' }}>
                 Welcome Back
               </CardTitle>
             </motion.div>
@@ -89,7 +90,7 @@ export default function LoginForm() {
                 Don&apos;t have an account?{" "}
                 <Link 
                   href="/signup" 
-                  className="text-[#B16FE8] dark:text-[#D29DF6] hover:text-[#C17FF2] dark:hover:text-[#C17FF2] font-semibold transition-colors duration-200 hover:underline"
+                  className="text-primary dark:text-primary hover:text-primary dark:hover:text-primary font-semibold transition-colors duration-200 hover:underline"
                 >
                   Sign up here
                 </Link>
@@ -104,7 +105,7 @@ export default function LoginForm() {
             >
               <Link 
                 href="/reset-password" 
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-[#B16FE8] dark:hover:text-[#D29DF6] transition-colors duration-200 hover:underline"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 hover:underline"
               >
                 Need help accessing your account?
               </Link>

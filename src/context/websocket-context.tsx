@@ -303,6 +303,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
+    // Friend status change notifications
+    newSocket.on('friend_status_change', (data: any) => {
+      console.log('Friend status change:', data);
+      toast(
+        `${data.username} is now ${data.is_online ? 'online' : 'offline'}`,
+        { 
+          duration: 2000,
+          icon: data.is_online ? '🟢' : '🔴'
+        }
+      );
+    });
+
     // Live yap like notifications
     newSocket.on('yap_liked', (data: any) => {
       console.log('Yap liked notification:', data);

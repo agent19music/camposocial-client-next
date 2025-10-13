@@ -8,6 +8,9 @@ import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Colors as Palette } from "@/constants/Colors"
+
+const C = Palette;
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -289,7 +292,7 @@ export default function ProfileEditor() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="p-0 relative">
           {/* Header Image Section */}
-          <div className="relative h-32 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-t-lg overflow-hidden">
+          <div className="relative h-32 rounded-t-lg overflow-hidden" style={{ backgroundColor: 'rgba(181,168,209,0.04)' }}>
             {headerSrc && (
               <Image 
                 src={headerSrc} 
@@ -330,7 +333,7 @@ export default function ProfileEditor() {
             <div className="relative -mt-12">
               <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
                 <AvatarImage src={avatarSrc} alt="User's profile picture" />
-                <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-purple-500 to-violet-500 text-white">
+                <AvatarFallback className="text-lg font-semibold text-white" style={{ backgroundColor: C.accentDark || C.accent }}>
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>

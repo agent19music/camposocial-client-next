@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4K Gradient Renderer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+        }
+        .controls {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            height: fit-content;
+        }
+        .control-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            color: #aaa;
+            letter-spacing: 0.5px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4a9eff;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4a9eff;
+            cursor: pointer;
+            border: none;
+        }
+        input[type="color"] {
+            width: 100%;
+            height: 45px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .value-display {
+            display: inline-block;
+            background: #2a2a2a;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+            color: #4a9eff;
+        }
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+        .btn-export {
+            background: #4a9eff;
+            color: #fff;
+            grid-column: span 2;
+        }
+        .btn-export:hover {
+            background: #357ac9;
+        }
+        .btn-reset {
+            background: #333;
+            color: #fff;
+        }
+        .btn-reset:hover {
+            background: #444;
+        }
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .preview-box {
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .preview-label {
+            padding: 15px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #aaa;
+            background: #0f0f0f;
+            letter-spacing: 0.5px;
+        }
+        #previewCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .info {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>4K Gradient Blur & Grain Renderer</h1>
+        
+        <div class="layout">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Semicircle Color</label>
+                    <input type="color" id="color1" value="#B5A8D1">
+                </div>
+
+                <div class="control-group">
+                    <label>Background Color</label>
+                    <input type="color" id="color2" value="#FAFAF9">
+                </div>
+
+                <div class="control-group">
+                    <label>Semicircle Position</label>
+                    <input type="range" id="position" min="0" max="100" value="50">
+                    <div class="value-display" id="positionVal">50%</div>
+                </div>
+
+                <div class="control-group">
+                    <label>Blur Intensity</label>
+                    <input type="range" id="blur" min="0" max="50" value="0">
+                    <div class="value-display" id="blurVal">0</div>
+                </div>
+
+                <div class="control-group">
+                    <label>Grain Amount</label>
+                    <input type="range" id="grain" min="0" max="50" value="0">
+                    <div class="value-display" id="grainVal">0</div>
+                </div>
+
+                <div class="control-group">
+                    <label>Edge Softness</label>
+                    <input type="range" id="softness" min="0" max="100" value="30">
+                    <div class="value-display" id="softnessVal">30</div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-reset" onclick="resetControls()">Reset</button>
+                    <button class="btn-export" onclick="exportImage()">Export 4K</button>
+                </div>
+
+                <div class="info" style="margin-top: 20px;">
+                    Export Resolution: 3840×2160 (4K 16:9) PNG
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <div class="preview-box">
+                    <div class="preview-label">Preview (1920×1080)</div>
+                    <canvas id="previewCanvas" width="1920" height="1080"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const controls = {
+            color1: document.getElementById('color1'),
+            color2: document.getElementById('color2'),
+            position: document.getElementById('position'),
+            blur: document.getElementById('blur'),
+            grain: document.getElementById('grain'),
+            softness: document.getElementById('softness')
+        };
+
+        const displays = {
+            positionVal: document.getElementById('positionVal'),
+            blurVal: document.getElementById('blurVal'),
+            grainVal: document.getElementById('grainVal'),
+            softnessVal: document.getElementById('softnessVal')
+        };
+
+        function updateDisplays() {
+            displays.positionVal.textContent = controls.position.value + '%';
+            displays.blurVal.textContent = controls.blur.value;
+            displays.grainVal.textContent = controls.grain.value;
+            displays.softnessVal.textContent = controls.softness.value;
+        }
+
+        function addGrain(imageData, intensity) {
+            const data = imageData.data;
+            const amount = intensity * 2.55;
+            for (let i = 0; i < data.length; i += 4) {
+                const grain = (Math.random() - 0.5) * amount;
+                data[i] += grain;
+                data[i + 1] += grain;
+                data[i + 2] += grain;
+            }
+            return imageData;
+        }
+
+        function blurCanvas(imgData, radius) {
+            const width = imgData.width;
+            const height = imgData.height;
+            const data = imgData.data;
+            
+            for (let i = 0; i < radius; i++) {
+                const newData = new Uint8ClampedArray(data);
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        const idx = (y * width + x) * 4;
+                        for (let c = 0; c < 3; c++) {
+                            let sum = 0;
+                            for (let dy = -1; dy <= 1; dy++) {
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    sum += data[((y + dy) * width + (x + dx)) * 4 + c];
+                                }
+                            }
+                            newData[idx + c] = sum / 9;
+                        }
+                    }
+                }
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = newData[i];
+                }
+            }
+            return imgData;
+        }
+
+        function renderGradient(width, height) {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Fill background
+            ctx.fillStyle = controls.color2.value;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw semicircle
+            const semicircleColor = controls.color1.value;
+            const yPos = (height * parseFloat(controls.position.value)) / 100;
+            const radius = Math.sqrt(width * width + height * height) * 0.6;
+            const softness = parseFloat(controls.softness.value) / 100;
+            
+            // Create radial gradient for soft edge
+            const gradient = ctx.createRadialGradient(width / 2, yPos, 0, width / 2, yPos, radius);
+            gradient.addColorStop(0, semicircleColor);
+            gradient.addColorStop(1 - softness, semicircleColor);
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(width / 2, yPos, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Apply blur if needed
+            const blurAmount = Math.round(parseFloat(controls.blur.value) / 5);
+            if (blurAmount > 0) {
+                const imgData = ctx.getImageData(0, 0, width, height);
+                blurCanvas(imgData, blurAmount);
+                ctx.putImageData(imgData, 0, 0);
+            }
+            
+            // Apply grain if needed
+            const grainAmount = parseFloat(controls.grain.value);
+            if (grainAmount > 0) {
+                const imgData = ctx.getImageData(0, 0, width, height);
+                addGrain(imgData, grainAmount);
+                ctx.putImageData(imgData, 0, 0);
+            }
+        }
+
+        function exportImage() {
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = 3840;
+            exportCanvas.height = 2160;
+            const exportCtx = exportCanvas.getContext('2d');
+            
+            // Fill background
+            exportCtx.fillStyle = controls.color2.value;
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            
+            // Draw semicircle
+            const semicircleColor = controls.color1.value;
+            const yPos = (exportCanvas.height * parseFloat(controls.position.value)) / 100;
+            const radius = Math.sqrt(exportCanvas.width * exportCanvas.width + exportCanvas.height * exportCanvas.height) * 0.6;
+            const softness = parseFloat(controls.softness.value) / 100;
+            
+            // Create radial gradient for soft edge
+            const gradient = exportCtx.createRadialGradient(exportCanvas.width / 2, yPos, 0, exportCanvas.width / 2, yPos, radius);
+            gradient.addColorStop(0, semicircleColor);
+            gradient.addColorStop(1 - softness, semicircleColor);
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            exportCtx.fillStyle = gradient;
+            exportCtx.beginPath();
+            exportCtx.arc(exportCanvas.width / 2, yPos, radius, 0, Math.PI * 2);
+            exportCtx.fill();
+            
+            const blurAmount = Math.round(parseFloat(controls.blur.value) / 5);
+            if (blurAmount > 0) {
+                const imgData = exportCtx.getImageData(0, 0, exportCanvas.width, exportCanvas.height);
+                blurCanvas(imgData, blurAmount);
+                exportCtx.putImageData(imgData, 0, 0);
+            }
+            
+            const grainAmount = parseFloat(controls.grain.value);
+            if (grainAmount > 0) {
+                const imgData = exportCtx.getImageData(0, 0, exportCanvas.width, exportCanvas.height);
+                addGrain(imgData, grainAmount);
+                exportCtx.putImageData(imgData, 0, 0);
+            }
+            
+            exportCanvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gradient-4k-${Date.now()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function resetControls() {
+            controls.color1.value = '#B5A8D1';
+            controls.color2.value = '#FAFAF9';
+            controls.position.value = 50;
+            controls.blur.value = 0;
+            controls.grain.value = 0;
+            controls.softness.value = 30;
+            updateDisplays();
+            renderGradient(canvas.width, canvas.height);
+        }
+
+        Object.values(controls).forEach(control => {
+            control.addEventListener('input', () => {
+                updateDisplays();
+                renderGradient(canvas.width, canvas.height);
+            });
+        });
+
+        resetControls();
+    </script>
+</body>
+</html>

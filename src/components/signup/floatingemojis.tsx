@@ -1,3 +1,6 @@
+import { Colors as Palette } from '@/constants/Colors'
+
+const C = Palette
 "use client"
 
 import { useState, useEffect } from "react"
@@ -61,11 +64,8 @@ export default function FloatingEmojisBackground({
                       stiffness: 200,
                       damping: 20,
                     }}
-                    className="inline-block text-transparent bg-clip-text 
-                               bg-gradient-to-r from-mocha-500 via-sunset-500 to-blush-500 
-                               dark:from-blush-300 dark:via-sunset-400 dark:to-mocha-300
-                               hover:from-sunset-600 hover:via-blush-500 hover:to-mocha-600
-                               transition-all duration-300"
+                       className="inline-block"
+                       style={{ color: C.primaryDark }}
                   >
                     {letter}
                   </motion.span>
@@ -93,7 +93,8 @@ export default function FloatingEmojisBackground({
                 <DialogTrigger asChild>
                   <Button 
                     size="lg" 
-                    className="w-full bg-gradient-to-r from-mocha-500 to-sunset-500 hover:from-mocha-600 hover:to-sunset-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                     className="w-full text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                     style={{ backgroundColor: C.accent }}
                   >
                     <Icons.globe className="mr-2 h-5 w-5" />
                     Sign Up with Social

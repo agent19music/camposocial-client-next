@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUserContext } from '@/context/usercontext';
+import { Colors as Palette } from '@/constants/Colors';
 import { 
   UserPlus, 
   Shield, 
@@ -91,7 +92,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
       onHoverEnd={() => setIsHovered(false)}
       className="group cursor-pointer"
     >
-      <Card className="glass-card hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 overflow-hidden bg-gradient-to-br from-white/80 to-violet-50/50 dark:from-gray-900/80 dark:to-violet-950/50">
+      <Card className="glass-card hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 overflow-hidden">
+        <div style={{ backgroundColor: 'rgba(255,255,255,0.8)' }} />
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             {/* Avatar */}
@@ -102,7 +104,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
               >
                 <Avatar className="w-14 h-14 border-3 border-white dark:border-gray-800 shadow-lg">
                   <AvatarImage src={suggestion.avatar} alt={getDisplayName()} />
-                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-500 text-white font-semibold text-lg">
+                  <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: Palette.accent }}>
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
@@ -113,7 +115,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                 <motion.div 
                   initial={{ scale: 0, rotate: -90 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full p-1"
+                  className="absolute -top-1 -right-1 rounded-full p-1"
+                  style={{ backgroundColor: '#fb7185' }}
                 >
                   <div className="w-3 h-3 bg-white rounded-full"></div>
                 </motion.div>
@@ -182,9 +185,9 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
               <div className="flex items-center gap-2">
                 <Button 
                   size="sm" 
-                  className="flex-1 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex-1 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                  style={{ backgroundColor: Palette.primary }}
                   onClick={() => handleAddFriend(suggestion.id)}
-                  
                   disabled={isAdding || isLoading}
                 >
                   <motion.div

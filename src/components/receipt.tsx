@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { Download, Store } from "lucide-react";
 import html2canvas from "html2canvas";
 import React, { useState, useContext, useEffect } from "react";
+import { Colors as Palette } from "@/constants/Colors";
 import { AuthContext } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
 
@@ -146,6 +147,7 @@ export default function Receipt() {
   if (loading) {
     return <div>Loading receipt...</div>;
   }
+  const C = Palette;
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 sm:p-6">
@@ -201,7 +203,7 @@ export default function Receipt() {
           </CardFooter>
         </div>
         <div className="h-3 sm:h-4 bg-gray-100 relative">
-          <div className="absolute bottom-full left-0 right-0 h-2 sm:h-3 bg-[repeating-linear-gradient(45deg,transparent,transparent_8px,#e5e7eb_8px,#e5e7eb_16px)]"></div>
+          <div className="absolute bottom-full left-0 right-0 h-2 sm:h-3" style={{ backgroundColor: '#e5e7eb' }}></div>
         </div>
       </Card>
       <Button onClick={handleDownload} className="mt-4 sm:mt-6 gap-2" variant="outline">

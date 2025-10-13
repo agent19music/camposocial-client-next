@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isYesterday } from 'date-fns';
+import { Colors as Palette } from '@/constants/Colors';
+
+const C = Palette;
 import Image from 'next/image';
 import { 
   Send, 
@@ -43,7 +46,8 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
     editMessage,
     friendDetails,
     currentUser,
-    setMessages
+    setMessages,
+    chatList
   } = useChat();
   
   const { socket, emit, on, off, isConnected } = useWebSocket();
@@ -385,8 +389,23 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
     return [...groups, { ...message, isFirstInGroup, isLastInGroup }];
   }, []);
 
+  // Fallback friend info from chat list when context friendDetails has not loaded yet
+  const displayFriend = useMemo(() => {
+    if (friendDetails) return friendDetails;
+    const fromList = chatList?.find((f: any) => f.id === friendId);
+    if (fromList) {
+      return {
+        username: `${fromList.firstName || ''} ${fromList.lastName || ''}`.trim(),
+        avatar: fromList.avatar || '/default-avatar.png',
+        isOnline: false,
+        id: fromList.id
+      } as any;
+    }
+    return null;
+  }, [friendDetails, chatList, friendId]);
+
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col h-full" style={{ backgroundColor: C.background }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
@@ -397,23 +416,23 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
           )}
           <div className="relative">
             <Image 
-              src={friendDetails?.avatar || '/default-avatar.png'} 
-              alt={friendDetails?.username || 'User avatar'}
+              src={displayFriend?.avatar || '/default-avatar.png'} 
+              alt={displayFriend?.username || 'User avatar'}
               className="w-10 h-10 rounded-full object-cover"
               width={40}
               height={40}
             />
-            {friendDetails?.isOnline && (
+            {displayFriend?.isOnline && (
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
             )}
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white">
-              {friendDetails?.username || 'Loading...'}
+              {displayFriend?.username || 'Loading...'}
             </h2>
             {friendTyping ? (
               <p className="text-xs text-gray-500 dark:text-gray-400">typing...</p>
-            ) : friendDetails?.isOnline ? (
+            ) : displayFriend?.isOnline ? (
               <p className="text-xs text-green-500">Active now</p>
             ) : null}
           </div>
@@ -472,8 +491,8 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
                   isFirstInGroup={message.isFirstInGroup}
                   isLastInGroup={message.isLastInGroup}
                   showAvatar={true}
-                  userName={friendDetails?.username}
-                  userAvatar={friendDetails?.avatar}
+                  userName={displayFriend?.username}
+                  userAvatar={displayFriend?.avatar}
                   onReply={() => setReplyingTo(message)}
                   onEdit={() => {
                     setEditingMessage(message);
@@ -489,8 +508,8 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
 
         {friendTyping && (
           <TypingIndicator 
-            userName={friendDetails?.username}
-            userAvatar={friendDetails?.avatar}
+            userName={displayFriend?.username}
+            userAvatar={displayFriend?.avatar}
           />
         )}
         <div ref={messagesEndRef} />
@@ -507,7 +526,7 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600 dark:text-gray-300">
-                Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : friendDetails?.username}
+                Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : displayFriend?.username}
               </span>
             </div>
             <button
