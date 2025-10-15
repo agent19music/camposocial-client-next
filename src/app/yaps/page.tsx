@@ -40,39 +40,40 @@ import { motion } from 'framer-motion'
 import { Colors as Palette } from '@/constants/Colors'
 import Link from 'next/link'
 import AddYap from '@/components/addyap'
+import { useTheme } from '@/context/themecontext'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
   const router = useRouter();
-
+  const { theme } = useTheme();
   const quickActions = [
     {
       icon: MessageCircle,
       title: "Share Your First Yap",
       description: "Tell your campus what's on your mind",
       action: () => {}, // This would trigger the add yap modal
-      color: "text-purple-600 dark:text-purple-400"
+      color: "text-[#ff9013] dark:text-white"
     },
     {
       icon: Users,
       title: "Find Friends",
       description: "Connect with classmates and build your network",
       action: () => router.push('/friends'),
-      color: "text-violet-600 dark:text-violet-400"
+      color: "text-[#ff9013] dark:text-white"
     },
     {
       icon: Calendar,
       title: "Discover Events",
       description: "See what's happening on campus",
       action: () => router.push('/events'),
-      color: "text-purple-600 dark:text-purple-400"
+      color: "text-[#ff9013] dark:text-white"
     },
     {
       icon: ShoppingBag,
       title: "Browse Marketplace",
       description: "Find great deals from fellow students",
       action: () => router.push('/marketplace'),
-      color: "text-violet-600 dark:text-violet-400"
+      color: "text-[#ff9013] dark:text-white"
     }
   ];
 
@@ -92,7 +93,10 @@ const NewUserWelcome = () => {
             className="w-20 h-20 mx-auto mb-6"
           >
             <Image
-              src="/camposocial_logo.png"
+              src= {theme === 'dark'
+                ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+              }
               alt="CampoSocial"
               width={80}
               height={80}
@@ -100,7 +104,7 @@ const NewUserWelcome = () => {
               priority
             />
           </motion.div>
-          <h1 className="text-3xl font-bold mb-3" style={{ color: Palette.primaryDark }}>
+          <h1 className="text-3xl font-bold mb-3" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
             Welcome to CampoSocial, {currentUser?.first_name || 'friend'}!
           </h1>
           <p className="text-lg text-muted-foreground">
@@ -118,7 +122,7 @@ const NewUserWelcome = () => {
               whileHover={{ scale: 1.02, y: -2 }}
             >
               <Card 
-                className="group p-5 hover:shadow-lg transition-all duration-300 cursor-pointer bg-card/50 backdrop-blur-sm border-border/50 hover:border-purple-300 dark:hover:border-purple-700"
+                className="group p-5 hover:shadow-lg transition-all duration-300 cursor-pointer bg-card/50 backdrop-blur-sm border-border/50 hover:border-[#ff9013] dark:hover:border-[#ff9013]"
                 onClick={action.action}
               >
                 <CardContent className="p-0">
@@ -144,7 +148,6 @@ const NewUserWelcome = () => {
           className="text-center space-y-6"
         >
           <div className="p-4 rounded-xl bg-muted/30 backdrop-blur-sm">
-            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">
               Once you start connecting and sharing, your personalized feed will appear here.
             </p>
@@ -154,7 +157,7 @@ const NewUserWelcome = () => {
               onClick={() => router.push('/friends')}
               size="lg"
               className="text-white shadow-lg hover:shadow-xl transition-all duration-300"
-              style={{ backgroundColor: Palette.primary }}
+              style={{ backgroundColor: 'var(--color-fun)' }}
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Start Exploring
@@ -209,18 +212,21 @@ export default function Component() {
     following: { icon: UsersIcon, label: "Following", description: "Yaps from people you follow" }
   };
 
-  // Filter pills for both mobile and desktop
-  const filterPills: FilterPill[] = Object.entries(feedTypeConfig).map(([key, config]) => ({
-    id: key,
-    label: config.label,
-    active: feedType === key
-  }));
+  // Filter pills for both mobile and desktop + special Search pill
+  const filterPills: FilterPill[] = [
+    ...Object.entries(feedTypeConfig).map(([key, config]) => ({
+      id: key,
+      label: config.label,
+      active: feedType === key,
+    })),
+    { id: 'search', label: 'Search', isSearch: true },
+  ];
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <main className="mobile-content-padding lg:pb-4">
-        {/* Filter Pills - Always visible on mobile and desktop */}
+        {/* Filter Pills - Always visible on mobile and desktop, includes Search pill */}
         <FilterPills 
           filters={filterPills}
           onFilterSelect={handleFeedTypeChange}
@@ -235,7 +241,7 @@ export default function Component() {
           
           {/* Center content */}
           <div className="flex-1 flex flex-col gap-4 lg:gap-6">
-            {/* Desktop Filter Pills */}
+            {/* Desktop Filter Pills (with Search pill) */}
             <div className="hidden lg:block">
               <FilterPills 
                 filters={filterPills}
@@ -243,21 +249,7 @@ export default function Component() {
               />
             </div>
 
-            {/* Desktop Search */}
-            <div className="hidden lg:flex w-full justify-center">
-              <form className="w-full max-w-2xl">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search yaps..."
-                    className="w-full appearance-none bg-background pl-8 shadow-none"
-                  />
-                </div>
-              </form>
-            </div>
-
-            {/* Add Yap Button */}
+            {/* Add Yap Button only */}
             <div className="w-full max-w-2xl mx-auto">
               <AddYap />
             </div>

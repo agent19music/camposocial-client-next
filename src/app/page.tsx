@@ -59,7 +59,7 @@ const stats = [
 export default function Home() {
   const { currentUser } = useContext(AuthContext);
   const C = Palette;
-  const isDark = useTheme();
+  const {theme} = useTheme();
   // small helper to convert hex to rgba for subtle alpha gradients
   const hexToRgba = (hex: string, alpha = 1) => {
     const clean = hex.replace('#', '');
@@ -70,7 +70,10 @@ export default function Home() {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
   return (
-   <div className="min-h-scree bg-background">
+   <div className="min-h-screen bg-background bg-stone-50"
+ style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
+        }}>
 
       <FloatingBackground iconCount={20} opacity={3} />
       
@@ -80,14 +83,27 @@ export default function Home() {
           <div className="flex justify-between items-center h-14">
               <div className="flex items-center space-x-3">
               <Image
-                src="/camposocial_logo.png"
+                src= {theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                }
                 alt="CampoSocial"
                 width={36}
                 height={36}
                 className="rounded-xl shadow-sm"
                 priority
               />
-              <span className="text-[1.125rem] font-semibold tracking-tight" style={{ color: 'var(--color-heading)' }}>CampoSocial</span>
+           <Image
+                src={theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
+                }
+                alt="University Logo"
+                width={90}
+                height={90}
+                className=" shadow-sm rounded-sm"
+                priority
+              />
             </div>
             <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -111,7 +127,13 @@ export default function Home() {
         HERO SECTION - TRANSFORMED
         ========================================================
       */}
- <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden dark:bg-black min-h-[85vh]">
+ <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden bg:[#f1efe7] dark:bg-background min-h-[85vh]"
+  style={{
+          backgroundImage: `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                           radial-gradient(circle at 80% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
+                           radial-gradient(circle at 40% 20%, rgba(0,0,0,0.02) 0%, transparent 50%)`,
+        }}
+ >
         {/* Gradient orbs - enhanced for dark mode */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
@@ -154,7 +176,11 @@ export default function Home() {
                 color: 'var(--color-heading)',
                 fontFamily: 'Helvetica',
               }}>
-                The Campus Social Network That Gets You
+                The 
+                 
+                 Campus Social
+                
+               Network That Gets You
               </h2>
               </div>
               
@@ -180,12 +206,12 @@ export default function Home() {
                   
                 </Link> */}
                 
-                <Link href="/login">
+                <Link href="/signup">
                   <Button
                     size="lg"
                     variant="default"
-                    className="font-medium px-8 py-3 my-4 rounded-full transition-colors duration-200 text-[1.0625rem]"
-                    style={{ color: C.white, backgroundColor: C.primaryDark }}
+                    className="font-medium px-8 bg-[#ff9013]  py-3 my-4 rounded-full transition-colors duration-200 text-[1.0625rem]"
+                    style={{ color: C.white }}
                   >
                     Get Started
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -267,7 +293,7 @@ export default function Home() {
         NEW STATS SECTION (Separated from Hero)
         ========================================================
       */}
-      <section className="py-20 px-6 sm:px-8 lg:px-10 dark:bg-black">
+      <section className="py-20 px-6 sm:px-8 lg:px-10 dark:bg-background">
         <div className="max-w-6xl mx-auto">
           <motion.div 
             className="grid grid-cols-2 lg:grid-cols-4 gap-8 pt-10  max-w-4xl mx-auto"
@@ -285,8 +311,9 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-3xl font-semibold mb-1" style={{ color: C.primaryDark }}>
-                  {stat.value}
+                <div className="text-3xl font-semibold mb-1" style={{ color: 'var(--color-heading)'}}>
+                  {stat.value.replace('+', '')}
+                  {stat.value.includes('+') && <span style={{ color: '#ff9013' }}>+</span>}
                 </div>
                 <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   {stat.label}
@@ -298,7 +325,7 @@ export default function Home() {
       </section>
 
       {/* Features Section - Clean grid layout */}
-      <section className="py-24 px-6 sm:px-8 lg:px-dark:bg-black">
+      <section className="py-24 px-6 sm:px-8 lg:px-10 dark:bg-background">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <motion.div
@@ -316,7 +343,7 @@ export default function Home() {
             </motion.div>
           </div>
           
-          <div className="grid bg-[#FAFAF9] dark:bg-[#1A1A19] grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -325,12 +352,12 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
               >
-                <div className="bg-[#FAFAF9] dark:bg-[#1A1A19]  p-8 h-full rounded-2xl   hover:shadow-lg transition-all duration-300 group backdrop-blur-sm">
+                <div className="bg-[#FAFAF9] dark:bg-[#1A1A19]  p-8 h-full rounded-2xl  shadow-lg transition-all duration-300 group backdrop-blur-sm">
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300"
-                    style={{ backgroundColor: C.accent }}
+                    
                   >
-                      <feature.icon className="h-6 w-6 text-slate-500 dark:text-white"  />
+                      <feature.icon className="h-6 w-6 text-[#ff9013] "  />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
                     {feature.title}
@@ -346,21 +373,32 @@ export default function Home() {
       </section>
 
       {/* Footer - Minimal Apple style */}
-      <Footer />
       <footer className="py-2 px-6 sm:px-8 lg:px-10 dark:bg-background">
         <div className="max-w-6xl mx-auto">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-3 mb-6">
               <Image
-                src="/camposocial_logo.png"
+                src={theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                }
                 alt="CampoSocial"
                 width={36}
                 height={36}
                 className="rounded-xl shadow-sm"
               />
-              <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">CampoSocial</span>
+              <Image
+                src={theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
+                }
+                alt="University Logo"
+                width={100}
+                height={100}
+                className=" shadow-sm rounded-sm"
+              />
             </div>
-        
+            
              <div className="text-center mt-8">
              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
              Made by an over caffeinated undergrad 
@@ -369,7 +407,7 @@ export default function Home() {
                 alt="Sean" 
                 width={40} 
                 height={40} 
-                className="inline-block rounded-full" 
+                className="inline-block" 
               />
             </p>
           </div>

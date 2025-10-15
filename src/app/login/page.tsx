@@ -15,8 +15,18 @@ import { motion } from "framer-motion";
 import { SocialLoginModal } from "@/modals/signup/socialsbuttons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { FloatingBackground } from "@/components/ui/floating-background";
+import { useContext, useEffect } from "react";
+import { AuthContext } from "@/context/authcontext";
+import { useTheme } from "@/context/themecontext";
 
 export default function LoginForm() {
+  const { setShowSocialModal } = useContext(AuthContext);
+
+  // Automatically expand the social login modal when the page loads
+  useEffect(() => {
+    setShowSocialModal(true);
+  }, [setShowSocialModal]);
+  const { theme } = useTheme();
   return (
     <div className="min-h-screen transition-colors duration-500 flex items-center justify-center p-4" >
       {/* Theme toggle */}
@@ -49,7 +59,10 @@ export default function LoginForm() {
               className="mx-auto mb-2"
             >
               <Image
-                src="/camposocial_logo.png"
+                src= {theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                }
                 alt="CampoSocial"
                 width={80}
                 height={80}
@@ -62,12 +75,11 @@ export default function LoginForm() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-bold" style={{ color: 'var(--color-heading)' }}>
-                Welcome Back
-              </CardTitle>
+              <CardTitle className="text-3xl font-bold" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
+We&apos;re glad to see you again              </CardTitle>
             </motion.div>
             <CardDescription className="text-gray-600 dark:text-gray-300">
-              Sign in to your account to continue connecting with your campus community
+              Sign in to your account to continue connecting with your friends
             </CardDescription>
           </CardHeader>
           
@@ -90,7 +102,8 @@ export default function LoginForm() {
                 Don&apos;t have an account?{" "}
                 <Link 
                   href="/signup" 
-                  className="text-primary dark:text-primary hover:text-primary dark:hover:text-primary font-semibold transition-colors duration-200 hover:underline"
+                  className="font-semibold transition-colors duration-200 hover:underline"
+                  style={{ color: 'var(--color-fun)' }}
                 >
                   Sign up here
                 </Link>

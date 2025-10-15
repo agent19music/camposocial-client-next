@@ -6,11 +6,19 @@ import { Colors as Palette } from "@/constants/Colors";
 import { SocialLoginModal } from '@/modals/signup/socialsbuttons'
 import { FallingIcons } from '@/components/ui/falling-icons'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { useContext, useEffect } from 'react'
+import { AuthContext } from '@/context/authcontext'
+import { useTheme } from '@/context/themecontext';
 
 export default function SignUpPage() {
   const C = Palette;
+  const { setShowSocialModal } = useContext(AuthContext);
+  useEffect(() => {
+    setShowSocialModal(true);
+  }, [setShowSocialModal]);
+  const { theme } = useTheme();
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: C.background }}>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" >
       {/* Theme toggle */}
       <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
@@ -42,7 +50,10 @@ export default function SignUpPage() {
               className="relative"
             >
               <Image
-                src="/camposocial_logo.png"
+                src= {theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                }
                 alt="CampoSocial"
                 width={100}
                 height={100}
@@ -52,11 +63,22 @@ export default function SignUpPage() {
             </motion.div>
           </div>
 
-          <h2 className="text-4xl font-bold mb-2" style={{ color: C.primaryDark }}>
-            Join CampoSocial
+          <h2 className="text-4xl font-bold flex items-center justify-center " style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
+            Join
+            <Image 
+              src= {theme === 'dark'
+                ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-typo-dark.png"
+                : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-typo-light.png"
+              }
+              alt="CampoSocial"
+              width={200}
+              height={200}
+              className="inline-block align-middle"
+              
+            />
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-8 text-lg">
-            Connect with your campus community
+          <p className="text-gray-600 dark:text-gray-300  text-lg">
+            It&apos;ll be fun, I promise.
           </p>
         </motion.div>
 
@@ -78,7 +100,8 @@ export default function SignUpPage() {
             Already have an account?{' '}
             <a 
               href="/login" 
-              className="text-[#B16FE8] dark:text-[#D29DF6] hover:text-[#C17FF2] dark:hover:text-[#C17FF2] font-medium transition-colors underline decoration-2 underline-offset-2"
+              className="font-medium transition-colors underline decoration-2 underline-offset-2"
+              style={{ color: 'var(--color-fun)' }}
             >
               Sign in
             </a>

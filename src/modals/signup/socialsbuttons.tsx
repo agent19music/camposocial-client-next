@@ -130,21 +130,21 @@ export function SocialLoginModal() {
       name: 'GitHub',
       icon: Icons.github,
       onClick: handleGithubLogin,
-      color: 'bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 text-white',
+      color: 'bg-white hover:bg-gray-50 dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Continue with your GitHub account'
     },
     {
       name: 'Google',
       icon: Icons.google,
       onClick: () => googleLogin(),
-      color: 'bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
+      color: 'bg-white hover:bg-gray-50 dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Continue with your Google account'
     },
     {
       name: 'Twitter',
       icon: Icons.x,
       onClick: handleTwitterLogin,
-      color: 'bg-black hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 text-white',
+      color: 'bg-white hover:bg-gray-50 dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Continue with your Twitter account'
     }
   ];
@@ -155,7 +155,7 @@ export function SocialLoginModal() {
         <Button 
           onClick={() => setShowSocialModal(true)}
             className="w-full h-14 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
-            style={{ backgroundColor: '#B5A8D1' }}
+            style={{ backgroundColor: 'var(--color-fun)' }}
         >
           <div className="flex items-center justify-center space-x-3">
             <span>Get Started</span>

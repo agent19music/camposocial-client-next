@@ -271,7 +271,7 @@ export default function AddYap() {
                 {/* Hashtag suggestions */}
                 {showHashtagSuggestions && hashtagSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 z-50 mt-2">
-                    <div className="bg-card border rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                    <div className="bg-background border rounded-xl shadow-lg max-h-40 overflow-y-auto">
                       {hashtagSuggestions.map((suggestion, index) => (
                         <button
                           key={index}

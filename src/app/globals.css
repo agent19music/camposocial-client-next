@@ -8,7 +8,7 @@
     --color-primary: #7B8FA8;
     --color-primary-light: #D4E4F0;
     --color-primary-dark: #5A6F85;
-    --color-heading: #5A6F85;
+    --color-heading: #1612d3;
     --color-secondary: #A89BA3;
     --color-accent: #B5A8D1;
     --color-accent-light: #E8DDF5;
@@ -16,7 +16,7 @@
     --color-text-primary: #2A2A2A;
     --color-text-secondary: #5F5F5E;
     --color-text-tertiary: #8B8B8B;
-    --color-background-hex: #FAFAF9;
+    --color-background-hex: #f1efe7;
     --color-surface: #F5F5F3;
     --color-card: #FFFFFF;
     --color-border: #E3E3E1;
@@ -29,10 +29,9 @@
     --color-warning: #D4A574;
     --color-error: #C9929D;
     --color-info: #9DBFD4;
+    --color-fun: #ff9013;
 
-    /* Light mode - clean and minimal */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 16%;
+    
     
     /* Cards - clean white */
     --card: 0 0% 100%;
@@ -55,6 +54,9 @@
     /* Accent - soft lavender */
     --accent: 280 15% 82%;
     --accent-foreground: 0 0% 16%;
+
+    --fun: 30 100% 50%;
+    --fun-foreground: 0 0% 16%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -98,7 +100,7 @@
     --color-warning: #E8C999;
     --color-error: #E8B4C4;
     --color-info: #B5D4E8;
-
+    
     /* Dark mode - deep, refined */
     --background: 0 0% 10%;
     --foreground: 0 0% 94%;
@@ -242,6 +244,9 @@ body {
 }
 
 @layer utilities {
+  .font-times-condensed {
+    font-family: var(--font-times-condensed), "Times New Roman", serif;
+  }
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
     display: none;

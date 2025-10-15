@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/context/themecontext";
 import AuthProvider from "@/context/authcontext";
@@ -18,6 +19,13 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   style: ["normal", "italic"],
   variable: "--font-playfair"
+});
+
+const timesCondensed = localFont({
+  src: "../../public/Times New Roman MT Condensed Regular.otf",
+  variable: "--font-times-condensed",
+  display: "swap",
+  weight: "100",
 });
 
 export const metadata: Metadata = {
@@ -139,7 +147,7 @@ export default function RootLayout({
         <StructuredData type="website" data={websiteSchema} />
         <StructuredData type="organization" data={organizationSchema} />
       </head>
-      <body className={`${inter.variable} ${playfair.variable} ${inter.className}`}>
+  <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${inter.className}`}>
         <ThemeProvider>   
           <AuthProvider>
             <Toaster
