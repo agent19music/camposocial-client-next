@@ -75,9 +75,9 @@ export default function Home() {
           <div className="flex justify-between items-center h-14">
               <div className="flex items-center space-x-3">
               <Image
-                src= {theme === 'dark'
-                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
-                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                src= {theme !== 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
                 }
                 alt="CampoSocial"
                 width={36}
@@ -86,9 +86,9 @@ export default function Home() {
                 priority
               />
            <Image
-                src={theme === 'dark'
-                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
-                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
+                src={theme !== 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
                 }
                 alt="University Logo"
                 width={90}
@@ -341,9 +341,9 @@ export default function Home() {
           <div className="text-center">
             <div className="flex items-center justify-center space-x-3 mb-6">
               <Image
-                src={theme === 'dark'
-                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
-                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                src={theme !== 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
                 }
                 alt="CampoSocial"
                 width={36}
@@ -351,9 +351,9 @@ export default function Home() {
                 className="rounded-xl shadow-sm"
               />
               <Image
-                src={theme === 'dark'
-                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
-                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
+                  src={theme !== 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
                 }
                 alt="University Logo"
                 width={100}
