@@ -34,14 +34,13 @@ export default function LoginForm() {
         <ThemeToggle />
       </div>
 
-      {/* Floating icons background */}
-      <FloatingBackground iconCount={30} opacity={8} />
+      {/* Floating icons background (disabled in dark mode) */}
+      {theme !== 'dark' && (
+        <FloatingBackground iconCount={30} opacity={8} />
+      )}
 
-      {/* Decorative gradient orbs - matching landing page */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(181,168,209,0.06)' }} />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.05)' }} />
-      </div>
+      
+
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

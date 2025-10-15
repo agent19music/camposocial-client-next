@@ -69,13 +69,18 @@ export default function Home() {
     const b = bigint & 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
+  const heroBackgroundImage = theme === 'dark'
+    ? 'none'
+    : `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                           radial-gradient(circle at 80% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
+                           radial-gradient(circle at 40% 20%, rgba(0,0,0,0.02) 0%, transparent 50%)`;
   return (
    <div className="min-h-screen bg-background bg-stone-50"
  style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
         }}>
 
-      <FloatingBackground iconCount={20} opacity={3} />
+    
       
       {/* Navigation - Clean header with unified dark mode */}
       <nav className="fixed top-0 w-full z-50  backdrop-blur-2xl ">
@@ -101,7 +106,7 @@ export default function Home() {
                 alt="University Logo"
                 width={90}
                 height={90}
-                className=" shadow-sm rounded-sm"
+                className="  rounded-sm"
                 priority
               />
             </div>
@@ -128,24 +133,11 @@ export default function Home() {
         ========================================================
       */}
  <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden bg:[#f1efe7] dark:bg-background min-h-[85vh]"
-  style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%),
-                           radial-gradient(circle at 80% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
-                           radial-gradient(circle at 40% 20%, rgba(0,0,0,0.02) 0%, transparent 50%)`,
+ style={{
+          backgroundImage: heroBackgroundImage,
         }}
  >
-        {/* Gradient orbs - enhanced for dark mode */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div
-            className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl"
-            style={{ backgroundColor: hexToRgba(C.primaryLight, 0.12) }}
-          />
-          <div
-            className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl"
-            style={{ backgroundColor: hexToRgba(C.accentLight, 0.12) }}
-          />
-        </div>
-        
+
         <div className="max-w-6xl mx-auto relative z-20"> {/* Increased z-index for text/CTA */}
           <div className="text-center">
             <motion.div
@@ -153,21 +145,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              {/* Clean pill badge */}
-              {/* <motion.div 
-                className="inline-flex items-center px-4 py-2 rounded-full backdrop-blur-sm border mb-3"
-                style={{
-                  backgroundColor: C.accentLight,
-                  borderColor: hexToRgba(C.accent, 0.18),
-                }}
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <span className="text-sm font-medium" style={{ color: C.primaryDark }}>
-                  Over 50,000 students connected
-                </span>
-              </motion.div> */}
+            
               
               {/* Main headline - Text centered, bold, and impactful */}
               <div className="mb-2">
@@ -395,7 +373,7 @@ export default function Home() {
                 alt="University Logo"
                 width={100}
                 height={100}
-                className=" shadow-sm rounded-sm"
+                className="  rounded-sm"
               />
             </div>
             

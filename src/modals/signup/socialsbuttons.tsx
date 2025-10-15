@@ -130,21 +130,21 @@ export function SocialLoginModal() {
       name: 'GitHub',
       icon: Icons.github,
       onClick: handleGithubLogin,
-      color: 'bg-white hover:bg-gray-50 dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
+      color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Continue with your GitHub account'
     },
     {
       name: 'Google',
       icon: Icons.google,
       onClick: () => googleLogin(),
-      color: 'bg-white hover:bg-gray-50 dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
+      color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Continue with your Google account'
     },
     {
       name: 'Twitter',
       icon: Icons.x,
       onClick: handleTwitterLogin,
-      color: 'bg-white hover:bg-gray-50 dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
+      color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Continue with your Twitter account'
     }
   ];

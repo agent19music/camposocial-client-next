@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import {toast} from 'react-hot-toast'
-import { Yap, MediaItem, Reply, HashtagSuggestion, LocationSuggestion, YapContextProps, YapPayload } from "../utils/types";
+import { Yap, MediaItem, Reply, HashtagSuggestion, LocationSuggestion, YapContextProps, YapPayload, WhoToFollowSuggestion } from "../utils/types";
 
 
 // Types moved to src/utils/types.ts
@@ -41,7 +41,11 @@ const defaultValue: YapContextProps = {
   
   // Reply management
   yapReplies: [],
-  setYapReplies: () => {}
+  setYapReplies: () => {},
+  
+  // Who to follow
+  whotofollow: async () => [],
+  whotofollowSuggestions: []
 };
 
 // Create the YapContext with default values
@@ -65,7 +69,7 @@ export default function YapProvider({ children }: YapProviderProps) {
   const [selectedYap, setSelectedYap] = useState<Yap | null>(null);
   const [feedType, setFeedType] = useState<'chronological' | 'trending' | 'following'>('chronological');
   const [yapReplies, setYapReplies] = useState<Reply[]>([]);
-
+  const [whotofollowSuggestions, setWhotofollowSuggestions] = useState<WhoToFollowSuggestion[]>([]);
   const router = useRouter(); // Initialize the router
 
   // Rate limiting and debouncing refs
@@ -207,6 +211,47 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
   }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType, canMakeRequest, markRequestStart, markRequestEnd]);
 
+  const whotofollow = useCallback(async (): Promise<WhoToFollowSuggestion[]> => {
+    if (!isAuthenticated || !authToken || !apiEndpoint) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/who-to-follow/suggestions`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to fetch who to follow suggestions');
+        return [];
+      }
+
+      const data = await response.json();
+      return data.suggestions || data || [];
+    } catch (error) {
+      console.error('Error fetching who to follow suggestions:', error);
+      return [];
+    }
+  }, [isAuthenticated, authToken, apiEndpoint]);
+  
+
+  useEffect(() => {
+    if (isAuthenticated && authToken) {
+      const timeoutId = setTimeout(() => {
+        const data = whotofollow().then((data) => {
+          setWhotofollowSuggestions(data);
+        }).catch((error) => {
+          console.error('Error fetching whotofollow suggestions:', error);
+        });
+      }, DEBOUNCE_DELAY);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [isAuthenticated, authToken, whotofollow, setWhotofollowSuggestions]);
   // Fetch yaps only when authenticated and not loading
   useEffect(() => {
     if (authLoading || !isAuthenticated || !authToken) {
@@ -885,7 +930,11 @@ export default function YapProvider({ children }: YapProviderProps) {
     
     // Reply management
     yapReplies,
-    setYapReplies
+    setYapReplies,
+    
+    // Who to follow
+    whotofollow,
+    whotofollowSuggestions
   };
 
   // Render the provider and pass the context data

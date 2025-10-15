@@ -25,13 +25,15 @@ export default function SignUpPage() {
       </div>
 
       {/* Falling icons background */}
-      <FallingIcons />
+      {/* <FallingIcons /> */}
 
-      {/* Background decoration - matching landing page */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(181,168,209,0.06)' }} />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.08)' }} />
-      </div>
+      {/* Background decoration - matching landing page (disabled in dark mode) */}
+      {theme !== 'dark' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(181,168,209,0.06)' }} />
+          <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.08)' }} />
+        </div>
+      )}
 
       {/* Main content */}
       <div className="w-full max-w-md space-y-8 p-8 relative z-10">

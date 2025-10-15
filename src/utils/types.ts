@@ -348,6 +348,16 @@ export interface HashtagSuggestion { name: string; usage_count: number }
 
 export interface LocationSuggestion { name: string; usage_count: number }
 
+export interface WhoToFollowSuggestion {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar: string;
+  bio?: string;
+  followers_count?: number;
+  is_following?: boolean;
+}
+
 export interface YapContextProps {
   yaps: Yap[];
   isLoading: boolean;
@@ -369,6 +379,8 @@ export interface YapContextProps {
   getLocationSuggestions: (query?: string) => Promise<LocationSuggestion[]>;
   yapReplies: Reply[];
   setYapReplies: (replies: Reply[]) => void;
+  whotofollow: () => Promise<WhoToFollowSuggestion[]>;
+  whotofollowSuggestions: WhoToFollowSuggestion[];
 }
 
 export interface YapPayload {

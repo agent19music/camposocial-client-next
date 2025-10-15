@@ -23,9 +23,11 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { FloatingBackground } from '@/components/ui/floating-background';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTheme } from '@/context/themecontext';
 
 export default function CompleteProfile() {
   const { completeProfile } = useContext(AuthContext);
+  const { theme } = useTheme();
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const [formData, setFormData] = useState({
     username: '',
@@ -143,13 +145,13 @@ export default function CompleteProfile() {
         <ThemeToggle />
       </div>
       
-      <FloatingBackground iconCount={30} opacity={8} />
+      {/* Disable floating background in dark mode */}
+      {theme !== 'dark' && (
+        <FloatingBackground iconCount={30} opacity={8} />
+      )}
       
-      {/* Decorative gradient orbs - matching landing page */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(210,157,246,0.06)' }} />
-        <div className="absolute bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(193,127,242,0.06)' }} />
-      </div>
+     
+
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -167,7 +169,10 @@ export default function CompleteProfile() {
               className="mx-auto mb-2"
             >
               <Image
-                src="/camposocial_logo.png"
+                src={theme === 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                }
                 alt="CampoSocial"
                 width={80}
                 height={80}
@@ -180,7 +185,7 @@ export default function CompleteProfile() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-bold" style={{ color: C.primaryDark }}>
+              <CardTitle className="text-3xl font-bold" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
                 Complete Your Profile
               </CardTitle>
             </motion.div>

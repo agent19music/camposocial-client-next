@@ -41,6 +41,7 @@ import { Colors as Palette } from '@/constants/Colors'
 import Link from 'next/link'
 import AddYap from '@/components/addyap'
 import { useTheme } from '@/context/themecontext'
+import WhoToFollow from '@/components/whotofollow'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
@@ -373,28 +374,7 @@ export default function Component() {
               </Card>
 
               {/* Who to follow */}
-              <Card>
-                <CardHeader>
-                  <h3 className="font-semibold">Who to follow</h3>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {users.slice(0, 3).map((user, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback>{user.first_name?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{user.first_name} {user.last_name}</p>
-                          <p className="text-xs text-muted-foreground">@{user.username}</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline">Follow</Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              <WhoToFollow />
             </div>
           </div>
         </div>
