@@ -76,7 +76,8 @@ export default function LoginForm() {
               transition={{ delay: 0.3 }}
             >
               <CardTitle className="text-3xl font-bold" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
-We&apos;re glad to see you again              </CardTitle>
+                We&apos;re Glad to See You Again
+              </CardTitle>
             </motion.div>
             <CardDescription className="text-gray-600 dark:text-gray-300">
               Sign in to your account to continue connecting with your friends

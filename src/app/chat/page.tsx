@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChat } from '@/context/chatcontext';
 import { useContext } from 'react';
@@ -33,6 +33,19 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
 
+  const loadConversations = useCallback(async () => {
+    setIsLoadingConversations(true);
+    try {
+      await getChatList();
+      await fetchConversations();
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+      toast.error('Failed to load conversations');
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [getChatList, fetchConversations]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
@@ -45,20 +58,7 @@ export default function ChatPage() {
     }
 
     loadConversations();
-  }, [isAuthenticated, keyStatus]);
-
-  const loadConversations = async () => {
-    setIsLoadingConversations(true);
-    try {
-      await getChatList();
-      await fetchConversations();
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-      toast.error('Failed to load conversations');
-    } finally {
-      setIsLoadingConversations(false);
-    }
-  };
+  }, [isAuthenticated, keyStatus, generateKeys, loadConversations, router]);
 
   const handleSelectFriend = (friend: any) => {
     setSelectedFriend(friend.id);
@@ -70,7 +70,10 @@ export default function ChatPage() {
   ) || [];
 
   // Mobile responsive: Show chat window or list based on selection
-  const showChatWindow = selectedFriend && window.innerWidth < 768;
+  const showChatWindow = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(selectedFriend) && window.innerWidth < 768;
+  }, [selectedFriend]);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">

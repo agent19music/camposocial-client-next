@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import {
@@ -156,11 +157,15 @@ export default function MessageBubble({
       {showAvatar && !isOwn && (
         <div className="w-8 h-8 flex-shrink-0">
           {isLastInGroup && (
-            <img
-              src={userAvatar || '/default-avatar.png'}
-              alt={userName}
-              className="w-8 h-8 rounded-full"
-            />
+            <div className="w-8 h-8 relative">
+              <Image
+                src={userAvatar || '/default-avatar.png'}
+                alt={userName || 'avatar'}
+                fill
+                className="rounded-full object-cover"
+                sizes="32px"
+              />
+            </div>
           )}
         </div>
       )}
@@ -205,11 +210,15 @@ export default function MessageBubble({
                 {message.media.map((item, index) => (
                   <div key={index}>
                     {item.type === 'image' && (
-                      <img
-                        src={item.url}
-                        alt="Attachment"
-                        className="rounded-lg max-w-full"
-                      />
+                      <div className="relative w-full h-auto min-h-[120px]">
+                        <Image
+                          src={item.url}
+                          alt="Attachment"
+                          fill
+                          className="rounded-lg object-contain"
+                          sizes="(max-width: 768px) 90vw, 600px"
+                        />
+                      </div>
                     )}
                     {item.type === 'video' && (
                       <video

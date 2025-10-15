@@ -67,7 +67,7 @@ export default function SellerProfile() {
     };
 
     fetchSellerData();
-  }, [params]);
+  }, [params, apiEndpoint, deslugify]);
 
   const marketplaceLinks = [
     { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" />, onClick: () => {} },

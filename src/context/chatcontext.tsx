@@ -12,13 +12,13 @@ import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConv
 
 export const ChatContext = createContext<ChatContextType>({
     sendMessage: async () => { },
-    getMessages: async () => [],
+            ? {
     editMessage: async () => { },
     deleteMessage: async () => { },
     addReaction: async () => { },
     uploadMedia: async () => { return []; },
     authToken: null,
-    friendId: null,
+            : null, [rawCurrentUser]);
     setFriendId: () => { },
     messages: [],
     setMessages: () => { },
@@ -40,13 +40,15 @@ export const ChatContext = createContext<ChatContextType>({
 });
 
 export default function ChatProvider({ children }: ChatProviderProps) {
-    const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [friendId, currentUser?.id, authToken]);
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
     
     // Memoize currentUser to prevent unnecessary re-renders
     const currentUser = useMemo(() => rawCurrentUser
         ? {
-            id: rawCurrentUser.id,
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [currentUser?.id]);
             firstName: rawCurrentUser.first_name,
             lastName: rawCurrentUser.last_name,
             email: rawCurrentUser.email,
@@ -67,7 +69,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     
     // OpenPGP key management
     const [privateKey, setPrivateKey] = useState<openpgp.PrivateKey | null>(null);
-    const [publicKey, setPublicKey] = useState<openpgp.PublicKey | null>(null);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [currentUser?.id, authToken, isAuthenticated]);
     const [keyStatus, setKeyStatus] = useState<KeyStatus>('unavailable');
     const [friendPublicKeys, setFriendPublicKeys] = useState<Record<string, openpgp.PublicKey>>({});
 
@@ -150,7 +153,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     }, []);
 
     // Stable API endpoint reference
-    const stableApiEndpoint = useMemo(() => apiEndpoint, []);
+    const stableApiEndpoint = useMemo(() => apiEndpoint, [apiEndpoint]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -172,14 +175,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } else {
             setMessagesCallback([]); 
         }
-    }, [friendId, currentUser?.id, authToken]); // Simplified dependencies to prevent circular references
+    }, [friendId, currentUser, authToken, checkIfConversationExistsMemoized, getMessages, setMessagesCallback]);
 
     // Load user's keys from localStorage when component mounts
     useEffect(() => {
         if (currentUser) {
             loadKeys();
         }
-    }, [currentUser?.id]); // Use stable currentUser.id instead of whole object
+    }, [currentUser]);
 
     // Load conversations when component mounts with debouncing
     useEffect(() => {
@@ -201,7 +204,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 clearTimeout(timeoutId);
             };
         }
-    }, [currentUser?.id, authToken, isAuthenticated]); // Simplified dependencies to prevent circular references
+    }, [currentUser, authToken, isAuthenticated, fetchConversations]);
 
     // Cleanup effect
     useEffect(() => {
@@ -254,7 +257,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             socket.off('message_sent', handleMessageSent);
             socket.off('user_typing', handleUserTyping);
         };
-    }, [socket, isConnected, friendId, currentUser?.id]);
+    }, [socket, isConnected, friendId]);
 
     // Generate a unique conversation ID from two user IDs
     const generateConversationId = useCallback((userId1: string, userId2: string): string => {
@@ -349,7 +352,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('conversation_exists');
         }
-    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
+    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, checkMessagesExistFallback]);
 
     // Fallback method to check if messages exist
     const checkMessagesExistFallback = useCallback(async (friendId: string): Promise<boolean> => {
@@ -368,7 +371,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('messages_exist_fallback');
         }
-    }, [canMakeRequest, markRequestStart, markRequestEnd]); // Note: getMessages will be defined below
+    }, [canMakeRequest, markRequestStart, markRequestEnd, getMessages]);
 
     // Add getMessages dependency to checkMessagesExistFallback  
     const checkMessagesExistFallbackMemoized = useCallback(async (friendId: string): Promise<boolean> => {
@@ -387,7 +390,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('messages_exist_fallback');
         }
-    }, [canMakeRequest, markRequestStart, markRequestEnd]); // Remove getMessages to prevent circular dependency
+    }, [canMakeRequest, markRequestStart, markRequestEnd, getMessages]);
 
     // Update checkIfConversationExists to use the memoized fallback
     const checkIfConversationExistsMemoized = useCallback(async (friendId: string): Promise<boolean> => {
@@ -604,7 +607,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('send_message');
         }
-    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, encryptMessage]);
+    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, encryptMessage, uploadMedia]);
 
     // Send typing indicator
     const sendTypingIndicator = useCallback((isTyping: boolean) => {
@@ -985,7 +988,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             fetchingConversationsRef.current = false;
             activeRequestsRef.current.delete('fetch_conversations');
         }
-    }, [currentUser?.id, authToken, isAuthenticated, stableApiEndpoint]); // Only stable dependencies
+    }, [currentUser, authToken, isAuthenticated, stableApiEndpoint]);
 
     const generateKeys = async () => {
         if (!currentUser) {

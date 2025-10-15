@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 interface TypingIndicatorProps {
@@ -29,11 +30,15 @@ export default function TypingIndicator({ userName, userAvatar }: TypingIndicato
       className="flex items-end gap-2 mb-2"
     >
       {userAvatar && (
-        <img
-          src={userAvatar}
-          alt={userName}
-          className="w-8 h-8 rounded-full"
-        />
+        <div className="w-8 h-8 relative">
+          <Image
+            src={userAvatar}
+            alt={userName || 'avatar'}
+            fill
+            className="rounded-full object-cover"
+            sizes="32px"
+          />
+        </div>
       )}
       
       <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-2">

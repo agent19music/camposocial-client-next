@@ -200,11 +200,13 @@ export default function EventProvider({ children }: EventProviderProps) {
 
   // Cleanup effect
   useEffect(() => {
+    const activeAtMount = activeRequestsRef.current; // capture ref value now
+    const controllerAtMount = abortControllerRef.current;
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      if (controllerAtMount) {
+        controllerAtMount.abort();
       }
-      activeRequestsRef.current.clear();
+      activeAtMount.clear();
     };
   }, []);
 

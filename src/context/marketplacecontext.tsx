@@ -83,7 +83,7 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
         setFilteredProducts([]);
         setIsLoading(false);
       });
-  }, [onchange]);
+  }, [onchange, apiEndpoint]);
 
   // Function to create a slug from yap id
   function slugify(int: string): string {

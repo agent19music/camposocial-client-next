@@ -2,7 +2,7 @@
 
 import { Icons } from "@/components/icons"
 import { Smartphone } from "lucide-react"
-import React, { useState, useContext, useEffect } from "react"
+import React, { useState, useContext, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -62,7 +62,7 @@ export default function CardsPaymentMethod() {
   }
 
   // Function to fetch payment configuration
-  const fetchPaystackConfig = async () => {
+  const fetchPaystackConfig = useCallback(async () => {
     try {
       // Fetch the payment initialization
       const response = await fetch(`${apiEndpoint}/paystack/initialize_payment`, {
@@ -108,7 +108,7 @@ export default function CardsPaymentMethod() {
       console.error('Payment initialization failed:', err);
       return null;
     }
-  };
+  }, [apiEndpoint, authToken, orderId]);
 
   // Effect to fetch payment config when component mounts
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function CardsPaymentMethod() {
     };
     
     getPaymentConfig();
-  }, [orderId]);
+  }, [fetchPaystackConfig]);
 
   // Handle successful Paystack payment
   const handlePaymentSuccess = (reference: any) => {

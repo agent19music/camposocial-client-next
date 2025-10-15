@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useCallback } from 'react'
 import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -95,7 +95,7 @@ export default function CheckoutComponent() {
     },
   })
 
-  const getCartItems = async (userId: string): Promise<CartItem[]> => {
+  const getCartItems = useCallback(async (userId: string): Promise<CartItem[]> => {
     try {
       const response = await fetch(`${apiEndpoint}/cart/${userId}`);
       if (!response.ok) {
@@ -108,7 +108,7 @@ export default function CheckoutComponent() {
       toast.error("Failed to fetch cart items");
       return [];
     }
-  }; 
+  }, [apiEndpoint]); 
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -120,7 +120,7 @@ export default function CheckoutComponent() {
       };
       fetchCartItems();
     }
-  }, [currentUser]);
+  }, [currentUser, getCartItems]);
 
   const onSubmit = async (values: z.infer<typeof orderSchema>) => {
     try {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Download, Store } from "lucide-react";
 import html2canvas from "html2canvas";
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useCallback } from "react";
 import { Colors as Palette } from "@/constants/Colors";
 import { AuthContext } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
@@ -115,7 +115,7 @@ export default function Receipt() {
     }
   };
 
-  const getCartItems = async (userId: string): Promise<CartItem[]> => {
+  const getCartItems = useCallback(async (userId: string): Promise<CartItem[]> => {
     try {
       const response = await fetch(`${apiEndpoint}/cart/${userId}`);
       if (!response.ok) {
@@ -128,7 +128,7 @@ export default function Receipt() {
       toast.error("Failed to fetch cart items");
       return [];
     }
-  };
+  }, [apiEndpoint]);
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -140,7 +140,7 @@ export default function Receipt() {
       };
       fetchCartItems();
     }
-  }, [currentUser]);
+  }, [currentUser, getCartItems]);
 
   const total = cartItems.reduce((sum, item) => sum + item.total_item_price, 0);
 

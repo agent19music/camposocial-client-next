@@ -133,7 +133,7 @@ export default function SingleProductPage() {
   
     fetchProductData();
     return () => { isMounted = false; };
-  }, [params.slug, setSelectedProduct,apiEndpoint]);
+  }, [params.slug, setSelectedProduct, apiEndpoint, deslugify]);
   
 
   // deslugify now provided by context

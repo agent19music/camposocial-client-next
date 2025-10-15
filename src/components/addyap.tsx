@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useContext, useRef } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -307,10 +308,12 @@ export default function AddYap() {
                     <div key={index} className="relative group">
                       <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                         {file.type.startsWith('image/') ? (
-                          <img
+                          <Image
                             src={URL.createObjectURL(file)}
                             alt="Preview"
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 33vw"
                           />
                         ) : (
                           <video
