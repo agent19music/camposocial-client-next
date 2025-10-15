@@ -1,5 +1,4 @@
 "use client";
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
@@ -60,20 +59,8 @@ export default function Home() {
   const { currentUser } = useContext(AuthContext);
   const C = Palette;
   const {theme} = useTheme();
-  // small helper to convert hex to rgba for subtle alpha gradients
-  const hexToRgba = (hex: string, alpha = 1) => {
-    const clean = hex.replace('#', '');
-    const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-  const heroBackgroundImage = theme === 'dark'
-    ? 'none'
-    : `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%),
-                           radial-gradient(circle at 80% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
-                           radial-gradient(circle at 40% 20%, rgba(0,0,0,0.02) 0%, transparent 50%)`;
+
+
   return (
    <div className="min-h-screen bg-background bg-stone-50"
  style={{
@@ -133,9 +120,7 @@ export default function Home() {
         ========================================================
       */}
  <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden bg:[#f1efe7] dark:bg-background min-h-[85vh]"
- style={{
-          backgroundImage: heroBackgroundImage,
-        }}
+
  >
 
         <div className="max-w-6xl mx-auto relative z-20"> {/* Increased z-index for text/CTA */}

@@ -140,7 +140,7 @@ export default function CompleteProfile() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: C.background }}>
+    <div className="min-h-screen bg-[#f1efe7] dark:bg-background flex items-center justify-center p-4">
       <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
       </div>
@@ -185,7 +185,7 @@ export default function CompleteProfile() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-bold" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
+              <CardTitle className="text-3xl" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
                 Complete Your Profile
               </CardTitle>
             </motion.div>
@@ -212,13 +212,13 @@ export default function CompleteProfile() {
                     value={formData.username}
                     onChange={handleUsernameChange}
                     placeholder="Choose your unique username"
-                    className={`bg-white/50 dark:bg-gray-800/50 pr-10 ${
+                    className={`bg-white/50 dark:bg-background pr-10 ${
                       usernameStatus === 'taken' 
                         ? 'border-red-500 dark:border-red-400' 
                         : usernameStatus === 'available'
                         ? 'border-green-500 dark:border-green-400'
-                        : 'border-[#D29DF6]/30 dark:border-[#B16FE8]/30'
-                    } focus:border-[#C17FF2] dark:focus:border-[#D29DF6]`}
+                        : 'border-background/30 dark:border-[#ff9013]/30'
+                    } focus:border-[#ff9013] dark:focus:border-[#ff9013]`}
                     required
                     minLength={3}
                     maxLength={20}
@@ -288,8 +288,11 @@ export default function CompleteProfile() {
                   value={formData.display_name}
                   onChange={handleChange}
                   placeholder="How should others see your name?"
-                  className="bg-white/50 dark:bg-gray-800/50 border-[#D29DF6]/30 dark:border-[#B16FE8]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
+                  className="bg-white/50 dark:bg-gray-800/50 border-[#ff9013]/30 dark:border-[#ff9013]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
                   required
+                  minLength={3}
+                  maxLength={20}
+                  pattern="[a-z0-9_]+"
                 />
               </motion.div>
 
@@ -308,7 +311,7 @@ export default function CompleteProfile() {
                   value={formData.phone_no}
                   onChange={handleChange}
                   placeholder="+1 (555) 123-4567"
-                  className="bg-white/50 dark:bg-gray-800/50 border-[#D29DF6]/30 dark:border-[#B16FE8]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
+                  className="bg-white/50 dark:bg-gray-800/50 border-[#ff9013]/30 dark:border-[#ff9013]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
                 />
               </motion.div>
 
@@ -326,7 +329,7 @@ export default function CompleteProfile() {
                   value={formData.bio}
                   onChange={handleChange}
                   placeholder="Tell us a bit about yourself..."
-                  className="bg-white/50 dark:bg-gray-800/50 min-h-[80px] resize-none border-[#D29DF6]/30 dark:border-[#B16FE8]/30 focus:border-[#C17FF2] dark:focus:border-[#D29DF6]"
+                  className="bg-white/50 dark:bg-gray-800/50 min-h-[80px] resize-none border-[#ff9013]/30 dark:border-[#ff9013]/30 focus:border-[#C17FF2] dark:focus:border-[#ff9013]"
                   maxLength={150}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -342,7 +345,7 @@ export default function CompleteProfile() {
                 <Button 
                   type="submit" 
                   className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  style={{ backgroundColor: '#B5A8D1' }}
+                  style={{ backgroundColor: '#ff9013' }}
                   disabled={isLoading || (formData.username && usernameStatus !== 'available') || !formData.username || !formData.category || !formData.display_name}
                 >
                   {isLoading ? 'Completing...' : 'Complete Profile'}
