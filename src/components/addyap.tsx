@@ -239,7 +239,7 @@ export default function AddYap() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-  <Button className="w-full text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200" style={{ backgroundColor: Palette.accent }}>
+  <Button className="w-full text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200" variant="default">
           What&apos;s happening?
         </Button>
       </DialogTrigger>

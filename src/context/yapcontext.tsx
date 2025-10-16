@@ -252,6 +252,8 @@ export default function YapProvider({ children }: YapProviderProps) {
       };
     }
   }, [isAuthenticated, authToken, whotofollow, setWhotofollowSuggestions]);
+
+  console.log('Who to follow suggestions:', whotofollowSuggestions);
   // Fetch yaps only when authenticated and not loading
   useEffect(() => {
     if (authLoading || !isAuthenticated || !authToken) {

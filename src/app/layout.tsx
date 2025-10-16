@@ -9,6 +9,7 @@ import AuthenticatedWrapper from "@/components/AuthenticatedWrapper";
 import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import StructuredData, { websiteSchema, organizationSchema } from "@/components/StructuredData";
+import Script from "next/script";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -142,10 +143,11 @@ export default function RootLayout({
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <StructuredData type="website" data={websiteSchema} />
         <StructuredData type="organization" data={organizationSchema} />
+        <Script id="theme-init" strategy="beforeInteractive">{`(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var v=t|| (m?'dark':'light');var e=document.documentElement;e.classList.remove('light','dark');e.classList.add(v);}catch(e){}})();`}</Script>
       </head>
   <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${inter.className}`}>
         <ThemeProvider>   

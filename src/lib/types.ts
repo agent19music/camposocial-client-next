@@ -48,3 +48,51 @@ export interface OnlineStatusEvent {
 export interface CustomMessageEvent {
     message: Message;
 }
+
+export interface EventTicketGroup {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  ticketsPerGroup: number;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventTicketGroupInput {
+  name: string;
+  price: number;
+  quantity: number;
+  ticketsPerGroup?: number;
+  description?: string;
+}
+
+export interface EventCommentUser {
+  id: string | number | null;
+  username: string | null;
+  avatar: string | null;
+}
+
+export interface EventComment {
+  id: number;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  user: EventCommentUser;
+  likesCount: number;
+  likedByCurrentUser: boolean;
+  parentCommentId: number | null;
+  replies: EventComment[];
+}
+
+export interface EventLikeResponse {
+  message: string;
+  likesCount: number;
+  likedByCurrentUser: boolean;
+}
+
+export interface EventCommentPayload {
+  text: string;
+  parent_comment_id?: number;
+}

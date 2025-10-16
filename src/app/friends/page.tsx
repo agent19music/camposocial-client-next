@@ -223,9 +223,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
-                      Your Friends
-                    </h2>
+                  
                     <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                       {friends.length} friends
                     </span>
@@ -267,9 +265,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
-                      Discover People
-                    </h2>
+              
                   </div>
 
                   <SearchableDiscover
@@ -288,9 +284,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
-                      Friend Requests
-                    </h2>
+                 
                     {receivedRequests.length > 0 && (
                       <span className="text-sm text-muted-foreground bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">
                         {receivedRequests.length} pending
@@ -331,9 +325,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
-                      Recent Conversations
-                    </h2>
+               
                   </div>
 
                   {friends.length > 0 ? (
@@ -370,9 +362,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
-                      Recent Activity
-                    </h2>
+                
                   </div>
 
                   <EmptyState 

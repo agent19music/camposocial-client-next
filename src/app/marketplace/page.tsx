@@ -32,7 +32,7 @@ export default function Marketplace() {
     { label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => router.push("/tech") },
     currentUser?.is_seller
       ? { label: "My Dashboard", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/sellerdashboard") }
-      : { label: "Become a seller", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/sellerdashboard/sellersignup") },
+      : { label: "Become a seller", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/marketplace/sellersignup") },
   ];
 
   // Debounced search function

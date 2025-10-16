@@ -1,4 +1,5 @@
 import type { ReactNode, Dispatch, SetStateAction } from "react";
+import type { EventComment, EventTicketGroup, EventTicketGroupInput, EventCommentPayload } from "@/lib/types";
 
 // ===================== Auth =====================
 export type CurrentUser = {
@@ -126,16 +127,40 @@ export interface AppEvent {
   id: string;
   eventId?: string;
   poster: string;
-  entry_fee: number;
+  entry_fee: number | string;
+  created_at: string;
+  updated_at: string;
+  start_time: string | null;
+  end_time: string | null;
+  date_of_event: string;
   date: string;
-  comments: any[];
-  user: any[];
+  location: string;
+  user_id: string;
+  comments: EventComment[];
+  ticketGroups: EventTicketGroup[];
   title: string;
   description: string;
   category: string;
-  username: string;
-  userimage: string;
 }
+
+export interface AddEventPayload {
+  poster: string;
+  posterFile?: File | null;
+  entry_fee: number | string;
+  created_at: string;
+  updated_at: string;
+  start_time: string;
+  end_time: string;
+  date_of_event: string | Date | undefined;
+  location: string;
+  user_id: string;
+  comments: EventComment[];
+  title: string;
+  description: string;
+  category: string;
+  ticketGroups: EventTicketGroupInput[];
+}
+
 
 export interface EventContextProps {
   events: any[];
@@ -145,6 +170,12 @@ export interface EventContextProps {
   setOnchange: (value: boolean) => void;
   navigateToSingleEventView: (event: AppEvent) => void;
   selectedEvent: AppEvent | null;
+  addEvent: (event: AddEventPayload) => Promise<boolean>;
+  updateEvent: (eventId: string, event: AddEventPayload) => Promise<boolean>;
+  deleteEvent: (eventId: string) => Promise<boolean>;
+  toggleCommentLike: (commentId: number, eventId: string) => Promise<void>;
+  addCommentReply: (eventId: string, payload: EventCommentPayload) => Promise<EventComment | null>;
+  refreshEvents: () => Promise<void>;
 }
 
 export interface EventProviderProps { children: ReactNode }

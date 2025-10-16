@@ -194,11 +194,11 @@ const Header: FC<HeaderProps> = ({
       {/* Mobile Header with Search and Filters */}
       <MobileHeader
         searchPlaceholder={getSearchPlaceholder()}
-        filters={getPageFilters()}    
+        filters={[]}    
         onSearch={handleSearch}
         onFilterSelect={handleFilterSelect}
         showSearch={true}
-        showFilters={getPageFilters().length > 0}
+        showFilters={false}
       />
 
       {/* Smart FAB */}
@@ -211,8 +211,8 @@ const Header: FC<HeaderProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`text-muted-foreground hover:text-foreground ${
-                activePage.includes("/events") ? "text-foreground" : ""
+              className={`text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
+                activePage.includes("/events") ? "text-[#ff9013]" : ""
               }`}
             >
               <Calendar className="h-5 w-5 mr-2" />
@@ -224,8 +224,8 @@ const Header: FC<HeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleYapsNavigation}
-            className={`relative text-muted-foreground hover:text-foreground ${
-              activePage.includes("/yaps") ? "text-foreground" : ""
+            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
+              activePage.includes("/yaps") ? "text-[#ff9013]" : ""
             }`}
           >
             <MessageSquare className="h-5 w-5 mr-2" />
@@ -245,7 +245,7 @@ const Header: FC<HeaderProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20"
               >
                 <Plus className="h-5 w-5 mr-2" />
               </Button>
@@ -264,8 +264,8 @@ const Header: FC<HeaderProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`text-muted-foreground hover:text-foreground ${
-                activePage.includes("/marketplace") ? "text-foreground" : ""
+              className={`text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
+                activePage.includes("/marketplace") ? "text-[#ff9013]" : ""
               }`}
             >
               <ShoppingBag className="h-5 w-5 mr-2" />
@@ -277,8 +277,8 @@ const Header: FC<HeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleFriendsNavigation}
-            className={`relative text-muted-foreground hover:text-foreground ${
-              activePage.includes("/friends") ? "text-foreground" : ""
+            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
+              activePage.includes("/friends") ? "text-[#ff9013]" : ""
             }`}
           >
             <UserPlus className="h-5 w-5 mr-2" />
@@ -346,7 +346,7 @@ const Header: FC<HeaderProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors"
+              className="flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors"
             >
               <Menu className="h-5 w-5 mb-1" />
               <span className="text-xs">Menu</span>
@@ -361,8 +361,8 @@ const Header: FC<HeaderProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
-              activePage.includes("/events") ? "text-foreground bg-muted/50" : ""
+            className={`flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:bg-[#ff9013]/20 transition-colors ${
+              activePage.includes("/events") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
             }`}
           >
             <Calendar className="h-5 w-5 mb-1" />
@@ -374,8 +374,8 @@ const Header: FC<HeaderProps> = ({
           variant="ghost"
           size="sm"
           onClick={handleYapsNavigation}
-          className={`relative flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
-            activePage.includes("/yaps") ? "text-foreground bg-muted/50" : ""
+          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${
+            activePage.includes("/yaps") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
           }`}
         >
           <div className="relative">
@@ -394,8 +394,8 @@ const Header: FC<HeaderProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
-              activePage.includes("/marketplace") ? "text-foreground bg-muted/50" : ""
+              className={`flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${
+              activePage.includes("/marketplace") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
             }`}
           >
             <ShoppingBag className="h-5 w-5 mb-1" />
@@ -407,8 +407,8 @@ const Header: FC<HeaderProps> = ({
           variant="ghost"
           size="sm"
           onClick={handleFriendsNavigation}
-          className={`relative flex-col h-12 px-3 text-muted-foreground hover:text-foreground transition-colors ${
-            activePage.includes("/friends") ? "text-foreground bg-muted/50" : ""
+          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${
+            activePage.includes("/friends") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
           }`}
         >
           <div className="relative">

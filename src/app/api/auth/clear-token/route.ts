@@ -4,12 +4,16 @@ export async function POST(request: Request) {
     try {
         const response = NextResponse.json({ success: true });
         
-        // Clear auth token cookie
+        const cookieDomain = process.env.AUTH_COOKIE_DOMAIN;
+        const secure = process.env.NODE_ENV === 'production';
+        const sameSite = cookieDomain ? 'none' : 'lax';
+
         response.cookies.set('authToken', '', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 0 // Expire immediately
+            secure: cookieDomain ? true : secure,
+            sameSite,
+            domain: cookieDomain || undefined,
+            maxAge: 0
         });
 
         return response;

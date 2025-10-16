@@ -30,6 +30,7 @@ export default function SellerSignup() {
   const { currentUser, authToken } = useContext(AuthContext);
   const {setSellerStausChange, sellerStatusChange} = useContext(MarketplaceContext)
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL;
 
   useEffect(() => {
     if (currentUser) {
@@ -148,7 +149,13 @@ export default function SellerSignup() {
         toast.success('Your seller account has been created successfully!');
         console.log('Seller account created:', result);
         // Redirect to dashboard
-        setTimeout(() => router.push('/sellerdashboard'), 300);
+        setTimeout(() => {
+          if (sellerDashboardUrl) {
+            window.location.href = sellerDashboardUrl;
+          } else {
+            router.push('/marketplace');
+          }
+        }, 300);
       } else {
         setError(result.error || 'Failed to create seller account');
         toast.error(result.error || 'Failed to create seller account');

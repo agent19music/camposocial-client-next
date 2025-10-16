@@ -72,8 +72,6 @@ export const FriendCard: React.FC<FriendCardProps> = ({
   friend, 
   showMessage = false,
   onMessage,
-  onCall,
-  onVideoCall,
   onRemoveFriend,
   onBlock,
   onReport,
@@ -96,7 +94,6 @@ export const FriendCard: React.FC<FriendCardProps> = ({
       const lastSeenTime = new Date(friend.lastSeen);
       const now = new Date();
       const diffHours = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60 * 60);
-      
       if (diffHours < 1) return 'recently';
       if (diffHours < 24) return 'today';
       return 'offline';
@@ -106,7 +103,7 @@ export const FriendCard: React.FC<FriendCardProps> = ({
 
   const cardVariants = {
     idle: { scale: 1, y: 0 },
-    hover: { scale: 1.02, y: -4 }
+    hover: { scale: 1.01, y: -2 }
   };
 
   const onlineStatus = getOnlineStatus();
@@ -127,21 +124,18 @@ export const FriendCard: React.FC<FriendCardProps> = ({
       onHoverEnd={() => setIsHovered(false)}
       className="group cursor-pointer"
     >
-      <Card
-        className="glass-card hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 overflow-hidden"
-        style={{ backgroundColor: C.card }}
-      >
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            {/* Avatar with Status and Badges */}
+      <Card className="transition-all duration-200 overflow-hidden bg-background border rounded-lg">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            {/* Avatar with Status */}
             <div className="relative flex-shrink-0">
               <motion.div
-                animate={{ scale: isHovered ? 1.05 : 1 }}
-                transition={{ duration: 0.2 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0 }}
                 onClick={() => onViewProfile?.(friend)}
                 className="cursor-pointer"
               >
-                <Avatar className="w-14 h-14 border-3 border-white dark:border-gray-800 shadow-lg">
+                <Avatar className="w-14 h-14 border-2 border-white dark:border-gray-800 shadow">
                   <AvatarImage src={friend.avatar} alt={getDisplayName()} />
                   <AvatarFallback
                     className="text-white font-semibold text-lg"
@@ -151,99 +145,47 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                   </AvatarFallback>
                 </Avatar>
               </motion.div>
-              
               {/* Online Status */}
               <motion.div
-                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 shadow-lg"
+                className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border border-white dark:border-gray-800 shadow"
                 style={{ backgroundColor: statusColor }}
-                animate={{ scale: friend.isOnline ? [1, 1.2, 1] : 1 }}
+                animate={{ scale: friend.isOnline ? [1, 1.1, 1] : 1 }}
                 transition={{ repeat: friend.isOnline ? Infinity : 0, duration: 2 }}
               />
-              
-              {/* Special Badges */}
-              <AnimatePresence>
-                {friend.isClose && (
-                  <motion.div 
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    className="absolute -top-1 -right-1"
-                  >
-                    <div
-                      className="rounded-full p-1"
-                      style={{ backgroundColor: C.warning }}
-                    >
-                      <Star className="h-3 w-3 text-white fill-current" />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
-            
             {/* Friend Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 
-                      className="font-semibold text-foreground truncate text-lg cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-                      onClick={() => onViewProfile?.(friend)}
-                    >
-                      {getDisplayName()}
-                    </h3>
-                    {friend.unreadCount && friend.unreadCount > 0 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="text-white rounded-full min-w-[1.25rem] h-5 flex items-center justify-center text-xs font-medium shadow-lg"
-                        style={{ backgroundColor: C.error }}
-                      >
-                        {friend.unreadCount > 99 ? '99+' : friend.unreadCount}
-                      </motion.div>
-                    )}
-                  </div>
-                  
-                  <p 
-                    className="text-sm text-muted-foreground mb-1 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+              <div className="flex items-center justify-between mb-0.5">
+                <div className="flex items-center gap-1 min-w-0">
+                  <h3 
+                    className="font-semibold text-foreground truncate text-sm cursor-pointer"
                     onClick={() => onViewProfile?.(friend)}
                   >
-                    @{friend.username}
-                  </p>
-                  
-                  {/* Status and Details */}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <span className="capitalize font-medium">{onlineStatus}</span>
-                    {friend.category && (
-                      <>
-                        <span>•</span>
-                        <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                          {friend.category}
-                        </Badge>
-                      </>
-                    )}
-                    {friend.mutualFriends !== undefined && friend.mutualFriends > 0 && (
-                      <>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Heart className="h-3 w-3" />
-                          {friend.mutualFriends} mutual
-                        </span>
-                      </>
-                    )}
-                  </div>
+                    {getDisplayName()}
+                  </h3>
+                  {friend.unreadCount && friend.unreadCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="text-white rounded-full min-w-[1.1rem] h-4 flex items-center justify-center text-[10px] font-medium shadow"
+                      style={{ backgroundColor: C.error }}
+                    >
+                      {friend.unreadCount > 99 ? '99+' : friend.unreadCount}
+                    </motion.div>
+                  )}
                 </div>
-                
                 {/* Actions Menu */}
                 <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      size="sm" 
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      size="icon" 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 h-7 w-7 p-0"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-40">
                     {friend.isClose ? (
                       <DropdownMenuItem className="text-yellow-600">
                         <Crown className="h-4 w-4 mr-2" />
@@ -275,14 +217,39 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              
+              <p
+                className="text-xs text-muted-foreground mb-0.5 cursor-pointer"
+                onClick={() => onViewProfile?.(friend)}
+              >
+                @{friend.username}
+              </p>
+              {/* Status and Details */}
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1">
+                <span className="capitalize font-medium">{onlineStatus}</span>
+                {friend.category && (
+                  <>
+                    <span>•</span>
+                    <Badge variant="outline" className="text-[10px] px-1 py-0.5">
+                      {friend.category}
+                    </Badge>
+                  </>
+                )}
+                {friend.mutualFriends !== undefined && friend.mutualFriends > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Heart className="h-3 w-3" />
+                      {friend.mutualFriends} mutual
+                    </span>
+                  </>
+                )}
+              </div>
               {/* Bio */}
               {friend.bio && (
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-muted-foreground mb-2 line-clamp-2 leading-snug">
                   {friend.bio}
                 </p>
               )}
-              
               {/* Message Preview */}
               <AnimatePresence>
                 {showMessage && friend.messagePreview && (
@@ -290,50 +257,30 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="rounded-lg p-3 mb-3 border"
+                    className="rounded p-2 mb-2 border"
                     style={{
-                      backgroundColor: hexToRgba(C.accent, 0.06),
+                      backgroundColor: hexToRgba(C.accent, 0.04),
                       borderColor: C.border || '#E3E3E1'
                     }}
                   >
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className="text-xs text-muted-foreground line-clamp-2">
                       {friend.messagePreview}
                     </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                       {friend.messageTime}
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
-              
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              {/* Action Button */}
+              <div className="flex items-center gap-2 mt-1">
                 <Button
                   size="sm"
-                  className="flex-1 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex-1 text-white border-0 shadow hover:shadow-md transition-all duration-200 h-7 text-xs px-2"
                   onClick={() => onMessage?.(friend)}
-                  style={{ backgroundColor: C.accent }}
                 >
                   <MessageSquare className="h-3 w-3 mr-1" />
                   Message
-                </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-muted hover:bg-muted/50 hover:scale-105 transition-all duration-200"
-                  onClick={() => onCall?.(friend)}
-                >
-                  <Phone className="h-3 w-3" />
-                </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-muted hover:bg-muted/50 hover:scale-105 transition-all duration-200"
-                  onClick={() => onVideoCall?.(friend)}
-                >
-                  <Video className="h-3 w-3" />
                 </Button>
               </div>
             </div>

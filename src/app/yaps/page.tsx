@@ -264,10 +264,7 @@ export default function Component() {
                 {/* Feed Header */}
                 <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-10">
                   <div className="flex items-center justify-center p-4">
-                    <h2 className="text-xl font-bold">
-                      {React.createElement(feedTypeConfig[feedType].icon, { className: "h-5 w-5 mr-2 inline" })}
-                      {feedTypeConfig[feedType].label}
-                    </h2>
+                
                   </div>
                 </div>
 

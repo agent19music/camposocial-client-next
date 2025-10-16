@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import { useContext, useMemo, useState } from "react"
 import {
   Bell,
   CircleUser,
@@ -8,7 +9,6 @@ import {
   Menu,
   Package,
   Package2,
-  Search,
   ShoppingCart,
   Users,
 } from "lucide-react"
@@ -30,176 +30,169 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+// Removed standalone Input; search is handled via FilterPills
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import EventCard from '@/components/event';
 import { MouseEvent } from "react";
 import SideNav from "@/components/sidenav"
 import Header from "@/components/header"
+import FilterPills, { FilterPill } from "@/components/filter-pills"
 import { Calendar, PartyPopper, Plus, List} from "lucide-react";
 import { toast } from "react-hot-toast"
+import { useEventContext } from "@/context/eventcontext"
+import { AuthContext } from "@/context/authcontext"
+import AddEvent from "@/components/addevent"
 
 export default function Dashboard() {
+const { events, isLoading, setCategory } = useEventContext()
+  const [activeFilter, setActiveFilter] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const { authToken } = useContext(AuthContext)
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
+  console.log("[Dashboard] Events:", events);
+  const categories = useMemo(() => {
+    const set = new Set<string>(["all"])
+    events.forEach(e => {
+      if (e.category && typeof e.category === 'string') set.add(e.category)
+    })
+    return Array.from(set)
+  }, [events])
+
+  const filterPills: FilterPill[] = [
+    ...categories.map(cat => ({
+      id: cat,
+      label: cat === 'all' ? 'All' : cat,
+      active: activeFilter === cat,
+    })),
+    { id: 'search', label: 'Search', isSearch: true },
+  ]
+
+  const handleFilterSelect = (filterId: string) => {
+    setActiveFilter(filterId)
+    setCategory(filterId === 'all' ? '' : filterId)
+  }
+  
+  const displayEvents = useMemo(() => {
+    if (!searchQuery.trim()) return events
+    const q = searchQuery.toLowerCase()
+    return events.filter((e: any) => {
+      const fields = [e.title, e.description, e.username]
+      return fields.some((f) => typeof f === 'string' && f.toLowerCase().includes(q))
+    })
+  }, [events, searchQuery])
+  
   const eventLinks = [
     { label: "Calendar", icon: <Calendar className="h-4 w-4" />, onClick: () => toast.success("calendar") },
     { label: "Create Event", icon: <Plus className="h-4 w-4" />, onClick: () => toast.success("create") },
     { label: "My Events", icon: <List className="h-4 w-4" />, onClick: () => toast.success("myEvents") },
   ]
+      
+  const handleSubmit = async (
+    e: MouseEvent<HTMLButtonElement>, 
+    eventId: string, 
+    localCommentText: string
+  ): Promise<void> => {
+    e.preventDefault();
+  
+    if (!localCommentText) {
+      toast.error('Comment cannot be empty')
+      return;
+    }
+  
+    if (localCommentText.length > 300) {
+      toast.error('Comment is too long (max 300 characters)')
+      return;
+    }
+  
+    if (localCommentText !== '') {
+      sendComment(localCommentText, eventId);
+    }
+  };
+ 
+  const sendComment = async (commentText: string, eventId: string): Promise<void> => {
+    if (!apiEndpoint || !authToken) {
+      toast.error('Please login to comment')
+      return
+    }
 
-    const comments = [
-        {
-          image: null,
-          username: "HappyCoder",
-          text: "I love this feature! 😍🔥",
-          dateCreated: "2024-08-20T10:30:00Z",
+    try {
+      const response = await fetch(`${apiEndpoint}/comment-event/${eventId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
         },
-        {
-          image :"/yoruichipfp.jpg",
-          username: "DevGuru",
-          text: "Well done! Keep up the great work! 💪💻",
-          dateCreated: "2024-08-21T15:45:00Z",
-        },
-        {
-          image: null,
-          username: "BugHunter",
-          text: "I found a small issue, but it’s nothing major 🐞🚀",
-          dateCreated: "2024-08-22T09:15:00Z",
-        },
-        {
-          image: null,
-          username: "UIWizard",
-          text: "The new design looks amazing! ✨🎨",
-          dateCreated: "2024-08-23T13:50:00Z",
-        },
-        {
-          image: null,
-          username: "CodeMaster",
-          text: "This is super useful, thanks! 🙌📚",
-          dateCreated: "2024-08-24T08:25:00Z",
-        },
-      ];
-      const events = [
-        {
-          eventId: "1",
-          title: "Plant your own garden",
-          description: "Like plants so much you wanna love them? Pull up!",
-          date: "27/03/2024",
-          entry_fee: "500",
-          poster: "/eventposter.png",
-          username: "tayk47",
-          userimage: null,
-          comments: comments, // Assuming you want the same comments for each event
-        },
-        {
-          eventId: "2",
-          title: "Y2K Party",
-          description: "Early 2000s themed party. Pull up!",
-          date: "27/03/2024",
-          entry_fee: "500",
-          poster: "/y2kparty.png",
-          username: "oppaStompa",
-          userimage: "/wkndpfp.jpg",
-          comments: comments,
-        },
-        {
-          eventId: "3",
-          title: "Ramen",
-          description: "Vibe and slurp on ramen",
-          date: "27/03/2024",
-          entry_fee: "500",
-          poster: "/ramenposter.png",
-          username: "tayk47",
-          userimage: "/yoruichipfp.jpg",
-          comments: comments,
-        },
-      ];
-      
-      const handleSubmit = (
-        e: MouseEvent<HTMLButtonElement>, 
-        eventId: string, 
-        localCommentText: string
-      ): void => {
-        e.preventDefault();
-      
-        if (!localCommentText) {
-         
-          return;
-        }
-      
-        if (localCommentText.length > 300) {
-          return;
-        }
-      
-        if (localCommentText !== '') {
-          sendComment(localCommentText, eventId);  // Assuming sendComment is defined elsewhere
-        }
-      };
-     
-      const sendComment = async (commentText: string, eventId: string): Promise<void> => {
-        const apiEndpoint = "YOUR_API_ENDPOINT"; // Define your API endpoint here
-        const authToken = "YOUR_AUTH_TOKEN"; // Replace with your actual token retrieval logic
-      
-        try {
-          const response = await fetch(`${apiEndpoint}/comment-event/${eventId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${authToken ?? ''}`,  // Safe fallback if authToken is undefined
-            },
-            body: JSON.stringify({ text: commentText, event_id: eventId }),
-          });
-      
-          if (response.ok) {
-           console.log("yaay");
-             // Assuming setOnchange is a function elsewhere
-          }
-        } catch (error) {
-          console.error('Error submitting comment:', error);
-        }
-      };
+        body: JSON.stringify({ text: commentText, event_id: eventId }),
+      });
+  
+      if (response.ok) {
+        toast.success('Comment added successfully')
+        setOnchange(!onchange)
+      } else {
+        toast.error('Failed to add comment')
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+      toast.error('Failed to add comment')
+    }
+  };
+
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
-    <Header />
-    <main className="mobile-content-padding lg:pb-4">
-    <div className="flex flex-col md:flex-row ">
-      {/* Left SideNav - Desktop Only */}
-      <div className="hidden md:block md:w-64 flex-shrink-0">
-          <SideNav links = {eventLinks} />
-        </div>
-
-    {/* Center content */}
-    <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center ">
-      
-      {/* Desktop Search - Hidden on Mobile */}
-      <div className="hidden lg:flex w-full flex-1 justify-center items-center">
-        <form>
-          <div className="relative mx-auto">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search events..."
-              className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-full"
-            />
+      <Header />
+      <main className="mobile-content-padding lg:pb-4">
+        <div className="flex flex-col md:flex-row ">
+          <div className="hidden md:block md:w-64 flex-shrink-0">
+            <SideNav links={eventLinks} />
           </div>
-        </form>
-      </div>
-      
-      <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px] ">
-  {events.map((event, index) => (
-    <EventCard
-      key={index}
-    {...event}
-    event={event}
-    handleSubmit={handleSubmit}
-    />
-  ))}
-</div>
 
+          <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center ">
+            {/* Event Filters with Search pill (mobile) */}
+            <div className="w-full lg:hidden">
+              <FilterPills 
+                filters={filterPills} 
+                onFilterSelect={handleFilterSelect}
+                onSearchChange={setSearchQuery}
+                searchQuery={searchQuery}
+              />
+            </div>
+
+            {/* Event Filters with Search pill (desktop) */}
+            <div className="w-full hidden lg:block">
+              <FilterPills 
+                filters={filterPills} 
+                onFilterSelect={handleFilterSelect}
+                onSearchChange={setSearchQuery}
+                searchQuery={searchQuery}
+              />
+            </div>
+            
+            <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px] ">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-muted-foreground">Loading events...</p>
+                </div>
+              ) : events.length === 0 ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <p className="text-muted-foreground mb-4">No events found</p>
+                    <AddEvent />
+                  </div>
+                </div>
+              ) : (
+                displayEvents.map((event, index) => (
+                  <EventCard
+                    key={event.eventId || index}
+                    {...event}
+                    event={event}
+                    handleSubmit={handleSubmit}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
-
-  </div>
-  </main>
-</div>
-
   )
 }

@@ -66,7 +66,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 
   const cardVariants = {
     idle: { scale: 1, y: 0 },
-    hover: { scale: 1.02, y: -4 }
+    hover: { scale: 1.01, y: -2 }
   };
 
   const { sendFriendRequest } = useUserContext();
@@ -92,19 +92,19 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
       onHoverEnd={() => setIsHovered(false)}
       className="group cursor-pointer"
     >
-      <Card className="glass-card hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 overflow-hidden">
+      <Card className="transition-all duration-200 overflow-hidden bg-background border rounded-lg">
         <div style={{ backgroundColor: 'rgba(255,255,255,0.8)' }} />
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <motion.div
-                animate={{ scale: isHovered ? 1.05 : 1 }}
-                transition={{ duration: 0.2 }}
+                animate={{ scale: isHovered ? 1.03 : 1 }}
+                transition={{ duration: 0.15 }}
               >
-                <Avatar className="w-14 h-14 border-3 border-white dark:border-gray-800 shadow-lg">
+                <Avatar className="w-10 h-10 border-2 border-white dark:border-gray-800 shadow">
                   <AvatarImage src={suggestion.avatar} alt={getDisplayName()} />
-                  <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: Palette.accent }}>
+                  <AvatarFallback className="text-white font-semibold text-base" style={{ backgroundColor: Palette.accent }}>
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
@@ -118,27 +118,27 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                   className="absolute -top-1 -right-1 rounded-full p-1"
                   style={{ backgroundColor: '#fb7185' }}
                 >
-                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
                 </motion.div>
               )}
             </div>
             
             {/* Suggestion Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center justify-between mb-0.5">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate text-lg mb-1">
+                  <h3 className="font-semibold text-foreground truncate text-sm mb-0.5">
                     {getDisplayName()}
                   </h3>
                   
-                  <p className="text-sm text-muted-foreground mb-2">@{suggestion.username}</p>
+                  <p className="text-xs text-muted-foreground mb-1">@{suggestion.username}</p>
                   
                   {/* Suggestion Reason */}
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1 mb-1">
                     {suggestion.reason && (
                       <Badge 
                         variant="outline" 
-                        className={`text-xs px-2 py-1 border-0 ${getReasonColor(suggestion.reason)}`}
+                        className={`text-[10px] px-1.5 py-0.5 border-0 ${getReasonColor(suggestion.reason)}`}
                       >
                         {suggestion.reason}
                       </Badge>
@@ -148,7 +148,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
               </div>
               
               {/* Details */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-1">
                 {suggestion.category && (
                   <div className="flex items-center gap-1">
                     <GraduationCap className="h-3 w-3" />
@@ -171,22 +171,16 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
               
               {/* Bio */}
               {suggestion.bio && (
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-muted-foreground mb-2 line-clamp-2 leading-snug">
                   {suggestion.bio}
-                </p>
-              )}
-              {suggestion.id && (
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
-                  {suggestion.id}
                 </p>
               )}
               
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-1">
                 <Button 
                   size="sm" 
-                  className="flex-1 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
-                  style={{ backgroundColor: Palette.primary }}
+                  className="flex-1 text-white border-0 shadow hover:shadow-md transition-all duration-200 h-7 text-xs px-2"
                   onClick={() => handleAddFriend(suggestion.id)}
                   disabled={isAdding || isLoading}
                 >
@@ -194,7 +188,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                     animate={{ rotate: isAdding ? 360 : 0 }}
                     transition={{ duration: 0.5, repeat: isAdding ? Infinity : 0, ease: "linear" }}
                   >
-                    <UserPlus className="h-3 w-3 mr-2" />
+                    <UserPlus className="h-3 w-3 mr-1" />
                   </motion.div>
                   {isAdding ? 'Adding...' : 'Add Friend'}
                 </Button>
@@ -202,7 +196,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="border-muted hover:bg-muted/50 hover:scale-105 transition-all duration-200"
+                  className="border-muted hover:bg-muted/50 hover:scale-105 transition-all duration-200 h-7 text-xs px-2"
                   onClick={() => onViewProfile?.(suggestion)}
                 >
                   <Shield className="h-3 w-3 mr-1" />

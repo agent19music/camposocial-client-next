@@ -64,7 +64,7 @@ export const EmptyState: React.FC<EmptyState> = ({ type, onAction }) => {
         transition={{ delay: 0.3 }}
         className="max-w-sm space-y-4"
       >
-        <h3 className="text-2xl font-bold" style={{ color: Palette.primaryDark }}>
+        <h3 className="text-2xl font-bold" style={{  fontFamily: 'Helvetica'}}>
           {state.title}
         </h3>
         
@@ -81,7 +81,7 @@ export const EmptyState: React.FC<EmptyState> = ({ type, onAction }) => {
             <Button
               onClick={onAction}
               className={`text-white shadow-lg hover:shadow-xl transition-all duration-300`}
-              style={{ backgroundColor: Palette.primary }}
+              style={{ backgroundColor: '#4A90E2' }}
             >
               <IconComponent className="h-4 w-4 mr-2" />
               {state.actionText}

@@ -9,13 +9,16 @@ export async function POST(request: Request) {
         }
 
         const response = NextResponse.json({ success: true });
-        
-        // Set auth token as HTTP-only cookie
+        const cookieDomain = process.env.AUTH_COOKIE_DOMAIN;
+        const secure = process.env.NODE_ENV === 'production';
+        const sameSite = cookieDomain ? 'none' : 'lax';
+
         response.cookies.set('authToken', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7 // 7 days
+            secure: cookieDomain ? true : secure,
+            sameSite,
+            domain: cookieDomain || undefined,
+            maxAge: 60 * 60 * 24 * 7
         });
 
         return response;
