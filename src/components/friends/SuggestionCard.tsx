@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUserContext } from '@/context/usercontext';
+import { useWebSocket } from '@/context/websocket-context';
 import { Colors as Palette } from '@/constants/Colors';
 import { 
   UserPlus, 
@@ -45,7 +46,19 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
   isLoading = false
 }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { pendingRequests } = useWebSocket();
+
+  const {
+    sendFriendRequest,
+    addFriend,
+    friends,
+    receivedRequests,
+    fetchPendingRequests,
+  } = useUserContext();
+
+  const suggestionId = suggestion.id?.toString();
 
   const getInitials = () => {
     return `${suggestion.first_name?.[0] || ''}${suggestion.last_name?.[0] || ''}`.toUpperCase();
@@ -55,12 +68,58 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     return suggestion.display_name || `${suggestion.first_name} ${suggestion.last_name}`;
   };
 
-  const handleAddFriend = async (suggestionId: string | number) => {
+  const isExistingFriend = useMemo(() => {
+    if (!suggestionId) return false;
+    return friends.some(friend => friend.username === suggestion.username || friend.id === suggestionId);
+  }, [friends, suggestion.username, suggestionId]);
+
+  const incomingRequest = useMemo(() => {
+    if (!suggestionId) return null;
+    return receivedRequests.find((request: any) => {
+      const candidateIds = [
+        request.requesterId,
+        request.user?.id,
+        request.user_id,
+      ].filter(Boolean);
+      return candidateIds.some((id: any) => id?.toString() === suggestionId);
+    }) || null;
+  }, [receivedRequests, suggestionId]);
+
+  const isPendingOutgoing = useMemo(() => {
+    if (!suggestionId) return false;
+    if (!Array.isArray(pendingRequests)) return false;
+    return pendingRequests.some((req: any) => {
+      const user = req.user || req.requester || {};
+      const candidateIds = [
+        user.id,
+        req.user_id,
+        req.userId,
+        req.requester_id,
+      ].filter(Boolean);
+      return candidateIds.some((id: any) => id?.toString() === suggestionId);
+    });
+  }, [pendingRequests, suggestionId]);
+
+  const handleAddFriend = async (userId: string) => {
+    if (!userId || isExistingFriend || isPendingOutgoing) return;
     setIsAdding(true);
     try {
-      await sendFriendRequest(suggestionId.toString());
+      await sendFriendRequest(userId);
+      await fetchPendingRequests({ force: true });
+      await onAddFriend?.(userId);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleAcceptRequest = async () => {
+    if (!incomingRequest?.id) return;
+    setIsAccepting(true);
+    try {
+      await addFriend(incomingRequest.id);
+      await fetchPendingRequests({ force: true });
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -68,8 +127,6 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     idle: { scale: 1, y: 0 },
     hover: { scale: 1.01, y: -2 }
   };
-
-  const { sendFriendRequest } = useUserContext();
 
   const reasonColors = {
     'Same course': 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
@@ -181,16 +238,38 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                 <Button 
                   size="sm" 
                   className="flex-1 text-white border-0 shadow hover:shadow-md transition-all duration-200 h-7 text-xs px-2"
-                  onClick={() => handleAddFriend(suggestion.id)}
-                  disabled={isAdding || isLoading}
+                  onClick={() => {
+                    if (incomingRequest) {
+                      handleAcceptRequest();
+                    } else if (suggestionId) {
+                      handleAddFriend(suggestionId);
+                    }
+                  }}
+                  disabled={
+                    isLoading ||
+                    isExistingFriend ||
+                    isPendingOutgoing ||
+                    isAdding ||
+                    isAccepting
+                  }
                 >
                   <motion.div
-                    animate={{ rotate: isAdding ? 360 : 0 }}
-                    transition={{ duration: 0.5, repeat: isAdding ? Infinity : 0, ease: "linear" }}
+                    animate={{ rotate: isAdding ? 360 : 0, scale: isAccepting ? [1, 1.15, 1] : 1 }}
+                    transition={{
+                      duration: isAccepting ? 0.4 : 0.5,
+                      repeat: isAdding ? Infinity : 0,
+                      ease: "linear",
+                    }}
                   >
                     <UserPlus className="h-3 w-3 mr-1" />
                   </motion.div>
-                  {isAdding ? 'Adding...' : 'Add Friend'}
+                  {isExistingFriend
+                    ? 'Friends'
+                    : incomingRequest
+                      ? (isAccepting ? 'Accepting...' : 'Accept Request')
+                      : isPendingOutgoing
+                        ? 'Pending'
+                        : (isAdding ? 'Adding...' : 'Add Friend')}
                 </Button>
                 
                 <Button 

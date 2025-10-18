@@ -254,7 +254,7 @@ export default function AddYap() {
             <Avatar className="w-12 h-12 flex-shrink-0">
               <AvatarImage src={currentUser?.avatar} alt={currentUser?.username} />
               <AvatarFallback className="text-primary font-medium" style={{ backgroundColor: Palette.accentLight }}>
-                {currentUser?.first_name?.[0] || 'U'}
+                {currentUser?.firstName?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-4 min-w-0">

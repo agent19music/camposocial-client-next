@@ -106,7 +106,7 @@ const NewUserWelcome = () => {
             />
           </motion.div>
           <h1 className="text-3xl font-bold mb-3" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
-            Welcome to CampoSocial, {currentUser?.first_name || 'friend'}!
+            Welcome to CampoSocial, {currentUser?.firstName || 'friend'}!
           </h1>
           <p className="text-lg text-muted-foreground">
             You&apos;re now part of your campus community. Here&apos;s how to get started:

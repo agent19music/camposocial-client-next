@@ -86,8 +86,8 @@ export default function CheckoutComponent() {
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
-      first_name: currentUser?.first_name || "",
-      last_name: currentUser?.last_name || "",
+      first_name: currentUser?.firstName || "",
+      last_name: currentUser?.lastName || "",
       email: currentUser?.email || "",
       phone_no: currentUser?.phone_no || "",
       address: currentUser?.address || "",

@@ -1,11 +1,23 @@
+export interface MinimalFriend {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  avatar: string;
+  isOnline: boolean;
+  lastSeen: Date | null;
+  isCloseFriend: boolean;
+  friendshipId: number | null;
+}
 import type { ReactNode, Dispatch, SetStateAction } from "react";
 import type { EventComment, EventTicketGroup, EventTicketGroupInput, EventCommentPayload } from "@/lib/types";
 
 // ===================== Auth =====================
 export type CurrentUser = {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   address: string;
   phone_no: string;
   email: string;
@@ -47,6 +59,7 @@ export interface ChatMessage {
   id: number;
   senderId: string;
   content: string;
+  ciphertext?: string | null;
   timestamp: Date;
   media: ChatMedia[] | null;
   reactions: { userId: string; reactionType: string }[];
@@ -64,10 +77,23 @@ export interface ChatUser {
 }
 
 export interface ChatFriend {
-  username: string;
-  avatar: string;
-  isOnline: boolean;
   id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  avatar: string;
+  displayName: string;
+  isOnline: boolean;
+  lastSeen: Date | null;
+  isCloseFriend: boolean;
+  friendshipId: number;
+  conversationId: string | null;
+  unreadCount: number;
+  mutualFriends: number;
+  category: string;
+  bio: string;
+  messagePreview: string | null;
+  messageTime: Date ;
 }
 
 export interface ChatConversation {
@@ -87,6 +113,7 @@ export interface ChatListUser {
   firstName: string;
   lastName: string;
   avatar: string;
+  isCloseFriend: boolean;
 }
 
 export type KeyStatus = 'generating' | 'available' | 'unavailable';
@@ -108,7 +135,6 @@ export interface ChatContextType {
   generateKeys: () => Promise<void>;
   exportPublicKey: () => Promise<string | null>;
   keyStatus: KeyStatus;
-  generateConversationId: (userId1: string, userId2: string) => string;
   fetchConversations: () => Promise<ChatConversation[]>;
   checkIfConversationExists: (friendId: string) => Promise<boolean>;
   conversations: ChatConversation[];
@@ -118,6 +144,8 @@ export interface ChatContextType {
   sendTypingIndicator: (isTyping: boolean) => void;
   isTyping: boolean;
   isConnected: boolean;
+  ensureConversation: (friendId: string) => Promise<string | null>;
+  currentConversationId: string | null;
 }
 
 export interface ChatProviderProps { children: ReactNode }
@@ -141,6 +169,9 @@ export interface AppEvent {
   title: string;
   description: string;
   category: string;
+  userimage: string;
+  username: string;
+  display_name: string;
 }
 
 export interface AddEventPayload {
@@ -301,19 +332,20 @@ export interface UserContextProps {
   receivedRequests: any[];
   setReceivedRequests: (receivedRequests: any[]) => void;
   removeFriend: (friendId: string) => void;
-  addFriend: (requesterId: string) => void;
+  addFriend: (requestId: string) => void;
   blockUser: (targetId: string, action: 'block' | 'unblock') => void;
   setUsers: (users: any[]) => void;
   setFilteredUsers: (users: any[]) => void;
   onchange: (onchange: boolean) => void;
-  rejectFriendRequest: (requesterId: string) => void;
-  friends: any[];
-  filteredFriends: any[];
+  rejectFriendRequest: (requestId: string) => void;
+  friends: ChatFriend[];
+  filteredFriends: ChatFriend[];
   searchUsers: (query: string) => Promise<any[]>;
   isLoadingUsers: boolean;
   isLoadingSearch: boolean;
-  fetchFriends: () => Promise<void>;
+  fetchFriends: (options?: { force?: boolean }) => Promise<void>;
   fetchUsers: () => Promise<void>;
+  fetchPendingRequests: (options?: { force?: boolean }) => Promise<void>;
 }
 
 export interface UserEvent {

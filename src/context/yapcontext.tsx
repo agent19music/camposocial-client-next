@@ -815,7 +815,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       location: yapPayload.location,
       user_id: currentUser.id,
       username: currentUser.username,
-      display_name: `${currentUser.first_name} ${currentUser.last_name}`,
+      display_name: `${currentUser.firstName} ${currentUser.lastName}`, 
       avatar: currentUser.avatar,
       original_yap_id: yapPayload.originalYapId,
       replies_count: 0,

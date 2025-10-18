@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isYesterday } from 'date-fns';
 import { Colors as Palette } from '@/constants/Colors';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 const C = Palette;
 import Image from 'next/image';
@@ -20,7 +21,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useChat } from '@/context/chatcontext';
-import { useWebSocket } from '@/hooks/useWebSocket';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,12 +31,11 @@ import { secureDB } from '@/utils/secureStorage';
 import { toast } from 'react-hot-toast';
 import { ChatMessage, ChatMedia    } from '@/utils/types';
 interface ChatWindowProps {
-  conversationId?: string;
   friendId: string;
   onBack?: () => void;
 }
 
-export default function ChatWindow({ conversationId, friendId, onBack }: ChatWindowProps) {
+export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
   const { 
     messages, 
     sendMessage, 
@@ -50,7 +49,7 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
     chatList
   } = useChat();
   
-  const { socket, emit, on, off, isConnected } = useWebSocket();
+  const { socket, emit, on, isConnected } = useWebSocket();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [friendTyping, setFriendTyping] = useState(false);
@@ -67,35 +66,52 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load cached messages on mount
-  const loadCachedMessages = useCallback(async () => {
-    if (!conversationId) return;
-    
-    const cached = await secureDB.getCachedMessages(conversationId, 50);
-    if (cached.length > 0) {
-      const formattedMessages = cached.map(msg => ({
-        id: parseInt(msg.id),
-        senderId: msg.senderId,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        encrypted: msg.encrypted,
-        isSent: msg.isSent ?? false,
-        isDelivered: msg.isDelivered ?? false,
-        isRead: msg.isRead ?? false,
-        reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type })),
-        media: [] as ChatMedia[]
-      }));
-      setMessages(formattedMessages as ChatMessage[]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
+  const loadCachedMessages = useCallback(async (convId: string) => {
+    try {
+      const cached = await secureDB.getCachedMessages(convId, 50);
+      if (cached.length > 0) {
+        const formattedMessages: ChatMessage[] = cached.map(msg => ({
+          id: parseInt(msg.id),
+          senderId: msg.senderId,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          encrypted: msg.encrypted,
+          isSent: msg.isSent ?? false,
+          isRead: msg.isRead ?? false,
+          reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type })),
+          media: [] as ChatMedia[]
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Failed to load cached messages:', error);
     }
-    
-    // Fetch latest messages from server
-    if (friendId) {
-      await getMessages(friendId, 50);
-    }
-  }, [conversationId, friendId, getMessages, setMessages]);
+  }, [setMessages]);
 
   useEffect(() => {
-    loadCachedMessages();
-  }, [loadCachedMessages]);
+    let active = true;
+    const initialiseConversation = async () => {
+      if (!friendId || !currentUser) return;
+      
+      // Generate conversation ID
+      const convId = [currentUser.id, friendId].sort().join('-');
+      setConversationId(convId);
+      
+      // Try to load from cache first
+      await loadCachedMessages(convId);
+      
+      // Then fetch fresh messages from server
+      const messages = await getMessages(friendId, 50);
+      if (!active) return;
+    };
+    initialiseConversation();
+
+    return () => {
+      active = false;
+    };
+  }, [friendId, currentUser, getMessages, loadCachedMessages]);
 
   // WebSocket event handlers
   const handleReactionUpdate = useCallback((data: any) => {
@@ -127,49 +143,68 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
   }, [setMessages]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !isConnected) return;
 
     const handleNewMessage = async (data: any) => {
+      console.log('📨 New message received in ChatWindow:', data);
+      
+      // Only process if it's for the current conversation
+      if (conversationId && data.conversation_id !== conversationId) {
+        return;
+      }
+      
       // Add to messages and cache
-      const newMessage = {
+      const newMessage: ChatMessage = {
         id: data.id,
         senderId: data.sender_id,
         content: data.content,
         timestamp: new Date(data.timestamp),
-        encrypted: data.encrypted,
+        encrypted: data.encrypted || false,
         isSent: true,
-        isDelivered: true,
-        media: data.media,
-        reactions: data.reactions,
-        isRead: data.is_read
+        isRead: data.is_read || false,
+        media: data.media || [],
+        reactions: data.reactions || [],
+        replyTo: data.reply_to
       };
       
-      setMessages(prev => [...prev, newMessage as ChatMessage]);
+      setMessages(prev => [...prev, newMessage]);
       
       // Cache the message
-      await secureDB.cacheMessage({
-        id: String(data.id),
-        conversationId: conversationId || '',
-        content: data.content,
-        senderId: data.sender_id,
-        timestamp: new Date(data.timestamp),
-        encrypted: data.encrypted
-      });
+      try {
+        await secureDB.cacheMessage({
+          id: String(data.id),
+          conversationId: conversationId || '',
+          content: data.content,
+          senderId: data.sender_id,
+          timestamp: new Date(data.timestamp),
+          encrypted: data.encrypted || false
+        });
+      } catch (error) {
+        console.error('Failed to cache message:', error);
+      }
       
-      // Play sound and vibrate
-      playMessageSound();
-      vibrate();
+      // Play sound and vibrate only for received messages (not own)
+      if (data.sender_id !== currentUser?.id) {
+        playMessageSound();
+        vibrate();
+      }
     };
 
     const handleTypingIndicator = (data: any) => {
+      console.log('✍️ Typing indicator:', data);
       if (data.user_id === friendId) {
         setFriendTyping(data.is_typing);
+        
+        // Auto-clear typing after 3 seconds
+        if (data.is_typing) {
+          setTimeout(() => setFriendTyping(false), 3000);
+        }
       }
     };
 
     const handleMessageRead = async (data: any) => {
       // Update message read status
-      const messageIds = data.message_ids;
+      const messageIds = data.message_ids || [];
       setMessages(prev => prev.map(msg => 
         messageIds.includes(msg.id) 
           ? { ...msg, isRead: true }
@@ -177,27 +212,33 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       ));
       
       // Update cache
-      for (const msgId of messageIds) {
-        await secureDB.updateMessageStatus(String(msgId), { isRead: true });
+      try {
+        for (const msgId of messageIds) {
+          await secureDB.updateMessageStatus(String(msgId), { isRead: true });
+        }
+      } catch (error) {
+        console.error('Failed to update message status:', error);
       }
     };
 
-    on('new_message', handleNewMessage);
-    on('typing_indicator', handleTypingIndicator);
-    on('messages_read', handleMessageRead);
-    on('reaction_added', handleReactionUpdate);
-    on('message_edited', handleMessageEdit);
-    on('message_deleted', handleMessageDelete);
+    // Register event listeners using the proper on() method
+    const cleanupNewMessage = on('new_message', handleNewMessage);
+    const cleanupTyping = on('user_typing', handleTypingIndicator);
+    const cleanupRead = on('messages_read', handleMessageRead);
+    const cleanupReaction = on('reaction_added', handleReactionUpdate);
+    const cleanupEdit = on('message_edited', handleMessageEdit);
+    const cleanupDelete = on('message_deleted', handleMessageDelete);
 
     return () => {
-      off('new_message', handleNewMessage);
-      off('typing_indicator', handleTypingIndicator);
-      off('messages_read', handleMessageRead);
-      off('reaction_added', handleReactionUpdate);
-      off('message_edited', handleMessageEdit);
-      off('message_deleted', handleMessageDelete);
+      // Cleanup all listeners
+      cleanupNewMessage();
+      cleanupTyping();
+      cleanupRead();
+      cleanupReaction();
+      cleanupEdit();
+      cleanupDelete();
     };
-  }, [socket, friendId, conversationId, on, off, handleReactionUpdate, handleMessageEdit, handleMessageDelete, setMessages]);
+  }, [socket, isConnected, friendId, conversationId, currentUser, on, handleReactionUpdate, handleMessageEdit, handleMessageDelete, setMessages]);
 
   // Auto-scroll to bottom for new messages
   useEffect(() => {
@@ -208,11 +249,12 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
 
   // Handle typing indicator
   const handleTyping = useCallback(() => {
+    if (!friendId || !isConnected) return;
+    
     if (!isTyping) {
       setIsTyping(true);
       emit('typing', { 
-        conversation_id: conversationId, 
-        user_id: currentUser?.id,
+        recipient_id: friendId,
         is_typing: true 
       });
     }
@@ -221,12 +263,11 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
       emit('typing', { 
-        conversation_id: conversationId,
-        user_id: currentUser?.id,
+        recipient_id: friendId,
         is_typing: false 
       });
-    }, 1000);
-  }, [isTyping, conversationId, currentUser, emit]);
+    }, 2000); // 2 seconds instead of 1 second
+  }, [isTyping, friendId, isConnected, emit]);
 
   // Handle infinite scroll
   const handleScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
@@ -244,19 +285,18 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       );
       
       if (cached.length > 0) {
-        const formattedMessages = cached.map(msg => ({
+        const formattedMessages: ChatMessage[] = cached.map(msg => ({
           id: parseInt(msg.id),
           senderId: msg.senderId,
           content: msg.content,
           timestamp: msg.timestamp,
           encrypted: msg.encrypted,
           isSent: msg.isSent ?? false,
-          isDelivered: msg.isDelivered ?? false,
           isRead: msg.isRead ?? false,
           media: [] as ChatMedia[],
           reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type }))   
         }));
-        setMessages(prev => [...formattedMessages as ChatMessage[], ...prev] as ChatMessage[]);
+        setMessages(prev => [...formattedMessages, ...prev]);
       } else {
         // Fetch from server
         const olderMessages = await getMessages(friendId, 20, oldestMessage.id);
@@ -289,13 +329,12 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
     setReplyingTo(null);
     
     // Optimistic update
-    const tempMessage = {
-      id: Date.now(), // Use number instead of string
+    const tempMessage: ChatMessage = {
+      id: Date.now(), // Temporary ID
       senderId: currentUser?.id || '',
       content: messageContent,
       timestamp: new Date(),
       isSent: false,
-      isDelivered: false,
       isRead: false,
       replyTo: replyingTo?.id,
       media: [] as ChatMedia[],
@@ -303,7 +342,7 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
       encrypted: true
     };
     
-    setMessages(prev => [...prev, tempMessage as ChatMessage]);
+    setMessages(prev => [...prev, tempMessage]);
     
     try {
       if (editingMessage) {
@@ -326,7 +365,6 @@ export default function ChatWindow({ conversationId, friendId, onBack }: ChatWin
         timestamp: new Date(),
         encrypted: true,
         isSent: true,
-        isDelivered: true,
         isRead: false,
         reactions: []
       });

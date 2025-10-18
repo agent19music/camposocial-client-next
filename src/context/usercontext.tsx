@@ -1,126 +1,165 @@
 "use client";
 
-import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
-import {nanoid} from 'nanoid';
-import { useRouter } from "next/navigation";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import useSWR, { mutate } from "swr";
 import { AuthContext } from "./authcontext";
 import { useWebSocket } from "./websocket-context";
-import { send } from "process";
-import {toast} from "react-hot-toast";
-import { UserContextProps } from "../utils/types";
+import { toast } from "react-hot-toast";
+import { UserContextProps, ChatFriend, MinimalFriend } from "../utils/types";
 
  
 
 const defaultValue: UserContextProps = {
   user: [],
   users: [],
-  sendFriendRequest: () => {},
+  sendFriendRequest: async () => {},
   receivedRequests: [],
   setReceivedRequests: () => {},
-  removeFriend: () => {},
-  addFriend: () => {},
-  blockUser: () => {},
+  removeFriend: async () => {},
+  addFriend: async () => {},
+  blockUser: async () => {},
   setUsers: () => {},
   setFilteredUsers: () => {},
   onchange: () => {},
-  rejectFriendRequest: () => {},
+  rejectFriendRequest: async () => {},
   friends: [],
   filteredFriends: [],
   searchUsers: async () => [],
   isLoadingUsers: false,
   isLoadingSearch: false,
   fetchFriends: async () => {},
-  fetchUsers: async () => {}
+  fetchUsers: async () => {},
+  fetchPendingRequests: async () => {},
 };
 
 export const UserContext = createContext<UserContextProps>(defaultValue);
 
 export default function UserProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const { pendingRequests } = useWebSocket(); // Get real-time pending requests
+  const { authToken, isAuthenticated } = useContext(AuthContext);
+  const { pendingRequests, removePendingRequest, updateFriendList } = useWebSocket();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
+  const [usersState, setUsersState] = useState<any[]>([]);
+  const [friendsState, setFriendsState] = useState<ChatFriend[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
-  const[users, setUsers] = useState<any[]>([]);
-  const[friends, setFriends] = useState<any[]>([]);
-  const [filteredFriends, setFilteredFriends] = useState<any[]>([]);
-  const[receivedRequests, setReceivedRequests] = useState<any[]>([]);
-  const [onchange, setOnchange] = useState(false);
-  const [category, setCategory] = useState("Fun"); // Default category
-  const user = ['fuck ts']
-  const{authToken, onAuthChange, isAuthenticated, currentUser}= useContext(AuthContext)
+  const [filteredFriends, setFilteredFriends] = useState<ChatFriend[]>([]);
+  const [receivedRequests, setReceivedRequests] = useState<MinimalFriend[]>([]);
 
-  // Add refs to prevent duplicate requests
-  const fetchingUsersRef = useRef(false);
-  const fetchingFriendsRef = useRef(false);
-  const fetchingRequestsRef = useRef(false);
-  const lastUsersFetchRef = useRef(0);
-  const lastFriendsFetchRef = useRef(0);
-  const lastRequestsFetchRef = useRef(0);
-  const usersAbortControllerRef = useRef<AbortController | null>(null);
-  const friendsAbortControllerRef = useRef<AbortController | null>(null);
-  const requestsAbortControllerRef = useRef<AbortController | null>(null);
+  const swrKey = useMemo(() => ({
+    friends: authToken && isAuthenticated ? `${apiEndpoint}/friends` : null,
+    users: authToken && isAuthenticated ? `${apiEndpoint}/users` : null,
+    pending: authToken && isAuthenticated ? `${apiEndpoint}/friends/pending` : null,
+  }), [apiEndpoint, authToken, isAuthenticated]);
 
-  const router = useRouter()
+  const fetcher = useCallback(async (url: string) => {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
 
-  // Debounced fetch users function
-  const fetchUsers = useCallback(async () => {
-    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingUsersRef.current) {
-      return;
+    if (!response.ok) {
+      if (response.status === 401) {
+        return null;
+      }
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Debounce requests - only allow one request per 10 seconds
-    const now = Date.now();
-    if (now - lastUsersFetchRef.current < 10000) {
-      return;
+    return response.json();
+  }, [authToken]);
+
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+  } = useSWR(swrKey.users, (url) => fetcher(url!), {
+    revalidateOnFocus: false,
+  });
+
+  const {
+    data: friendsData,
+    isLoading: isLoadingFriends,
+  } = useSWR(swrKey.friends, (url) => fetcher(url!), {
+    revalidateOnFocus: false,
+  });
+
+  const {
+    data: pendingData,
+    isLoading: isLoadingPending,
+  } = useSWR(swrKey.pending, (url) => fetcher(url!), {
+    revalidateOnFocus: false,
+  });
+
+  const users = useMemo(() => usersData?.users ?? [], [usersData]);
+  const friends = useMemo(() => {
+    const rawFriends = friendsData?.friends ?? [];
+    return rawFriends.map((friend: any) => ({
+      id: String(friend.id),
+      username: friend.username,
+      firstName: friend.first_name,
+      lastName: friend.last_name,
+      avatar: friend.avatar || "",
+      displayName: friend.display_name || `${friend.first_name} ${friend.last_name}`,
+      isOnline: Boolean(friend.is_online),
+      lastSeen: friend.last_seen ? new Date(friend.last_seen) : null,
+      isCloseFriend: Boolean(friend.is_close_friend),
+      friendshipId: friend.friendship_id,
+      conversationId: friend.conversation_id ? String(friend.conversation_id) : null,
+    })) as ChatFriend[];
+  }, [friendsData]);
+
+  useEffect(() => {
+    if (users) {
+      setUsersState(users);
+      setFilteredUsers(users);
     }
+  }, [users]);
 
-    fetchingUsersRef.current = true;
-    lastUsersFetchRef.current = now;
-    setIsLoadingUsers(true);
-
-    // Abort previous request if it exists
-    if (usersAbortControllerRef.current) {
-      usersAbortControllerRef.current.abort();
+  useEffect(() => {
+    if (friends) {
+      setFriendsState(friends);
+      setFilteredFriends(friends);
     }
+  }, [friends]);
 
-    const controller = new AbortController();
-    usersAbortControllerRef.current = controller;
+  const isLoading = isLoadingUsers || isLoadingFriends || isLoadingPending;
+  // user should be a single user object, not an array
+  const user = usersState.length > 0 ? usersState[0] : [];
 
-    try {
-      const response = await fetch(`${apiEndpoint}/users`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        signal: controller.signal,
-      });
+  const normalizePendingRequests = useCallback((requests: any[] = []): MinimalFriend[] => {
+    return requests
+      .map((request: any) => {
+        const user = request.user || request.requester || {};
+        const rawRequestId = request.id ?? request.request_id ?? request.requestId;
+        const rawUserId = user.id ?? request.user_id ?? request.userId ?? request.requester_id;
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token is invalid, don't make further requests
-          return; 
+        if (!rawRequestId || !rawUserId) {
+          return null;
         }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
 
-      const data = await response.json();
-      setUsers(data.users || []);
-      setFilteredUsers(data.users || []);
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error("Error fetching users:", error);
-        setUsers([]);
-        setFilteredUsers([]);
-      }
-    } finally {
-      fetchingUsersRef.current = false;
-      setIsLoadingUsers(false);
-    }
-  }, [authToken, isAuthenticated, apiEndpoint]);
+        const firstName = (user.first_name ?? request.firstName ?? request.first_name ?? "").toString();
+        const lastName = (user.last_name ?? request.lastName ?? request.last_name ?? "").toString();
+        const displayNameCandidate = (user.display_name ?? request.displayName ?? request.display_name ?? `${firstName} ${lastName}`).toString().trim();
+        const lastSeenRaw = user.last_seen ?? request.last_seen ?? request.lastSeen;
+
+        // Only return MinimalFriend fields
+        return {
+          id: String(rawRequestId),
+          username: (user.username ?? request.username ?? "").toString(),
+          firstName,
+          lastName,
+          displayName: displayNameCandidate || `${firstName} ${lastName}`.trim(),
+          avatar: (user.avatar ?? request.avatar ?? "").toString(),
+          isOnline: Boolean(user.is_online ?? request.is_online ?? request.isOnline ?? false),
+          lastSeen: lastSeenRaw ? new Date(lastSeenRaw) : null,
+        };
+      })
+      .filter((item): item is MinimalFriend => item !== null);
+  }, []);
 
   // Search users function
   const searchUsers = useCallback(async (query: string): Promise<any[]> => {
@@ -153,150 +192,25 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [authToken, isAuthenticated, apiEndpoint]);
 
-  console.log( "users", users);
-  console.log( "friends", friends);
-
-  // Debounced fetch friends function
-  const fetchFriends = useCallback(async () => {
-    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingFriendsRef.current) {
-      return;
-    }
-
-    // Debounce requests - only allow one request per 10 seconds
-    const now = Date.now();
-    if (now - lastFriendsFetchRef.current < 10000) {
-      return;
-    }
-
-    fetchingFriendsRef.current = true;
-    lastFriendsFetchRef.current = now;
-    setIsLoading(true);
-
-    // Abort previous request if it exists
-    if (friendsAbortControllerRef.current) {
-      friendsAbortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    friendsAbortControllerRef.current = controller;
-
-    try {
-      const response = await fetch(`${apiEndpoint}/friends`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token is invalid, don't make further requests
-          return;
-        }
-        // Don't throw error for 404 - friends endpoint might not exist
-        if (response.status === 404) {
-          console.warn('Friends endpoint not found');
-          setFriends([]);
-          setFilteredFriends([]);
-          return;
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setFriends(data.friends || []);
-      setFilteredFriends(data.friends || []);
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error("Error fetching friends:", error);
-        setFriends([]);
-        setFilteredFriends([]);
-      }
-    } finally {
-      fetchingFriendsRef.current = false;
-      setIsLoading(false);
-    }
-  }, [authToken, isAuthenticated, apiEndpoint]);
-
-  
-
-  // Debounced fetch pending requests function
-  const fetchPendingRequests = useCallback(async () => {
-    if (!authToken || !isAuthenticated || !apiEndpoint || fetchingRequestsRef.current) {
-      return;
-    }
-
-    // Debounce requests - only allow one request per 10 seconds
-    const now = Date.now();
-    if (now - lastRequestsFetchRef.current < 10000) {
-      return;
-    }
-
-    fetchingRequestsRef.current = true;
-    lastRequestsFetchRef.current = now;
-
-    // Abort previous request if it exists
-    if (requestsAbortControllerRef.current) {
-      requestsAbortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    requestsAbortControllerRef.current = controller;
-
-    try {
-      const response = await fetch(`${apiEndpoint}/friends/pending`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token is invalid, don't make further requests
-          return;
-        }
-        // Don't throw error for 404 - endpoint might not exist
-        if (response.status === 404) {
-          console.warn('Friends pending endpoint not found');
-          setReceivedRequests([]);
-          return;
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setReceivedRequests(data.pending_requests || []);
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching pending friend requests:', error);
-        setReceivedRequests([]);
-      }
-    } finally {
-      fetchingRequestsRef.current = false;
-    }
-  }, [authToken, isAuthenticated, apiEndpoint]);
-
-  // Effect to fetch data when auth state changes
   useEffect(() => {
-    if (authToken && isAuthenticated && currentUser) {
-      // Force refetch data when user logs in
-      fetchUsers();
-      fetchFriends();
-      fetchPendingRequests();
+    if (!Array.isArray(pendingRequests)) {
+      return;
     }
-  }, [authToken, isAuthenticated, currentUser, fetchUsers, fetchFriends, fetchPendingRequests]);
 
-  // Sync WebSocket pending requests with local state
-  useEffect(() => {
-    if (pendingRequests && pendingRequests.length >= 0) {
-      setReceivedRequests(pendingRequests);
+    if (pendingRequests.length === 0) {
+      setReceivedRequests([]);
+      return;
     }
-  }, [pendingRequests]);
+
+  setReceivedRequests(normalizePendingRequests(pendingRequests));
+  }, [pendingRequests, normalizePendingRequests]);
+
+  useEffect(() => {
+    if (!pendingData?.pending_requests) {
+      return;
+    }
+  setReceivedRequests(normalizePendingRequests(pendingData.pending_requests));
+  }, [pendingData, normalizePendingRequests]);
 
   async function sendFriendRequest(receipientId: string) {
     try {
@@ -319,6 +233,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       const responseData = await response.json();
   
       toast.success("Friend request sent successfully!");
+      await mutate(swrKey.pending);
     } catch (error) {
       console.error("Error sending friend request:", error);
       toast.error("An error occurred while sending the friend request.");
@@ -327,13 +242,12 @@ export default function UserProvider({ children }: { children: ReactNode }) {
 
   async function removeFriend(friendId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/remove`, {
+      const response = await fetch(`${apiEndpoint}/friends/${friendId}/remove`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ friend_id: friendId }),
       });
   
       if (!response.ok) {
@@ -344,9 +258,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   
       const responseData = await response.json();
       toast.success('Friend removed successfully!');
-      
-      // Refresh friends list
-      fetchFriends();
+      updateFriendList({ friend: friendId, action: 'remove' });
       
       return responseData.message;
     } catch (error) {
@@ -355,9 +267,9 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function addFriend(requesterId: string) {
+  async function addFriend(requestId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/request/${requesterId}/accept`, {
+      const response = await fetch(`${apiEndpoint}/friends/request/${requestId}/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -374,13 +286,11 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       const responseData = await response.json();
       toast.success('Friend request accepted!');
       
-      // Remove from pending requests immediately (optimistic update)
-      setReceivedRequests(prev => prev.filter(req => req.user.id.toString() !== requesterId));
-      
-      // Refresh friends list to include new friend
-      fetchFriends();
-      
-      // The WebSocket will notify the requester in real-time
+      // Refresh lists
+      await Promise.all([
+        mutate(swrKey.friends),
+        mutate(swrKey.pending)
+      ]);
       
       return responseData.message;
     } catch (error) {
@@ -391,13 +301,13 @@ export default function UserProvider({ children }: { children: ReactNode }) {
 
   async function blockUser(targetId: string, action: 'block' | 'unblock') {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/${action}`, {
+      const endpoint = action === 'block' ? `${apiEndpoint}/friends/${targetId}/block` : `${apiEndpoint}/friends/${targetId}/unblock`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ target_id: targetId }),
       });
   
       if (!response.ok) {
@@ -410,8 +320,8 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       toast.success(`User ${action}ed successfully!`);
       
       // Refresh relevant lists
-      fetchUsers();
-      fetchFriends();
+      mutate(swrKey.users);
+      mutate(swrKey.friends);
       
       return responseData.message;
     } catch (error) {
@@ -420,9 +330,9 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function rejectFriendRequest(requesterId: string) {
+  async function rejectFriendRequest(requestId: string) {
     try {
-      const response = await fetch(`${apiEndpoint}/friends/request/${requesterId}/decline`, {
+      const response = await fetch(`${apiEndpoint}/friends/request/${requestId}/decline`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -438,12 +348,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   
       const responseData = await response.json();
       
-      // Remove from pending requests immediately (optimistic update)
-      setReceivedRequests(prev => prev.filter(req => req.user.id.toString() !== requesterId));
-      
-      // No toast notification for rejection as per requirements
-      
-      // The WebSocket will clear this from the requester's outgoing requests
+      await mutate(swrKey.pending);
       
       return responseData.message;
     } catch (error) {
@@ -452,41 +357,33 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Cleanup function
-  useEffect(() => {
-    return () => {
-      if (usersAbortControllerRef.current) {
-        usersAbortControllerRef.current.abort();
-      }
-      if (friendsAbortControllerRef.current) {
-        friendsAbortControllerRef.current.abort();
-      }
-      if (requestsAbortControllerRef.current) {
-        requestsAbortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
   const contextData: UserContextProps = {
     user,
-    users,
+    users: usersState,
     sendFriendRequest,
     receivedRequests,
     setReceivedRequests,
     removeFriend,
     addFriend,
     blockUser,
-    setUsers,
+    setUsers: setUsersState,
     setFilteredUsers,
-    onchange: setOnchange,
+    onchange: () => {},
     rejectFriendRequest,
-    friends,
+    friends: friendsState,
     filteredFriends,
     searchUsers,
     isLoadingUsers,
     isLoadingSearch,
-    fetchFriends,
-    fetchUsers,
+    fetchFriends: async () => {
+      await mutate(swrKey.friends);
+    },
+    fetchUsers: async () => {
+      await mutate(swrKey.users);
+    },
+    fetchPendingRequests: async () => {
+      await mutate(swrKey.pending);
+    },
   };
 
   return (

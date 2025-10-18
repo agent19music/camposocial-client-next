@@ -138,12 +138,15 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('API endpoint not configured');
       }
       
-      const response = await fetch(`${apiEndpoint}/oauth/${provider}/callback`, {
+      const oauthEndpoint = apiEndpoint.replace('127.0.0.1', 'localhost');
+
+      const response = await fetch(`${oauthEndpoint}/oauth/${provider}/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -157,6 +160,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ token: result.access_token }),
+          credentials: 'include',
         });
 
         setAuthToken(result.access_token);

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { CheckCircleIcon } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { useTheme } from '@/context/themecontext';
 
 const funMessages = [
   "Uh oh, someone's eager!",
@@ -20,6 +21,7 @@ export default function ComingSoon() {
   const [error, setError] = useState('');
   const [isValidEmail, setIsValidEmail] = useState(false);
   const router = useRouter();
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Pick a random message on mount
@@ -84,13 +86,17 @@ export default function ComingSoon() {
       {/* Logo in top left */}
       <header className="absolute top-4 left-4 md:top-5 md:left-10">
         <div className="flex flex-row items-center" onClick={() => router.push('/')}>
-          <Image
-            src="/camposocial_logo.png"
-            alt="CampoSocial Logo"  
-            width={40}
-            height={40}
-            className="md:w-[60px] md:h-[60px]"
-          />
+    <Image
+                src= {theme !== 'dark'
+                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
+                }
+                alt="CampoSocial"
+                width={36}
+                height={36}
+                className="rounded-xl shadow-sm"
+                priority
+              />
           <h1 className="text-xl md:text-2xl font-semibold ml-2" style={{ fontFamily: 'Helvetica', color: 'var(--color-heading)' }}>
             CampoSocial
           </h1>
@@ -135,7 +141,8 @@ export default function ComingSoon() {
                 <button
                   type="submit"
                   disabled={isLoading || !isValidEmail || !email}
-                  className="px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold bg-primary text-white hover:bg-primary transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm md:text-base"
+                  style={{ backgroundColor: 'var(--color-heading)' }}
+                  className="px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold dark:text-black  text-white transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm md:text-base"
                 >
                     {isLoading ? 'Joining...' : 'Join Waitlist'}
                 </button>

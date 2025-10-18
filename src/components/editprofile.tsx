@@ -69,8 +69,8 @@ export default function ProfileEditor() {
   useEffect(() => {
     if (currentUser) {
       setProfileData({
-        first_name: currentUser.first_name || "",
-        last_name: currentUser.last_name || "",
+        first_name: currentUser.firstName || "",
+        last_name: currentUser.lastName || "",
         username: currentUser.username || "",
         display_name: currentUser.display_name || "",
         email: currentUser.email || "",
@@ -231,8 +231,8 @@ export default function ProfileEditor() {
   const handleCancel = () => {
     if (currentUser) {
       setProfileData({
-        first_name: currentUser.first_name || "",
-        last_name: currentUser.last_name || "",
+        first_name: currentUser.firstName || "",
+        last_name: currentUser.lastName || "",
         username: currentUser.username || "",
         display_name: currentUser.display_name || "",
         email: currentUser.email || "",

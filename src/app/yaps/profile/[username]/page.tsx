@@ -503,7 +503,7 @@ export default function ProfilePage() {
             </Button>
             <div className="flex-1">
               <h1 className="font-bold text-lg">{user.display_name}</h1>
-              <p className="text-sm text-muted-foreground">{user.yaps_count || 0} yaps</p>
+              <p className="text-sm text-muted-foreground">{yaps?.length || 0} yaps</p>
             </div>
             {!isOwnProfile && (
               <DropdownMenu>

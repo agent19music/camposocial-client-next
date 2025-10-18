@@ -39,7 +39,7 @@ export const ReplyInput = ({ onReply }: { onReply: (content: string) => void }) 
         <AvatarImage src={currentUser.avatar} />
         <AvatarFallback className="dark:bg-gray-700 dark:text-gray-200 text-sm font-semibold">
           {currentUser.display_name?.[0]?.toUpperCase() || 
-           currentUser.first_name?.[0]?.toUpperCase() || 
+           currentUser.firstName?.[0]?.toUpperCase() ||  
            currentUser.username?.[0]?.toUpperCase() || 
            'U'}
         </AvatarFallback>

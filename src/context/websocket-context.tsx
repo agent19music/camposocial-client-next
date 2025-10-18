@@ -61,6 +61,11 @@ interface YapNotification {
   timestamp: string;
 }
 
+interface JoinableConversation {
+  id: string;
+  joined: boolean;
+}
+
 interface WebSocketContextProps {
   socket: any;
   isConnected: boolean;
@@ -84,6 +89,12 @@ interface WebSocketContextProps {
     };
     created_at: string;
   }>;
+  joinConversation: (conversationId: string) => void;
+  leaveConversation: (conversationId: string) => void;
+  joinedConversations: string[];
+  removePendingRequest: (requestId: string | number) => void;
+  appendFriend: (friend: any) => void;
+  updateFriendList: (payload: { friend?: any; action: 'add' | 'remove'; requesterId?: string | number }) => void;
 }
 
 const defaultValue: WebSocketContextProps = {
@@ -98,6 +109,12 @@ const defaultValue: WebSocketContextProps = {
   latestFriendRequest: null,
   latestYapNotification: null,
   pendingRequests: [],
+  joinConversation: () => {},
+  leaveConversation: () => {},
+  joinedConversations: [],
+  removePendingRequest: () => {},
+  appendFriend: () => {},
+  updateFriendList: () => {},
 };
 
 export const WebSocketContext = createContext<WebSocketContextProps>(defaultValue);
@@ -128,10 +145,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     };
     created_at: string;
   }>>([]);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [joinedConversations, setJoinedConversations] = useState<JoinableConversation[]>([]);
 
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const conversationRoomsRef = useRef<Set<string>>(new Set());
 
   // Initialize socket connection
   const initializeSocket = useCallback(() => {
@@ -155,6 +175,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       reconnectionAttempts: maxReconnectAttempts,
       reconnectionDelay: 2000,
       forceNew: true,
+      auth: {
+        token: authToken,
+      },
     });
 
     newSocket.on('connect', () => {
@@ -162,15 +185,34 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(true);
       reconnectAttempts.current = 0;
 
-      // Authenticate the socket connection
-      newSocket.emit('authenticate', { token: authToken });
+      newSocket.emit('heartbeat', {});
     });
 
-    newSocket.on('authenticated', (data: any) => {
-      console.log('WebSocket authenticated for user:', data.user_id);
-      
-      // Request current notification counts
-      newSocket.emit('get_notification_counts', { token: authToken });
+    newSocket.on('conversation_list', (payload: { conversations: string[] }) => {
+      const normalized = (payload?.conversations || []).map(id => ({ id, joined: false }));
+      setJoinedConversations(normalized);
+    });
+
+    newSocket.on('conversation_joined', (data: { conversation_id: string }) => {
+      if (data?.conversation_id) {
+        conversationRoomsRef.current.add(data.conversation_id);
+        setJoinedConversations(prev => {
+          const existing = prev.find(item => item.id === data.conversation_id);
+          if (existing) {
+            return prev.map(item => item.id === data.conversation_id ? { ...item, joined: true } : item);
+          }
+          return [...prev, { id: data.conversation_id, joined: true }];
+        });
+        console.log('Joined conversation room', data.conversation_id);
+      }
+    });
+
+    newSocket.on('conversation_left', (data: { conversation_id: string }) => {
+      if (data?.conversation_id) {
+        conversationRoomsRef.current.delete(data.conversation_id);
+        setJoinedConversations(prev => prev.map(item => item.id === data.conversation_id ? { ...item, joined: false } : item));
+        console.log('Left conversation room', data.conversation_id);
+      }
     });
 
     newSocket.on('disconnect', (reason: any) => {
@@ -230,7 +272,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         friend_requests: data.friend_requests_count,
       }));
       
-      // Update pending requests list with real-time data
       setPendingRequests(data.all_pending_requests);
       
       // Show notification toast or handle UI update
@@ -280,11 +321,16 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Live friend request responses (accept/decline)  
     newSocket.on('friend_request_response', (data: any) => {
       console.log('Friend request response received:', data);
-      
       if (data.action === 'accepted') {
         toast.success(`${data.recipient.display_name} accepted your friend request!`);
       }
-      // Note: declined responses don't show notifications as per requirements
+      if (data.friend && data.action === 'accepted') {
+        setFriends(prev => {
+          const next = prev.filter(friend => friend.friendshipId !== data.friendship_id);
+          return [data.friend, ...next];
+        });
+      }
+      setPendingRequests(prev => prev.filter(req => req.id !== data.friendship_id));
     });
 
     // Live follower notifications
@@ -378,6 +424,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [socket, isConnected, authToken]);
 
+  const joinConversation = useCallback((conversationId: string) => {
+    if (socket && isConnected && conversationId) {
+      socket.emit('join_conversation', { conversation_id: conversationId });
+    }
+  }, [socket, isConnected]);
+
+  const leaveConversation = useCallback((conversationId: string) => {
+    if (socket && isConnected && conversationId) {
+      socket.emit('leave_conversation', { conversation_id: conversationId });
+    }
+  }, [socket, isConnected]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -389,6 +447,28 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [socket]);
+
+  const removePendingRequest = useCallback((requestId: string | number) => {
+    setPendingRequests(prev => prev.filter(req => String(req.id) !== String(requestId)));
+  }, []);
+
+  const appendFriend = useCallback((friend: any) => {
+    setFriends(prev => [friend, ...prev.filter(item => item.id !== friend.id)]);
+  }, []);
+
+  const updateFriendList = useCallback(({ friend, action, requesterId }: { friend?: any; action: 'add' | 'remove'; requesterId?: string | number }) => {
+    if (action === 'add' && friend) {
+      appendFriend(friend);
+      if (requesterId) {
+        removePendingRequest(requesterId);
+      }
+      return;
+    }
+
+    if (action === 'remove' && friend) {
+      setFriends(prev => prev.filter(item => String(item.id) !== String(friend)));
+    }
+  }, [appendFriend, removePendingRequest]);
 
   const value: WebSocketContextProps = {
     socket,
@@ -402,6 +482,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     latestFriendRequest,
     latestYapNotification,
     pendingRequests,
+    joinConversation,
+    leaveConversation,
+    joinedConversations: joinedConversations.filter(item => item.joined).map(item => item.id),
+    removePendingRequest,
+    appendFriend,
+    updateFriendList,
   };
 
   return (

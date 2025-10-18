@@ -105,7 +105,7 @@ export default function WelcomePage() {
           </motion.div>
           
           <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ color: C.primaryDark }}>
-            Welcome, {currentUser?.first_name}!
+            Welcome, {currentUser?.firstName}! 
           </h1>
           
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">

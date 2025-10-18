@@ -173,7 +173,7 @@ export default function Receipt() {
             <div className="space-y-2">
               <h3 className="font-bold text-sm sm:text-base">Customer Details:</h3>
               <div className="text-xs sm:text-sm">
-                Name: {currentUser?.first_name} {currentUser?.last_name}
+                Name: {currentUser?.firstName} {currentUser?.lastName}
               </div>
               <div className="text-xs sm:text-sm break-all">Email: {currentUser?.email}</div>
             </div>

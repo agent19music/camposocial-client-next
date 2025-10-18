@@ -36,8 +36,8 @@ export default function SellerSignup() {
     if (currentUser) {
       setEmail(currentUser.email || '');
       setName(
-        currentUser.first_name && currentUser.last_name
-          ? `${currentUser.first_name} ${currentUser.last_name}`
+        currentUser.firstName && currentUser.lastName 
+          ? `${currentUser.firstName} ${currentUser.lastName}`
           : ''
       );
       setPhone(currentUser.phone_no || '');

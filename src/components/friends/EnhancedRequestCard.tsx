@@ -8,31 +8,27 @@ import { Colors as Palette } from '@/constants/Colors';
 const C = Palette;
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { 
   Check, 
   X, 
   Shield,
   Clock,
   Heart,
-  GraduationCap,
   CheckCircle2,
   XCircle
 } from 'lucide-react';
 
-interface Request {
-  id: number | string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  display_name?: string;
-  avatar?: string;
-  bio?: string;
+import { MinimalFriend } from '@/utils/types';
+
+interface Request extends MinimalFriend {
+  created_at?: string;
+  requestTime?: string;
   mutualFriends?: number;
+  bio?: string;
   category?: string;
   year?: string;
-  requestTime?: string;
-  created_at?: string;
+  requesterId?: string;
+  mutualFriendIds?: string[];
 }
 
 interface EnhancedRequestCardProps {
@@ -53,11 +49,11 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const getInitials = () => {
-    return `${request.first_name?.[0] || ''}${request.last_name?.[0] || ''}`.toUpperCase();
+    return `${request.firstName?.[0] || ''}${request.lastName?.[0] || ''}`.toUpperCase();
   };
 
   const getDisplayName = () => {
-    return request.display_name || `${request.first_name} ${request.last_name}`;
+    return request.displayName || `${request.firstName} ${request.lastName}`;
   };
 
   const getTimeAgo = () => {
@@ -74,6 +70,17 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
     if (diffHours < 24) return `${Math.floor(diffHours)}h ago`;
     if (diffDays < 7) return `${Math.floor(diffDays)}d ago`;
     return `${Math.floor(diffDays / 7)}w ago`;
+  };
+
+  const isNewRequest = () => {
+    const timeString = request.requestTime || request.created_at;
+    if (!timeString) return true;
+    
+    const requestDate = new Date(timeString);
+    const now = new Date();
+    const diffHours = (now.getTime() - requestDate.getTime()) / (1000 * 60 * 60);
+    
+    return diffHours < 24; // New if less than 24 hours old
   };
 
   const handleAccept = async () => {
@@ -93,33 +100,29 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
         exit={{ opacity: 0, scale: 0.95, y: -20 }}
         transition={{ duration: 1.5 }}
       >
-          <Card className="border-green-300 border-l-4 border-l-green-500">
-            <div style={{ backgroundColor: '#f0fbf6' }} />
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-14 h-14 border-3 border-green-300">
+        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 border-2 border-green-300">
                 <AvatarImage src={request.avatar} alt={getDisplayName()} />
-                <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: C.success }}>
+                <AvatarFallback className="text-white font-semibold text-sm" style={{ backgroundColor: C.success }}>
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
                   </motion.div>
-                  <h3 className="font-semibold text-green-800 dark:text-green-200">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
                     You are now friends with {getDisplayName()}!
-                  </h3>
+                  </p>
                 </div>
-                <p className="text-sm text-green-600 dark:text-green-300">
-                  Friend request accepted successfully
-                </p>
               </div>
             </div>
           </CardContent>
@@ -137,27 +140,23 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
         exit={{ opacity: 0, scale: 0.95, x: -50 }}
         transition={{ duration: 1.0 }}
       >
-          <Card className="border-red-200">
-            <div style={{ backgroundColor: '#fff6f6' }} />
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-14 h-14 opacity-50">
+        <Card className="border-red-100 bg-red-50 dark:bg-red-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 opacity-50">
                 <AvatarImage src={request.avatar} alt={getDisplayName()} />
-                <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: C.grayLight || '#e5e7eb' }}>
+                <AvatarFallback className="text-white font-semibold text-sm" style={{ backgroundColor: C.grayLight || '#e5e7eb' }}>
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="h-5 w-5 text-red-500" />
-                  <h3 className="font-semibold text-red-700 dark:text-red-300">
-                    Request declined
-                  </h3>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm font-medium text-red-700 dark:text-red-300 truncate">
+                    Request from {getDisplayName()} declined
+                  </p>
                 </div>
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  Friend request from {getDisplayName()} has been declined
-                </p>
               </div>
             </div>
           </CardContent>
@@ -182,92 +181,58 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
       onHoverEnd={() => setIsHovered(false)}
       className="group cursor-pointer"
     >
-        <Card className={`glass-card hover:border-green-300 dark:hover:border-green-700 transition-all duration-300 overflow-hidden border-l-4 border-l-green-500 ${isLoading ? 'opacity-70' : ''}`}>
-          <div style={{ backgroundColor: 'rgba(255,255,255,0.8)' }} />
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
+      <Card className={`hover:border-primary/30 transition-all duration-300 ${isLoading ? 'opacity-70' : ''}`}>
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              <motion.div
-                animate={{ scale: isHovered ? 1.05 : 1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Avatar className="w-14 h-14 border-3 border-white dark:border-gray-800 shadow-lg">
-                  <AvatarImage src={request.avatar} alt={getDisplayName()} />
-                  <AvatarFallback className="text-white font-semibold text-lg" style={{ backgroundColor: C.success }}>
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-              </motion.div>
-              
-              {/* Request Indicator */}
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 rounded-full p-1 shadow-lg"
-                  style={{ backgroundColor: C.success }}
-              >
-                <div className="w-3 h-3 bg-white rounded-full"></div>
-              </motion.div>
+              <Avatar className="w-12 h-12 border-2 border-white dark:border-gray-800">
+                <AvatarImage src={request.avatar} alt={getDisplayName()} />
+                <AvatarFallback className="text-white font-semibold" style={{ backgroundColor: C.success }}>
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
             </div>
             
             {/* Request Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate text-lg mb-1">
-                    {getDisplayName()}
-                  </h3>
-                  
-                  <p className="text-sm text-muted-foreground mb-1">@{request.username}</p>
-                  
-                  {/* Request Time */}
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                    <Clock className="h-3 w-3" />
-                    <span>{getTimeAgo()}</span>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="font-semibold text-foreground truncate">
+                      {request.displayName || `${request.firstName} ${request.lastName}`}
+                    </h3>
+                    {isNewRequest() && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">New</span>
+                      </div>
+                    )}
                   </div>
+                  
+                  <p className="text-xs text-muted-foreground">@{request.username}</p>
                 </div>
                 
-                {/* New Request Badge */}
-                  <Badge className="text-white border-0 shadow-md" style={{ backgroundColor: C.success }}>
-                  New Request
-                </Badge>
+                {/* Request Time */}
+                <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                  <Clock className="h-3 w-3" />
+                  <span>{getTimeAgo()}</span>
+                </div>
               </div>
               
-              {/* Details */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                {request.category && (
-                  <div className="flex items-center gap-1">
-                    <GraduationCap className="h-3 w-3" />
-                    <span>{request.category}</span>
-                  </div>
-                )}
-                {request.year && (
-                  <div className="flex items-center gap-1">
-                    <span>•</span>
-                    <span>{request.year}</span>
-                  </div>
-                )}
-                {request.mutualFriends !== undefined && request.mutualFriends > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-3 w-3" />
-                    <span>{request.mutualFriends} mutual friends</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Bio */}
-              {request.bio && (
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
-                  {request.bio}
-                </p>
+              {/* Mutual Friends */}
+              {(request as any).mutualFriends !== undefined && (request as any).mutualFriends > 0 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                  <Heart className="h-3 w-3" />
+                  <span>{(request as any).mutualFriends} mutual friends</span>
+                </div>
               )}
               
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-3">
                 <Button 
                   size="sm" 
-                  className="flex-1 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex-1 h-8 text-white border-0 hover:opacity-90 transition-opacity"
                   onClick={handleAccept}
                   disabled={isLoading}
                   style={{ backgroundColor: C.success }}
@@ -276,15 +241,15 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
                     animate={{ scale: requestState === 'accepting' ? [1, 1.2, 1] : 1 }}
                     transition={{ duration: 0.2, repeat: requestState === 'accepting' ? Infinity : 0 }}
                   >
-                    <Check className="h-3 w-3 mr-2" />
+                    <Check className="h-3 w-3 mr-1.5" />
                   </motion.div>
-                  {requestState === 'accepting' ? 'Accepting...' : 'Accept'}
+                  <span className="text-xs font-medium">{requestState === 'accepting' ? 'Accepting...' : 'Accept'}</span>
                 </Button>
                 
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 transition-all duration-200"
+                  className="flex-1 h-8 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50 hover:border-red-300 hover:text-red-600 dark:hover:text-red-400 transition-all"
                   onClick={handleDecline}
                   disabled={isLoading}
                 >
@@ -292,15 +257,15 @@ export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
                     animate={{ rotate: requestState === 'declining' ? [0, -10, 10, -10, 0] : 0 }}
                     transition={{ duration: 0.3, repeat: requestState === 'declining' ? Infinity : 0 }}
                   >
-                    <X className="h-3 w-3 mr-2" />
+                    <X className="h-3 w-3 mr-1.5" />
                   </motion.div>
-                  {requestState === 'declining' ? 'Declining...' : 'Decline'}
+                  <span className="text-xs font-medium">{requestState === 'declining' ? 'Declining...' : 'Decline'}</span>
                 </Button>
                 
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="hover:bg-muted/50 hover:scale-105 transition-all duration-200"
+                  className="h-8 w-8 p-0 hover:bg-muted/50 transition-all"
                   onClick={() => onViewProfile?.(request)}
                   disabled={isLoading}
                 >

@@ -169,7 +169,7 @@ export default function Home() {
                   
                 </Link> */}
                 
-                <Link href="/signup">
+                <Link href="/comingsoon">
                   <Button
                     size="lg"
                     variant="default"

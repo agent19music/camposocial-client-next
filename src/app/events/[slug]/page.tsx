@@ -46,7 +46,10 @@ export default function SingleEventCard() {
   const router = useRouter()
   const eventId = selectedEvent ? selectedEvent.eventId || selectedEvent.id : ""
 
-  const ticketGroups: EventTicketGroup[] = selectedEvent?.ticketGroups || []
+  const ticketGroups: EventTicketGroup[] = useMemo(
+    () => selectedEvent?.ticketGroups || [],
+    [selectedEvent?.ticketGroups]
+  )
 
   useEffect(() => {
     setComments(selectedEvent?.comments || [])
@@ -86,7 +89,6 @@ export default function SingleEventCard() {
       const totalTickets = bundleQuantity * ticketsPerBundle
       const totalPrice = selectedGroup.price * bundleQuantity
       toast.success(`Reserved ${totalTickets} ticket(s) in ${selectedGroup.name}`)
-      console.log("Ticket reservation", { selectedGroup, bundles: bundleQuantity, totalTickets, totalPrice })
       return
     }
 
@@ -98,7 +100,6 @@ export default function SingleEventCard() {
 
     const totalPrice = basePrice * generalQuantity
     toast.success(`Reserved ${generalQuantity} ticket(s) for KES ${totalPrice.toFixed(2)}`)
-    console.log("Ticket reservation", { generalQuantity, totalPrice })
   }
 
   async function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {

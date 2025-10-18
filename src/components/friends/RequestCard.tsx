@@ -18,19 +18,15 @@ import {
   GraduationCap
 } from 'lucide-react';
 
-interface Request {
-  id: number | string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  display_name?: string;
-  avatar?: string;
+import { MinimalFriend } from '@/utils/types';
+
+interface Request extends MinimalFriend {
+  created_at?: string;
+  requestTime?: string;
   bio?: string;
-  mutualFriends?: number;
   category?: string;
   year?: string;
-  requestTime?: string;
-  created_at?: string;
+  mutualFriends?: number;
 }
 
 interface RequestCardProps {
@@ -53,11 +49,11 @@ export const RequestCard: React.FC<RequestCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const getInitials = () => {
-    return `${request.first_name?.[0] || ''}${request.last_name?.[0] || ''}`.toUpperCase();
+    return `${request.firstName?.[0] || ''}${request.lastName?.[0] || ''}`.toUpperCase();
   };
 
   const getDisplayName = () => {
-    return request.display_name || `${request.first_name} ${request.last_name}`;
+    return request.displayName || `${request.firstName} ${request.lastName}`;
   };
 
   const getTimeAgo = () => {

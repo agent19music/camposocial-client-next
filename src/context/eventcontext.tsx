@@ -23,6 +23,7 @@ const defaultValue: EventContextProps = {
   deleteEvent: () => Promise.resolve(false),
   toggleCommentLike: () => Promise.resolve(),
   addCommentReply: () => Promise.resolve(null),
+  refreshEvents: () => Promise.resolve(),
 };
 
 export const EventContext = createContext<EventContextProps>(defaultValue);
@@ -603,6 +604,7 @@ export default function EventProvider({ children }: EventProviderProps) {
     deleteEvent,
     toggleCommentLike,
     addCommentReply,
+    refreshEvents: fetchEvents,
   };
 
   return (

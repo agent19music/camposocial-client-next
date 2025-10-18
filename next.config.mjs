@@ -26,6 +26,12 @@ const nextConfig = {
             port: '',
             pathname: '/**', // This allows all paths under this hostname
           },
+                               {
+            protocol: 'https',
+            hostname: 'lh3.googleusercontent.com', // Cloudflare R2 hostname
+            port: '',
+            pathname: '/**', // This allows all paths under this hostname
+          },
         ],
         domains: ['m.media-amazon.com', 'ke.jumia.is',  'www.maccosmetics.com',
           'blushbox.store',

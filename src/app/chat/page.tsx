@@ -22,7 +22,6 @@ export default function ChatPage() {
     chatList, 
     fetchConversations,
     conversations,
-    generateConversationId,
     setFriendId,
     friendId,
     generateKeys,
@@ -37,7 +36,7 @@ export default function ChatPage() {
     setIsLoadingConversations(true);
     try {
       await getChatList();
-      await fetchConversations();
+    await fetchConversations();
     } catch (error) {
       console.error('Failed to load conversations:', error);
       toast.error('Failed to load conversations');
@@ -182,7 +181,6 @@ export default function ChatPage() {
       <div className={`${showChatWindow || !selectedFriend ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
         {selectedFriend ? (
           <ChatWindow
-            conversationId  ={currentUser && generateConversationId(currentUser.id, selectedFriend) || undefined}    
             friendId={selectedFriend}
             onBack={() => setSelectedFriend(null)}
           />

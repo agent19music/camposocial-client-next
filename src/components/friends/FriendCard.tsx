@@ -38,23 +38,9 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
-interface Friend {
-  id: number | string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  display_name?: string;
-  avatar?: string;
-  bio?: string;
-  isOnline?: boolean;
-  lastSeen?: string;
-  mutualFriends?: number;
-  category?: string;
-  isClose?: boolean;
-  messagePreview?: string;
-  messageTime?: string;
-  unreadCount?: number;
-}
+import { ChatFriend } from '@/utils/types';
+
+type Friend = ChatFriend;
 
 interface FriendCardProps {
   friend: Friend;
@@ -81,17 +67,17 @@ export const FriendCard: React.FC<FriendCardProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const getInitials = () => {
-    return `${friend.first_name?.[0] || ''}${friend.last_name?.[0] || ''}`.toUpperCase();
+    return `${friend.firstName?.[0] || ''}${friend.lastName?.[0] || ''}`.toUpperCase();
   };
 
   const getDisplayName = () => {
-    return friend.display_name || `${friend.first_name} ${friend.last_name}`;
+    return friend.displayName || `${friend.firstName} ${friend.lastName}`;
   };
 
   const getOnlineStatus = () => {
     if (friend.isOnline) return 'online';
     if (friend.lastSeen) {
-      const lastSeenTime = new Date(friend.lastSeen);
+      const lastSeenTime = friend.lastSeen instanceof Date ? friend.lastSeen : new Date(friend.lastSeen);
       const now = new Date();
       const diffHours = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60 * 60);
       if (diffHours < 1) return 'recently';
@@ -186,7 +172,7 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
-                    {friend.isClose ? (
+                    {friend.isCloseFriend ? (
                       <DropdownMenuItem className="text-yellow-600">
                         <Crown className="h-4 w-4 mr-2" />
                         Close Friend
@@ -266,9 +252,9 @@ export const FriendCard: React.FC<FriendCardProps> = ({
                     <p className="text-xs text-muted-foreground line-clamp-2">
                       {friend.messagePreview}
                     </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                      {friend.messageTime}
-                    </p>
+                    {/* <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                      {friend.messageTime}  
+                    </p> */}
                   </motion.div>
                 )}
               </AnimatePresence>

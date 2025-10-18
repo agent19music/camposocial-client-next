@@ -44,7 +44,7 @@ import { AuthContext } from "@/context/authcontext"
 import AddEvent from "@/components/addevent"
 
 export default function Dashboard() {
-const { events, isLoading, setCategory } = useEventContext()
+const { events, isLoading, setCategory, setOnchange, onchange } = useEventContext()
   const [activeFilter, setActiveFilter] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const { authToken } = useContext(AuthContext)

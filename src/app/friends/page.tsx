@@ -42,23 +42,24 @@ export default function FriendsPage() {
     removeFriend,
     blockUser,
     isLoadingUsers,
-    isLoadingSearch,
-    fetchFriends,
-    fetchUsers
+    isLoadingSearch
   } = useContext(UserContext);
 
-  console.log('receivedRequests', receivedRequests);
   
   // Get WebSocket context for notification counts
   const { notificationCounts, markFriendRequestsAsSeen } = useWebSocket();
+
+  console.log('received requests:', receivedRequests);
   
   const router = useRouter();
 
   // Fetch friends and users on mount
   useEffect(() => {
-    fetchFriends();
-    fetchUsers();
-  }, [fetchFriends, fetchUsers]);
+    if (users.length) {
+      return;
+    }
+    setRequestStates({});
+  }, [users.length]);
 
   // Quick access for desktop sidebar
   const quickAccessLinks = [
@@ -89,7 +90,7 @@ export default function FriendsPage() {
 
   // Friend actions
   const handleMessageFriend = (friend: any) => {
-    router.push(`/chat?user=${friend.username}`);
+    router.push(`/chat?user=${friend.id || friend.username}`);
   };
 
   const handleAddFriend = async (userId: string | number) => {
@@ -103,10 +104,8 @@ export default function FriendsPage() {
     try {
       await addFriend(reqId);
       
-      // Show success state briefly
       setRequestStates(prev => ({ ...prev, [reqId]: 'accepted' }));
       
-      // Remove the request after showing success
       setTimeout(() => {
         setRequestStates(prev => {
           const newState = { ...prev };
@@ -115,7 +114,6 @@ export default function FriendsPage() {
         });
       }, 2000);
     } catch (error) {
-      // Remove loading state on error
       setRequestStates(prev => {
         const newState = { ...prev };
         delete newState[reqId];
@@ -163,9 +161,9 @@ export default function FriendsPage() {
   // Filter friends based on search query
   const filteredFriends = friends.filter(friend => 
     !searchQuery || 
-    friend.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     friend.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${friend.first_name || ''} ${friend.last_name || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
+    `${friend.firstName || ''} ${friend.lastName || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -283,22 +281,15 @@ export default function FriendsPage() {
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-6"
                 >
-                  <div className="flex items-center justify-between">
-                 
-                    {receivedRequests.length > 0 && (
-                      <span className="text-sm text-muted-foreground bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">
-                        {receivedRequests.length} pending
-                      </span>
-                    )}  
-                  </div>
+     
 
                   {receivedRequests.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                       <AnimatePresence mode="popLayout">
                         {receivedRequests.map((request) => (
                           <EnhancedRequestCard
-                            key={request.id || request.username}
-                            request={request.user}
+                            key={request.id}
+                            request={request}
                             onAccept={handleAcceptRequest}
                             onDecline={handleDeclineRequest}
                             onViewProfile={handleViewProfile}

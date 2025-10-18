@@ -5,7 +5,6 @@ import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { set } from "date-fns";
 import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
 
  
@@ -27,7 +26,6 @@ export const ChatContext = createContext<ChatContextType>({
     generateKeys: async () => { },
     exportPublicKey: async () => null,
     keyStatus: 'unavailable',
-    generateConversationId: () => '',
     fetchConversations: async () => [],
     checkIfConversationExists: async () => false,
     conversations: [],
@@ -37,21 +35,19 @@ export const ChatContext = createContext<ChatContextType>({
     sendTypingIndicator: () => { },
     isTyping: false,
     isConnected: false,
+    ensureConversation: async () => null,
+    currentConversationId: null,
 });
 
 export default function ChatProvider({ children }: ChatProviderProps) {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
     
-    // Memoize currentUser to prevent unnecessary re-renders
-    const currentUser = useMemo(() => rawCurrentUser
-        ? {
-            id: rawCurrentUser.id,
-            firstName: rawCurrentUser.first_name,
-            lastName: rawCurrentUser.last_name,
-            email: rawCurrentUser.email,
-        }
-        : null, [rawCurrentUser?.id, rawCurrentUser?.first_name, rawCurrentUser?.last_name, rawCurrentUser?.email]);
+    const currentUser = useMemo(() => {
+        if (!rawCurrentUser) return null;
+        const { id, firstName, lastName, email } = rawCurrentUser;
+        return { id, firstName, lastName, email };
+    }, [rawCurrentUser]);
         
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [friendId, setFriendId] = useState<string | null>(null); 
@@ -60,10 +56,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     
     // WebSocket integration
-    const { socket, isConnected } = useWebSocket();
+    const { socket, isConnected, joinConversationRoom } = useWebSocket();
     
     // OpenPGP key management
     const [privateKey, setPrivateKey] = useState<openpgp.PrivateKey | null>(null);
@@ -83,9 +80,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
     // Rate limiting configuration
     const RATE_LIMIT_WINDOW = 60000; // 1 minute
-    const MAX_REQUESTS_PER_WINDOW = 20;
-    const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between requests
-    const DEBOUNCE_DELAY = 1000; // 1 second debounce for UI changes
+    const MAX_REQUESTS_PER_WINDOW = 50;
+    const MIN_REQUEST_INTERVAL = 500; // 0.5 seconds between requests
+    const DEBOUNCE_DELAY = 400; // Faster debounce for UI changes
 
     // Rate limiting function
     const canMakeRequest = useCallback((requestType: string): boolean => {
@@ -144,12 +141,109 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         endpointAvailabilityRef.current.set(endpoint, available);
     }, []);
 
+    const fetchConversations = useCallback(async (): Promise<ChatConversation[]> => { 
+        // Don't proceed if required data is missing or already fetching
+        if (!currentUser || !authToken || !isAuthenticated || !apiEndpoint || fetchingConversationsRef.current) {
+            return [];
+        }
+
+        // Rate limiting check - inline to avoid dependency
+        const now = Date.now();
+        if (now - rateLimitWindowRef.current > RATE_LIMIT_WINDOW) {
+            rateLimitWindowRef.current = now;
+            requestCountRef.current = 0;
+        }
+        
+        if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
+            console.warn('Rate limit exceeded for fetch_conversations');
+            return [];
+        }
+        
+        if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
+            console.warn('Request too frequent for fetch_conversations');
+            return [];
+        }
+        
+        if (activeRequestsRef.current.has('fetch_conversations')) {
+            console.warn('fetch_conversations already in progress');
+            return [];
+        }
+
+        // Check if endpoint is known to be unavailable
+        if (endpointAvailabilityRef.current.get('conversations') === false) {
+            console.warn('Conversations endpoint is known to be unavailable');
+            return [];
+        }
+
+        fetchingConversationsRef.current = true;
+        lastRequestTimeRef.current = now;
+        requestCountRef.current += 1;
+        activeRequestsRef.current.add('fetch_conversations');
+
+        // Abort previous request if it exists
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        try {
+            const response = await fetch(`${apiEndpoint}/conversations`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+                signal: controller.signal,
+            });
+
+            if (response.status === 404) {
+                // Conversations endpoint doesn't exist - mark as unavailable
+                endpointAvailabilityRef.current.set('conversations', false);
+                console.warn('Conversations endpoint not found (404). Disabling further requests.');
+                return [];
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const conversationsData = data.conversations?.map((conv: any) => ({
+                id: String(conv.conversation_id || conv.id),
+                friendId: String(conv.friend?.id || conv.friend_id),
+                friendName: conv.friend?.display_name || conv.friend_name || `${conv.friend?.first_name || ''} ${conv.friend?.last_name || ''}`.trim(),
+                friendAvatar: conv.friend?.avatar || conv.friend_avatar || '/default-avatar.png',
+                lastMessage: conv.last_message?.content || conv.last_message,
+                lastMessageTime: conv.last_message?.timestamp ? new Date(conv.last_message.timestamp) : (conv.last_message_time ? new Date(conv.last_message_time) : null),
+                unreadCount: conv.unread_count || 0,
+                isEmpty: !conv.last_message,
+                isOnline: Boolean(conv.friend?.is_online || conv.is_online),
+            })) || [];
+            
+            setConversations(conversationsData);
+            endpointAvailabilityRef.current.set('conversations', true);
+            return conversationsData;
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error("Error fetching conversations:", error);
+                // Don't show user-facing error for conversations as it might be optional
+            }
+            return [];
+        } finally {
+            fetchingConversationsRef.current = false;
+            activeRequestsRef.current.delete('fetch_conversations');
+        }
+        }, [currentUser, authToken, isAuthenticated, apiEndpoint]); // Only stable dependencies
+
     // Memoize setMessages to prevent unnecessary re-renders
     const setMessagesCallback = useCallback((messages: React.SetStateAction<ChatMessage[]>) => {
         setMessages(messages);
     }, []);
 
     // Stable API endpoint reference
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const stableApiEndpoint = useMemo(() => apiEndpoint, []);
 
     useEffect(() => {
@@ -158,110 +252,136 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [messages]);
 
-    useEffect(() => {
-        if (friendId && currentUser && authToken) {
-            // Check if conversation exists before fetching messages
-            checkIfConversationExistsMemoized(friendId).then(exists => {
-                if (exists) {
-                    getMessages(friendId, 10);
-                } else {
-                    setMessagesCallback([]);
-                }
-            });
-            fetchFriendPublicKey(friendId);
-        } else {
-            setMessagesCallback([]); 
-        }
-    }, [friendId, currentUser?.id, authToken]); // Simplified dependencies to prevent circular references
+    // Removed: Problematic useEffect that causes circular dependency
+    // This logic is now handled by the ChatWindow component directly
 
     // Load user's keys from localStorage when component mounts
     useEffect(() => {
-        if (currentUser) {
+        if (currentUser?.id) {
             loadKeys();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.id]); // Use stable currentUser.id instead of whole object
 
     // Load conversations when component mounts with debouncing
     useEffect(() => {
-        if (currentUser && authToken && isAuthenticated) {
-            const timeoutId = setTimeout(async () => {
-                // Call the function directly to avoid dependency issues
-                if (!fetchingConversationsRef.current) {
-                    try {
-                        await fetchConversations();
-                    } catch (error) {
-                        console.error('Error fetching conversations:', error);
-                        // Mark conversations as unavailable if they fail to load
-                        markEndpointAvailability('conversations', false);
-                    }
-                }
-            }, DEBOUNCE_DELAY);
-
-            return () => {
-                clearTimeout(timeoutId);
-            };
+        if (!(currentUser && authToken && isAuthenticated)) {
+            return;
         }
-    }, [currentUser?.id, authToken, isAuthenticated]); // Simplified dependencies to prevent circular references
+
+        const timeoutId = setTimeout(async () => {
+            if (!fetchingConversationsRef.current) {
+                try {
+                    await fetchConversations();
+                } catch (error) {
+                    console.error('Error fetching conversations:', error);
+                    markEndpointAvailability('conversations', false);
+                }
+            }
+        }, DEBOUNCE_DELAY);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [currentUser, authToken, isAuthenticated, fetchConversations, markEndpointAvailability]);
 
     // Cleanup effect
     useEffect(() => {
+            const activeRequests = activeRequestsRef.current;
         return () => {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
-            activeRequestsRef.current.clear();
+                activeRequests.clear();
         };
     }, []);
 
-    // WebSocket effect for real-time messaging
+    // CRITICAL FIX: WebSocket effect for real-time messaging with proper cleanup
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const handleNewMessage = (messageData: any) => {
-            console.log('Received new message:', messageData);
-            
-            // Add message to current conversation if it matches
-            if (friendId && messageData.conversation_id === parseInt(friendId)) {
-                setMessages(prev => [messageData, ...prev]);
-            }
-            
-            // Update conversations list
-            fetchConversations();
-        };
+        const handleNewMessage = async (messageData: any) => {
+            const incomingConversation = String(messageData.conversation_id);
 
-        const handleMessageSent = (data: any) => {
-            console.log('Message sent confirmation:', data);
-            // Message already added optimistically, just confirm delivery
+            if (!currentConversationId || incomingConversation !== currentConversationId) {
+                return;
+            }
+
+            const ciphertext = messageData.ciphertext || messageData.content;
+            const decrypted = messageData.encrypted && ciphertext
+                ? await decryptMessage(ciphertext, messageData.sender_id)
+                : messageData.content;
+
+            const newMessage: ChatMessage = {
+                id: messageData.id,
+                senderId: messageData.sender_id,
+                content: decrypted,
+                ciphertext,
+                timestamp: new Date(messageData.timestamp),
+                media: (messageData.media || []).map((item: any) => ({
+                    id: item.id,
+                    url: item.url,
+                    type: item.type,
+                    metadata: item.metadata || {},
+                })),
+                reactions: (messageData.reactions || []).map((reaction: any) => ({
+                    userId: reaction.user_id,
+                    reactionType: reaction.reaction_type,
+                })),
+                replyTo: messageData.reply_to,
+                isSent: messageData.sender_id === currentUser?.id,
+                isRead: Boolean(messageData.is_read),
+                encrypted: messageData.encrypted,
+            };
+
+            setMessages(prev => prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]);
         };
 
         const handleUserTyping = (data: any) => {
-            if (data.user_id === friendId) {
+            if (data.user_id === friendId && data.conversation_id === currentConversationId) {
                 setIsTyping(data.is_typing);
-                
+
+                if (typingTimeoutRef.current) {
+                    clearTimeout(typingTimeoutRef.current);
+                }
+
                 if (data.is_typing) {
-                    // Clear typing indicator after 3 seconds
-                    setTimeout(() => setIsTyping(false), 3000);
+                    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 5000);
                 }
             }
         };
 
+        const handleFriendStatus = (data: any) => {
+            // Update friend details or chat list
+            if (data.user_id === friendId) {
+                setFriendDetails(prev => {
+                    if (!prev || data.user_id !== prev.id) return prev;
+                    return {
+                        ...prev,
+                        isOnline: data.is_online,
+                        lastSeen: data.timestamp ? new Date(data.timestamp) : prev.lastSeen
+                    };
+                });
+            }
+        };
+
+        // Use the new WebSocket hook API which handles cleanup automatically
         socket.on('new_message', handleNewMessage);
-        socket.on('message_sent', handleMessageSent);
         socket.on('user_typing', handleUserTyping);
+        socket.on('friend_status_change', handleFriendStatus);
 
         return () => {
             socket.off('new_message', handleNewMessage);
-            socket.off('message_sent', handleMessageSent);
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
             socket.off('user_typing', handleUserTyping);
+            socket.off('friend_status_change', handleFriendStatus);
         };
-    }, [socket, isConnected, friendId, currentUser?.id]);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [socket, isConnected, friendId, currentUser?.id, currentConversationId]);
 
     // Generate a unique conversation ID from two user IDs
-    const generateConversationId = useCallback((userId1: string, userId2: string): string => {
-        // Sort IDs to ensure the same conversation ID regardless of order
-        const sortedIds = [userId1, userId2].sort();
-        return `${sortedIds[0]}_${sortedIds[1]}`;
-    }, []);
 
     // Fetch friend details including online status
     const getFriendDetails = useCallback(async (conversationId: string): Promise<{ name: string; avatar: string; isOnline: boolean } | null> => {
@@ -277,7 +397,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${authToken}`,
-                },
+                    },
             });
 
             if (convResponse.status === 404) {
@@ -288,18 +408,30 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             if (convResponse.ok) {
                 const convData = await convResponse.json();
-                console.log('Conversation data:', convData);
-                const friendDetails = {
-                    username: `${convData.first_name} ${convData.last_name}`,
-                    avatar: convData.avatar || '',
-                    isOnline: convData.is_online || false,
-                    id: convData.friend_id
+                const normalized: ChatFriend = {
+                    id: String(convData.friend?.id ?? convData.friend_id),
+                    username: convData.friend?.username || convData.username || '',
+                    firstName: convData.friend?.first_name || convData.first_name,
+                    lastName: convData.friend?.last_name || convData.last_name,
+                    avatar: convData.friend?.avatar || convData.avatar || '',
+                    displayName: convData.friend?.display_name || convData.display_name || `${convData.first_name} ${convData.last_name}`,
+                    isOnline: Boolean(convData.is_online),
+                    lastSeen: convData.last_seen ? new Date(convData.last_seen) : null,
+                    isCloseFriend: Boolean(convData.is_close_friend),
+                    friendshipId: convData.friendship_id || 0,
+                    conversationId,
+                    unreadCount: convData.unread_count || 0,
+                    mutualFriends: convData.mutual_friends || 0,
+                    category: convData.category || 'friends',
+                    bio: convData.bio || '',
+                    messagePreview: convData.last_message?.content || null,
+                    messageTime: convData.last_message?.timestamp ? new Date(convData.last_message.timestamp) : new Date(),
                 };
-                setFriendDetails(friendDetails);
+                setFriendDetails(normalized);
                 return {
-                    name: `${convData.first_name} ${convData.last_name}`,
-                    avatar: convData.avatar || '',
-                    isOnline: convData.is_online || false
+                    name: normalized.displayName,
+                    avatar: normalized.avatar,
+                    isOnline: normalized.isOnline
                 };
             }
         } catch (error) {
@@ -310,125 +442,29 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         return null;
     }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
 
-    // Check if a conversation with a friend exists (has any messages)
+    // Legacy conversation existence check - inline implementation to avoid circular dependency
     const checkIfConversationExists = useCallback(async (friendId: string): Promise<boolean> => {
-        if (!currentUser || !authToken || !canMakeRequest('conversation_exists')) {
-            return false;
-        }
-
-        markRequestStart('conversation_exists');
-
+        if (!currentUser || !authToken) return false;
+        
         try {
-            // First try the dedicated endpoint
-            const response = await fetch(`${apiEndpoint}/conversation-exists/${friendId}`, {
-                method: 'GET',
+            const response = await fetch(`${apiEndpoint}/conversations/with/${friendId}`, {
+                method: 'POST',
                 headers: {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
 
-            // Handle 404 errors specifically - this means the endpoint doesn't exist
-            if (response.status === 404) {
-                markEndpointAvailability('conversation-exists', false);
-                // Fallback: check for messages directly
-                return await checkMessagesExistFallback(friendId);
-            }
-
-            // Handle other HTTP errors
             if (!response.ok) {
-                console.warn(`Error ${response.status} checking if conversation exists, falling back to message check`);
-                return await checkMessagesExistFallback(friendId);
+                return false;
             }
 
-            // Process successful response
             const data = await response.json();
-            return data.exists;
+            return Boolean(data.conversation_id);
         } catch (error) {
-            console.error("Error checking if conversation exists:", error);
-            return await checkMessagesExistFallback(friendId);
-        } finally {
-            markRequestEnd('conversation_exists');
-        }
-    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
-
-    // Fallback method to check if messages exist
-    const checkMessagesExistFallback = useCallback(async (friendId: string): Promise<boolean> => {
-        if (!canMakeRequest('messages_exist_fallback')) {
+            console.error('Error checking conversation existence', error);
             return false;
         }
-
-        markRequestStart('messages_exist_fallback');
-
-        try {
-            const messages = await getMessages(friendId, 1);
-            return messages.length > 0;
-        } catch (error) {
-            console.error("Error in fallback message check:", error);
-            return false;
-        } finally {
-            markRequestEnd('messages_exist_fallback');
-        }
-    }, [canMakeRequest, markRequestStart, markRequestEnd]); // Note: getMessages will be defined below
-
-    // Add getMessages dependency to checkMessagesExistFallback  
-    const checkMessagesExistFallbackMemoized = useCallback(async (friendId: string): Promise<boolean> => {
-        if (!canMakeRequest('messages_exist_fallback')) {
-            return false;
-        }
-
-        markRequestStart('messages_exist_fallback');
-
-        try {
-            const messages = await getMessages(friendId, 1);
-            return messages.length > 0;
-        } catch (error) {
-            console.error("Error in fallback message check:", error);
-            return false;
-        } finally {
-            markRequestEnd('messages_exist_fallback');
-        }
-    }, [canMakeRequest, markRequestStart, markRequestEnd]); // Remove getMessages to prevent circular dependency
-
-    // Update checkIfConversationExists to use the memoized fallback
-    const checkIfConversationExistsMemoized = useCallback(async (friendId: string): Promise<boolean> => {
-        if (!currentUser || !authToken || !canMakeRequest('conversation_exists')) {
-            return false;
-        }
-
-        markRequestStart('conversation_exists');
-
-        try {
-            // First try the dedicated endpoint
-            const response = await fetch(`${apiEndpoint}/conversation-exists/${friendId}`, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${authToken}`,
-                },
-            });
-
-            // Handle 404 errors specifically - this means the endpoint doesn't exist
-            if (response.status === 404) {
-                markEndpointAvailability('conversation-exists', false);
-                // Fallback: check for messages directly
-                return await checkMessagesExistFallbackMemoized(friendId);
-            }
-
-            // Handle other HTTP errors
-            if (!response.ok) {
-                console.warn(`Error ${response.status} checking if conversation exists, falling back to message check`);
-                return await checkMessagesExistFallbackMemoized(friendId);
-            }
-
-            // Process successful response
-            const data = await response.json();
-            return data.exists;
-        } catch (error) {
-            console.error("Error checking if conversation exists:", error);
-            return await checkMessagesExistFallbackMemoized(friendId);
-        } finally {
-            markRequestEnd('conversation_exists');
-        }
-    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, checkMessagesExistFallbackMemoized]);
+    }, [currentUser, authToken, apiEndpoint]);
 
     const fetchFriendPublicKey = useCallback(async (userId: string): Promise<openpgp.PublicKey | null> => {
         // Check if we already have this friend's public key
@@ -522,6 +558,54 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [privateKey]);
 
+    const ensureConversation = useCallback(async (targetId: string): Promise<string | null> => {
+        if (!currentUser || !authToken) return null;
+
+        const response = await fetch(`${apiEndpoint}/conversations/with/${targetId}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${authToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to ensure conversation');
+        }
+
+        const data = await response.json();
+        const conversationId = data.conversation_id ? String(data.conversation_id) : null;
+
+        if (conversationId) {
+            setCurrentConversationId(conversationId);
+            joinConversationRoom(conversationId);
+
+            if (data.friend) {
+                const normalized: ChatFriend = {
+                    id: String(data.friend.id),
+                    username: data.friend.username,
+                    firstName: data.friend.first_name,
+                    lastName: data.friend.last_name,
+                    avatar: data.friend.avatar || '',
+                    displayName: data.friend.display_name || `${data.friend.first_name} ${data.friend.last_name}`,
+                    isOnline: Boolean(data.is_online),
+                        lastSeen: data.last_seen ? new Date(data.last_seen) : null,
+                    isCloseFriend: Boolean(data.is_close_friend),
+                    friendshipId: data.friendship_id || 0,
+                    conversationId,
+                        unreadCount: data.unread_count || 0,
+                        mutualFriends: data.mutual_friends || 0,
+                        category: data.category || 'friends',
+                        bio: data.friend.bio || '',
+                        messagePreview: data.last_message?.content || null,
+                        messageTime: data.last_message?.timestamp ? new Date(data.last_message.timestamp) : new Date(),
+                };
+                setFriendDetails(normalized);
+            }
+        }
+
+        return conversationId;
+    }, [apiEndpoint, authToken, currentUser, joinConversationRoom]);
+
     const sendMessage = useCallback(async (content: string, media: FileList | null, replyTo?: number) => {
         if (!friendId || !currentUser || !authToken) {
             toast.error("Cannot send message: missing required information");
@@ -535,30 +619,59 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         markRequestStart('send_message');
 
         try {
-            const conversationId = generateConversationId(currentUser.id, friendId);
+            const conversationId = await ensureConversation(friendId);
+            if (!conversationId) {
+                throw new Error('Conversation could not be created');
+            }
+
             let uploadedMedia: ChatMedia[] = [];
 
+            // Inline uploadMedia to avoid circular dependency
             if (media && media.length > 0) {
-                uploadedMedia = await uploadMedia(media);
+                if (canMakeRequest('upload_media')) {
+                    markRequestStart('upload_media');
+                    try {
+                        const formData = new FormData();
+                        Array.from(media).forEach((file, index) => {
+                            formData.append(`media_${index}`, file);
+                        });
+
+                        const uploadResponse = await fetch(`${apiEndpoint}/upload`, {
+                            method: 'POST',
+                            headers: {
+                                Authorization: `Bearer ${authToken}`,
+                            },
+                            body: formData,
+                        });
+
+                        if (uploadResponse.ok) {
+                            uploadedMedia = await uploadResponse.json();
+                            markEndpointAvailability('upload', true);
+                        }
+                    } catch (uploadError) {
+                        console.error("Error uploading media:", uploadError);
+                    } finally {
+                        markRequestEnd('upload_media');
+                    }
+                }
             }
 
             const { encrypted, isEncrypted } = await encryptMessage(content, friendId);
 
-            // Optimistically add message to UI
             const optimisticMessage: ChatMessage = {
-                id: Date.now(), // Temporary ID
+                id: Date.now(),
                 senderId: currentUser.id,
                 content: encrypted,
                 timestamp: new Date(),
                 media: uploadedMedia,
                 reactions: [],
                 replyTo: replyTo,
-                isSent: false, // Will be updated when response comes
+                isSent: false,
                 isRead: false,
                 encrypted: isEncrypted
             };
 
-            setMessages(prev => [optimisticMessage, ...prev]);
+    setMessages(prev => [optimisticMessage, ...prev]);
 
             const response = await fetch(`${apiEndpoint}/messages`, {
                 method: 'POST',
@@ -577,9 +690,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             });
 
             if (!response.ok) {
-                // Remove optimistic message on failure
                 setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
-                
                 if (response.status === 404) {
                     markEndpointAvailability('messages', false);
                     throw new Error('Messaging endpoint not available');
@@ -588,33 +699,42 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }
 
             const result = await response.json();
-            
-            // Update optimistic message with real data
-            setMessages(prev => prev.map(msg => 
-                msg.id === optimisticMessage.id 
-                    ? { ...msg, id: result.message_id, isSent: true }
+
+            setMessages(prev => prev.map(msg =>
+                msg.id === optimisticMessage.id
+                    ? {
+                        ...msg,
+                        id: result.message_id,
+                        isSent: true,
+                        timestamp: new Date(result.message_data.timestamp),
+                        content,
+                        ciphertext: encrypted,
+                    }
                     : msg
             ));
 
             markEndpointAvailability('messages', true);
-            
+
         } catch (error) {
             console.error("Error sending message:", error);
             toast.error("Failed to send message");
         } finally {
             markRequestEnd('send_message');
         }
-    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, encryptMessage]);
+    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, encryptMessage]);
 
     // Send typing indicator
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const sendTypingIndicator = useCallback((isTyping: boolean) => {
-        if (socket && isConnected && friendId) {
-            socket.emit('typing', {
-                recipient_id: friendId,
-                is_typing: isTyping
-            });
-        }
-    }, [socket, isConnected, friendId]);
+        if (socket && isConnected && friendId && currentConversationId) {
+      socket.emit('typing', {
+        recipient_id: friendId,
+        conversation_id: currentConversationId,
+        is_typing: isTyping
+      });
+    }
+  }, [socket, isConnected, friendId, currentConversationId]);
 
     const getMessages = useCallback(async (friendId: string, batchSize: number, lastMessageId?: number): Promise<ChatMessage[]> => {
         if (!currentUser || !authToken || fetchingMessagesRef.current) {
@@ -629,8 +749,13 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         markRequestStart('get_messages');
 
         try {
-            const conversationId = generateConversationId(currentUser.id, friendId);
-            const url = new URL(`${apiEndpoint}/messages/${conversationId}`);
+            const conversationId = await ensureConversation(friendId);
+            if (!conversationId) {
+                markEndpointAvailability('messages', false);
+                return [];
+            }
+
+            const url = new URL(`${apiEndpoint}/conversations/${conversationId}/messages`);
             url.searchParams.append('limit', batchSize.toString());
             if (lastMessageId) {
                 url.searchParams.append('before', lastMessageId.toString());
@@ -645,7 +770,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             if (response.status === 404) {
                 markEndpointAvailability('messages', false);
-                // Don't show error for new conversations with no messages
                 return [];
             }
 
@@ -659,10 +783,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             markEndpointAvailability('messages', true);
             const data = await response.json();
-            const messagesData = await Promise.all(data.messages.map(async (msg: any) => {
-                let decryptedContent = msg.content;
-                if (msg.encrypted) {
-                    decryptedContent = await decryptMessage(msg.content, msg.sender_id);
+            const messagesData = await Promise.all((data.messages || []).map(async (msg: any) => {
+                const encryptedContent = msg.ciphertext || msg.content;
+                let decryptedContent = encryptedContent;
+                if (msg.encrypted && encryptedContent) {
+                    decryptedContent = await decryptMessage(encryptedContent, msg.sender_id);
                 }
 
                 return {
@@ -670,8 +795,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     senderId: msg.sender_id,
                     content: decryptedContent,
                     timestamp: new Date(msg.timestamp),
-                    media: msg.media || null,
-                    reactions: msg.reactions || [],
+                    media: (msg.media || []).map((mediaItem: any) => ({
+                        url: mediaItem.url,
+                        type: mediaItem.type,
+                    })),
+                    reactions: (msg.reactions || []).map((reaction: any) => ({
+                        userId: reaction.user_id,
+                        reactionType: reaction.reaction_type
+                    })),
                     replyTo: msg.reply_to,
                     isSent: msg.sender_id === currentUser.id,
                     isRead: msg.is_read,
@@ -691,7 +822,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             fetchingMessagesRef.current = false;
             markRequestEnd('get_messages');
         }
-    }, [currentUser, authToken, stableApiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, generateConversationId, setMessagesCallback, decryptMessage]);
+    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, setMessagesCallback, decryptMessage]);
 
     const getChatList = async () => {
         if (!currentUser || !authToken || !canMakeRequest('get_chat_list')) {
@@ -721,10 +852,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             markEndpointAvailability('friends', true);
             const data = await response.json();
             const chatListData = data.friends.map((friend: any) => ({
-                id: friend.id,
+                id: String(friend.id),
                 firstName: friend.first_name,
                 lastName: friend.last_name,
-                avatar: friend.avatar || ''
+                avatar: friend.avatar || '',
+                isCloseFriend: Boolean(friend.is_close_friend),
             }));
 
             setChatList(chatListData);
@@ -891,101 +1023,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [currentUser, authToken, canMakeRequest, markRequestStart, apiEndpoint, markEndpointAvailability, markRequestEnd]);
 
-    const fetchConversations = useCallback(async (): Promise<ChatConversation[]> => { 
-        // Don't proceed if required data is missing or already fetching
-        if (!currentUser || !authToken || !isAuthenticated || !apiEndpoint || fetchingConversationsRef.current) {
-            return [];
-        }
 
-        // Rate limiting check - inline to avoid dependency
-        const now = Date.now();
-        if (now - rateLimitWindowRef.current > RATE_LIMIT_WINDOW) {
-            rateLimitWindowRef.current = now;
-            requestCountRef.current = 0;
-        }
-        
-        if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
-            console.warn('Rate limit exceeded for fetch_conversations');
-            return [];
-        }
-        
-        if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
-            console.warn('Request too frequent for fetch_conversations');
-            return [];
-        }
-        
-        if (activeRequestsRef.current.has('fetch_conversations')) {
-            console.warn('fetch_conversations already in progress');
-            return [];
-        }
-
-        // Check if endpoint is known to be unavailable
-        if (endpointAvailabilityRef.current.get('conversations') === false) {
-            console.warn('Conversations endpoint is known to be unavailable');
-            return [];
-        }
-
-        fetchingConversationsRef.current = true;
-        lastRequestTimeRef.current = now;
-        requestCountRef.current += 1;
-        activeRequestsRef.current.add('fetch_conversations');
-
-        // Abort previous request if it exists
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
-
-        try {
-            const response = await fetch(`${apiEndpoint}/conversations`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                signal: controller.signal,
-            });
-
-            if (response.status === 404) {
-                // Conversations endpoint doesn't exist - mark as unavailable
-                endpointAvailabilityRef.current.set('conversations', false);
-                console.warn('Conversations endpoint not found (404). Disabling further requests.');
-                return [];
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            const conversationsData = data.conversations?.map((conv: any) => ({
-                id: conv.id,
-                friendId: conv.friend_id,
-                friendName: conv.friend_name,
-                friendAvatar: conv.friend_avatar || '/default-avatar.png',
-                lastMessage: conv.last_message,
-                lastMessageTime: conv.last_message_time ? new Date(conv.last_message_time) : null,
-                unreadCount: conv.unread_count || 0,
-                isEmpty: !conv.last_message,
-                isOnline: false, // Will be updated via socket
-            })) || [];
-            
-            setConversations(conversationsData);
-            endpointAvailabilityRef.current.set('conversations', true);
-            return conversationsData;
-        } catch (error: any) {
-            if (error.name !== 'AbortError') {
-                console.error("Error fetching conversations:", error);
-                // Don't show user-facing error for conversations as it might be optional
-            }
-            return [];
-        } finally {
-            fetchingConversationsRef.current = false;
-            activeRequestsRef.current.delete('fetch_conversations');
-        }
-    }, [currentUser?.id, authToken, isAuthenticated, stableApiEndpoint]); // Only stable dependencies
 
     const generateKeys = async () => {
         if (!currentUser) {
@@ -1133,16 +1171,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 generateKeys,
                 exportPublicKey,
                 keyStatus,
-                generateConversationId,
                 fetchConversations,
                 checkIfConversationExists,
                 conversations,
                 getFriendDetails,
                 friendDetails,
-                currentUser,
                 sendTypingIndicator,
                 isTyping,
-                isConnected: isConnected && socket !== null
+                isConnected: isConnected && socket !== null,
+                ensureConversation,
+                currentConversationId: currentConversationId,
+                currentUser
             }}
         >
             {children}
@@ -1153,28 +1192,3 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 export const useChat = () => useContext(ChatContext);
 
 // Debug component to test for infinite re-renders
-export const ChatDebugger = () => {
-    const renderCount = useRef(0);
-    renderCount.current += 1;
-    
-    useEffect(() => {
-        console.log('ChatContext re-rendered:', renderCount.current);
-        if (renderCount.current > 5) {
-            console.warn('⚠️ ChatContext has re-rendered more than 5 times - potential infinite re-render detected!');
-        }
-    });
-    
-    return null;
-};
-
-// Test utility to verify our fixes
-export const ChatContextTester = () => {
-    useEffect(() => {
-        console.log('✅ ChatContext dependency fix test: Component mounted successfully');
-        return () => {
-            console.log('✅ ChatContext dependency fix test: Component unmounted successfully');
-        };
-    }, []);
-    
-    return null;
-};
