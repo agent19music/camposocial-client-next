@@ -93,7 +93,9 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
     debouncedSearch.cancel();
   };
 
-  const displayUsers = searchQuery.trim() ? searchResults : users.slice(0, 10); // Show top 10 suggestions when not searching
+  const displayUsers = searchQuery.trim()
+    ? searchResults
+    : users.slice(0, 10);
   const showEmptyState = hasSearched && searchResults.length === 0 && !isSearching;
 
   return (

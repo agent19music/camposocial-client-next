@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,13 @@ export default function CompleteProfile() {
   const { completeProfile } = useContext(AuthContext);
   const { theme } = useTheme();
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const normalizedApiEndpoint = useMemo(() => {
+    if (!apiEndpoint) {
+      return null;
+    }
+    const trimmed = apiEndpoint.trim().replace(/^['"]|['"]$/g, '');
+    return trimmed.replace(/\/+$/, '');
+  }, [apiEndpoint]);
   const [formData, setFormData] = useState({
     username: '',
     category: '',
@@ -38,7 +45,8 @@ export default function CompleteProfile() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [usernameDebounce, setUsernameDebounce] = useState<NodeJS.Timeout>();
+  const usernameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const usernameRequestControllerRef = useRef<AbortController | null>(null);
 
   // Check username availability
   const checkUsernameAvailability = async (username: string) => {
@@ -48,40 +56,50 @@ export default function CompleteProfile() {
     }
 
     setUsernameStatus('checking');
+    if (usernameRequestControllerRef.current) {
+      usernameRequestControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    usernameRequestControllerRef.current = controller;
+    const endpoint = normalizedApiEndpoint
+      ? `${normalizedApiEndpoint}/check-username`
+      : '/api/check-username';
     
     try {
-      // First try the API route which forwards to backend
-      const response = await fetch('/api/check-username', {
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.available !== undefined) {
-          setUsernameStatus(data.available ? 'available' : 'taken');
-          return;
-        }
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
       }
-      
-      // Fallback: If backend endpoint doesn't exist yet, do basic validation
-      // In production, you should always check with backend
-      // For now, we'll consider it available if it passes basic rules
-      if (username.length >= 3 && username.length <= 20 && /^[a-z0-9_]+$/.test(username)) {
-        setUsernameStatus('available');
-      } else {
-        setUsernameStatus('idle');
+
+      const data = await response.json();
+      if (typeof data.available === 'boolean') {
+        setUsernameStatus(data.available ? 'available' : 'taken');
+        return;
       }
+      throw new Error('Invalid response');
     } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
       console.error('Error checking username:', error);
-      // Fallback to basic validation if network error
       if (username.length >= 3 && username.length <= 20 && /^[a-z0-9_]+$/.test(username)) {
         setUsernameStatus('available');
       } else {
         setUsernameStatus('idle');
+      }
+    } finally {
+      if (usernameRequestControllerRef.current === controller) {
+        usernameRequestControllerRef.current = null;
       }
     }
   };
@@ -92,17 +110,26 @@ export default function CompleteProfile() {
     setFormData(prev => ({ ...prev, username }));
     
     // Clear existing debounce
-    if (usernameDebounce) {
-      clearTimeout(usernameDebounce);
+    if (usernameDebounceRef.current) {
+      clearTimeout(usernameDebounceRef.current);
     }
     
     // Set new debounce
-    const timeout = setTimeout(() => {
+    usernameDebounceRef.current = setTimeout(() => {
       checkUsernameAvailability(username);
     }, 500);
-    
-    setUsernameDebounce(timeout);
   };
+
+  useEffect(() => {
+    return () => {
+      if (usernameDebounceRef.current) {
+        clearTimeout(usernameDebounceRef.current);
+      }
+      if (usernameRequestControllerRef.current) {
+        usernameRequestControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -89,12 +89,14 @@ interface WebSocketContextProps {
     };
     created_at: string;
   }>;
+  offlineMessages: Record<string, any[]>;
   joinConversation: (conversationId: string) => void;
   leaveConversation: (conversationId: string) => void;
   joinedConversations: string[];
   removePendingRequest: (requestId: string | number) => void;
   appendFriend: (friend: any) => void;
   updateFriendList: (payload: { friend?: any; action: 'add' | 'remove'; requesterId?: string | number }) => void;
+  consumeOfflineConversationMessages: (conversationId: string) => any[];
 }
 
 const defaultValue: WebSocketContextProps = {
@@ -109,12 +111,14 @@ const defaultValue: WebSocketContextProps = {
   latestFriendRequest: null,
   latestYapNotification: null,
   pendingRequests: [],
+  offlineMessages: {},
   joinConversation: () => {},
   leaveConversation: () => {},
   joinedConversations: [],
   removePendingRequest: () => {},
   appendFriend: () => {},
   updateFriendList: () => {},
+  consumeOfflineConversationMessages: () => [],
 };
 
 export const WebSocketContext = createContext<WebSocketContextProps>(defaultValue);
@@ -147,6 +151,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   }>>([]);
   const [friends, setFriends] = useState<any[]>([]);
   const [joinedConversations, setJoinedConversations] = useState<JoinableConversation[]>([]);
+  const [offlineMessages, setOfflineMessages] = useState<Record<string, any[]>>({});
 
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
@@ -178,6 +183,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       auth: {
         token: authToken,
       },
+    });
+
+    newSocket.on('new_message', (data: any) => {
+      const conversationId = String(data.conversation_id || data.message?.conversation_id || '');
+      if (!conversationId) {
+        return;
+      }
+
+      setOfflineMessages(prev => {
+        const existing = prev[conversationId] || [];
+        return {
+          ...prev,
+          [conversationId]: [...existing, data],
+        };
+      });
     });
 
     newSocket.on('connect', () => {
@@ -470,6 +490,23 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [appendFriend, removePendingRequest]);
 
+  const consumeOfflineConversationMessages = useCallback((conversationId: string) => {
+    const key = String(conversationId);
+    const queued = offlineMessages[key] || [];
+
+    if (!queued.length) {
+      return [];
+    }
+
+    setOfflineMessages(prev => {
+      const clone = { ...prev };
+      delete clone[key];
+      return clone;
+    });
+
+    return queued;
+  }, [offlineMessages]);
+
   const value: WebSocketContextProps = {
     socket,
     isConnected,
@@ -488,6 +525,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     removePendingRequest,
     appendFriend,
     updateFriendList,
+    offlineMessages,
+    consumeOfflineConversationMessages,
   };
 
   return (

@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useWebSocket as useWebSocketContext } from "./websocket-context";
 import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
 
  
@@ -61,6 +62,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     
     // WebSocket integration
     const { socket, isConnected, joinConversationRoom } = useWebSocket();
+    const { consumeOfflineConversationMessages } = useWebSocketContext();
     
     // OpenPGP key management
     const [privateKey, setPrivateKey] = useState<openpgp.PrivateKey | null>(null);
@@ -296,23 +298,37 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
     }, []);
 
+    const decryptMessage = useCallback(async (content: string, senderId: string): Promise<string> => {
+        if (!privateKey) {
+            return content;
+        }
+
+        try {
+            const message = await openpgp.readMessage({ armoredMessage: content });
+            const { data: decrypted } = await openpgp.decrypt({
+                message,
+                decryptionKeys: privateKey
+            });
+
+            const decryptedString = String(decrypted);
+            return decryptedString;
+        } catch (error) {
+            console.error("Error decrypting message:", error);
+            return content;
+        }
+    }, [privateKey]);
+
     // CRITICAL FIX: WebSocket effect for real-time messaging with proper cleanup
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const handleNewMessage = async (messageData: any) => {
-            const incomingConversation = String(messageData.conversation_id);
-
-            if (!currentConversationId || incomingConversation !== currentConversationId) {
-                return;
-            }
-
+        const buildIncomingMessage = async (messageData: any): Promise<ChatMessage | null> => {
             const ciphertext = messageData.ciphertext || messageData.content;
             const decrypted = messageData.encrypted && ciphertext
                 ? await decryptMessage(ciphertext, messageData.sender_id)
                 : messageData.content;
 
-            const newMessage: ChatMessage = {
+            return {
                 id: messageData.id,
                 senderId: messageData.sender_id,
                 content: decrypted,
@@ -333,6 +349,26 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 isRead: Boolean(messageData.is_read),
                 encrypted: messageData.encrypted,
             };
+        };
+
+        const handleNewMessage = async (messageData: any) => {
+            const incomingConversation = String(messageData.conversation_id);
+            const isActiveConversation = currentConversationId && incomingConversation === currentConversationId;
+
+            if (!isActiveConversation) {
+                await fetchConversations();
+                if (messageData.sender_username) {
+                    toast.success(`New message from ${messageData.sender_username}`);
+                } else {
+                    toast.success('New message received');
+                }
+                return;
+            }
+
+            const newMessage = await buildIncomingMessage(messageData);
+            if (!newMessage) {
+                return;
+            }
 
             setMessages(prev => prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]);
         };
@@ -379,7 +415,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             socket.off('friend_status_change', handleFriendStatus);
         };
             // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [socket, isConnected, friendId, currentUser?.id, currentConversationId]);
+        }, [socket, isConnected, friendId, currentUser?.id, currentConversationId, decryptMessage, fetchConversations]);
 
     // Generate a unique conversation ID from two user IDs
 
@@ -537,27 +573,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [publicKey, friendPublicKeys]);
 
-    const decryptMessage = useCallback(async (content: string, senderId: string): Promise<string> => {
-        if (!privateKey) {
-            return content;
-        }
-
-        try {
-            const message = await openpgp.readMessage({ armoredMessage: content });
-            const { data: decrypted } = await openpgp.decrypt({
-                message,
-                decryptionKeys: privateKey
-            });
-
-            // Convert the decrypted data to string
-            const decryptedString = String(decrypted);
-            return decryptedString;
-        } catch (error) {
-            console.error("Error decrypting message:", error);
-            return content;
-        }
-    }, [privateKey]);
-
     const ensureConversation = useCallback(async (targetId: string): Promise<string | null> => {
         if (!currentUser || !authToken) return null;
 
@@ -578,6 +593,41 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         if (conversationId) {
             setCurrentConversationId(conversationId);
             joinConversationRoom(conversationId);
+
+            const queued = consumeOfflineConversationMessages(conversationId);
+            if (queued.length) {
+                for (const payload of queued) {
+                    const normalized = payload.message || payload;
+                    const ciphertext = normalized.ciphertext || normalized.content;
+                    const decrypted = normalized.encrypted && ciphertext
+                        ? await decryptMessage(ciphertext, normalized.sender_id)
+                        : normalized.content;
+
+                    const newMessage: ChatMessage = {
+                        id: normalized.id,
+                        senderId: normalized.sender_id,
+                        content: decrypted,
+                        ciphertext,
+                        timestamp: new Date(normalized.timestamp),
+                        media: (normalized.media || []).map((item: any) => ({
+                            id: item.id,
+                            url: item.url,
+                            type: item.type,
+                            metadata: item.metadata || {},
+                        })),
+                        reactions: (normalized.reactions || []).map((reaction: any) => ({
+                            userId: reaction.user_id,
+                            reactionType: reaction.reaction_type,
+                        })),
+                        replyTo: normalized.reply_to,
+                        isSent: normalized.sender_id === currentUser?.id,
+                        isRead: Boolean(normalized.is_read),
+                        encrypted: normalized.encrypted,
+                    };
+
+                    setMessages(prev => prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]);
+                }
+            }
 
             if (data.friend) {
                 const normalized: ChatFriend = {
@@ -604,7 +654,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
 
         return conversationId;
-    }, [apiEndpoint, authToken, currentUser, joinConversationRoom]);
+    }, [apiEndpoint, authToken, currentUser, joinConversationRoom, consumeOfflineConversationMessages, decryptMessage]);
 
     const sendMessage = useCallback(async (content: string, media: FileList | null, replyTo?: number) => {
         if (!friendId || !currentUser || !authToken) {

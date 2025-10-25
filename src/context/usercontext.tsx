@@ -27,9 +27,9 @@ const defaultValue: UserContextProps = {
   searchUsers: async () => [],
   isLoadingUsers: false,
   isLoadingSearch: false,
-  fetchFriends: async () => {},
+  fetchFriends: async (_opts?: { force?: boolean }) => {},
   fetchUsers: async () => {},
-  fetchPendingRequests: async () => {},
+  fetchPendingRequests: async (_opts?: { force?: boolean }) => {},
 };
 
 export const UserContext = createContext<UserContextProps>(defaultValue);
@@ -213,25 +213,52 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   }, [pendingData, normalizePendingRequests]);
 
   async function sendFriendRequest(receipientId: string) {
+    if (!apiEndpoint || !authToken) {
+      toast.error('Cannot send request right now. Please try again later.');
+      return;
+    }
+
+    const normalizedEndpoint = apiEndpoint.replace(/\/+$/, '');
+    const payload = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ user_id: receipientId }),
+    } as RequestInit;
+
+    const attemptRequest = async (url: string) => {
+      const response = await fetch(url, payload);
+      const data = await response.json().catch(() => ({}));
+      return { response, data };
+    };
+
     try {
-      const response = await fetch(`${apiEndpoint}/friends/request`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ user_id: receipientId }),
-      });
-  
+      // Try enhanced endpoint first for better messaging
+      let { response, data } = await attemptRequest(`${normalizedEndpoint}/friends/request`);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Failed to send friend request:", errorData);
-        toast.error(errorData.error || "Failed to send friend request.");
-        return;
+        const errorMessage = (data.error || '').toLowerCase();
+
+        // If backend indicates an existing pending request, surface as info
+        if (errorMessage.includes('already sent') || errorMessage.includes('already received')) {
+          toast.error(data.error || 'Friend request already pending.');
+          return;
+        }
+
+        // Attempt fallback endpoint if specific not-friends message occurs
+        if (errorMessage.includes('not friends yet')) {
+          ({ response, data } = await attemptRequest(`${normalizedEndpoint}/friends/request`));
+        }
+
+        if (!response.ok) {
+          console.error("Failed to send friend request:", data);
+          toast.error(data.error || "Failed to send friend request.");
+          return;
+        }
       }
-  
-      const responseData = await response.json();
-  
+
       toast.success("Friend request sent successfully!");
       await mutate(swrKey.pending);
     } catch (error) {
@@ -375,14 +402,20 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     searchUsers,
     isLoadingUsers,
     isLoadingSearch,
-    fetchFriends: async () => {
+    fetchFriends: async (options?: { force?: boolean }) => {
       await mutate(swrKey.friends);
+      if (options?.force) {
+        await mutate(swrKey.friends, undefined, { revalidate: true });
+      }
     },
     fetchUsers: async () => {
       await mutate(swrKey.users);
     },
-    fetchPendingRequests: async () => {
+    fetchPendingRequests: async (options?: { force?: boolean }) => {
       await mutate(swrKey.pending);
+      if (options?.force) {
+        await mutate(swrKey.pending, undefined, { revalidate: true });
+      }
     },
   };
 

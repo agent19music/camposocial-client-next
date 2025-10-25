@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CampoSocial
+
+> The campus social network that helps students find their crew, plan unforgettable events, and keep the good vibes going 24/7.
+
+![CampoSocial Hero](https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/Screenshot_20251025_073856.png)
+
+## Why CampoSocial
+
+- **Find Your Tribe** – Match with classmates who share your interests, majors, and on-campus ambitions.
+- **Experience More** – Discover campus takeovers, study sessions, and pop-up events curated for every type of student.
+- **Marketplace Built for Students** – Buy, sell, or trade textbooks, tickets, and gear without leaving campus.
+- **Stay in the Loop** – Chat in real time, share memes, and keep your circle close with fast messaging tools.
+
+## Fast Facts
+
+| 50K+ Squad Members | 200+ Campus Takeovers | 10K+ Epic Hangouts | 24/7 Good Vibes |
+| --- | --- | --- | --- |
+
+## Built With
+
+- **Next.js 14** for the app shell and routing
+- **TypeScript** for type-safe development
+- **Tailwind CSS** for rapid styling
+- **Framer Motion** for polished interactions
+- **Lucide & Phosphor Icons** for rich iconography
+- **Context API + custom hooks** for theme, auth, and chat state management
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# install dependencies
+npm install
+
+# start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) to explore the experience. Sign in, browse events, and peek at the marketplace to see CampoSocial in action.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Highlights
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- Modular UI components tuned for both light and dark themes
+- Real-time friendly chat experience powered by custom WebSocket context
+- Extensible feature grid to showcase future campus services
+- Animated hero section that sets an energetic tone from the first load
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Have ideas to make CampoSocial even better for students? Open an issue or submit a pull request—let’s build the campus social future together.
