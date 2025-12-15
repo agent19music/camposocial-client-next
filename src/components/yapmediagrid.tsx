@@ -256,19 +256,27 @@ export const MediaGrid = ({
                 className="max-w-full max-h-full object-contain"
                 sizes="90vw"
                 priority
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
               />
             </div>
-          ) : (
+          ) : selectedMedia.url ? (
             <video 
               controls 
               autoPlay
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
+              onError={(e) => {
+                console.warn('Focus view video failed to load:', selectedMedia.url);
+                (e.target as HTMLVideoElement).style.display = 'none';
+              }}
             >
               <source src={selectedMedia.url} type="video/mp4" />
+              <source src={selectedMedia.url} type="video/webm" />
               Your browser does not support the video tag.
             </video>
-          )}
+          ) : null}
         </div>
 
         {/* Bottom info */}
@@ -315,15 +323,20 @@ export const MediaGrid = ({
                   </MediaOverlay>
                 )}
               </>
-            ) : (
+            ) : item.url ? (
               <>
                 <video 
                   className="w-full h-full object-cover"
                   muted
                   playsInline
                   poster={item.url.replace(/\.[^/.]+$/, '.jpg')}
+                  onError={(e) => {
+                    console.warn('Video failed to load:', item.url);
+                    (e.target as HTMLVideoElement).style.display = 'none';
+                  }}
                 >
                   <source src={item.url} type="video/mp4" />
+                  <source src={item.url} type="video/webm" />
                 </video>
                 {enableFocusView && (
                   <MediaOverlay>
@@ -333,7 +346,7 @@ export const MediaGrid = ({
                   </MediaOverlay>
                 )}
               </>
-            )}
+            ) : null}
             
             {/* Media count indicator for multiple items */}
             {!shouldShowOriginalAspect && mediaCount > 4 && index === 3 && (

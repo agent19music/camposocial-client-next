@@ -284,6 +284,8 @@ export default function YapProvider({ children }: YapProviderProps) {
     };
   }, []);
 
+  
+
   // Function to create a slug from yap id
   function slugify(int: string) {
     const baseSlug = int;

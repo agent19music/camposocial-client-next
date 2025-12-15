@@ -5,6 +5,7 @@ import { AuthContextType, AuthProviderProps } from "../utils/types";
 import { useRouter } from "next/navigation";
 import { MarketplaceContext } from "./marketplacecontext";
 import {toast} from 'react-hot-toast'
+import { deriveKeyPassword } from "../lib/keyStorage";
 
  
 
@@ -116,6 +117,27 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
         setAuthToken(data.access_token);
         setIsAuthenticated(true);
+        
+        // Derive and store key password for E2EE auto-unlock
+        // This allows the chat encryption keys to be automatically unlocked
+        try {
+          // Get user_id from response or decode from JWT
+          let userId = data.user_id;
+          if (!userId && data.access_token) {
+            // Decode user_id from JWT payload (sub claim)
+            const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+            userId = payload.sub;
+          }
+          
+          if (userId) {
+            const keyPassword = await deriveKeyPassword(password, userId);
+            sessionStorage.setItem('e2ee_key_password', keyPassword);
+            console.log('E2EE key password stored for user', userId);
+          }
+        } catch (e) {
+          console.error('Failed to derive key password:', e);
+        }
+        
         toast.success('Welcome back');
         setOnAuthChange(!onAuthChange)
         
@@ -168,6 +190,28 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         setIsProfileComplete(result.is_profile_complete);
         setOnAuthChange(!onAuthChange);
         setShowSocialModal(false); // Close the modal on successful login
+        
+        // Derive and store key password for E2EE (OAuth flow)
+        // For OAuth users, we use a deterministic derivation based ONLY on userId
+        // This ensures the same password is derived across all login sessions
+        try {
+          let userId = result.user_id;
+          if (!userId && result.access_token) {
+            const payload = JSON.parse(atob(result.access_token.split('.')[1]));
+            userId = payload.sub;
+          }
+          
+          if (userId) {
+            // For OAuth, use ONLY userId as the base - must be stable across sessions!
+            // The access_token changes each login, so we can't use it
+            const oauthKeyBase = `oauth-e2ee-stable-key-${userId}`;
+            const keyPassword = await deriveKeyPassword(oauthKeyBase, userId);
+            sessionStorage.setItem('e2ee_key_password', keyPassword);
+            console.log('E2EE key password stored for OAuth user', userId);
+          }
+        } catch (e) {
+          console.error('Failed to derive key password for OAuth:', e);
+        }
         
         if (!result.is_profile_complete) {
           toast.success('Welcome! Let\'s complete your profile');
@@ -225,6 +269,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       });
     } catch (error) {
       console.error('Error clearing token:', error);
+    }
+    
+    // Clear E2EE key password from session
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('e2ee_key_password');
     }
     
     // Abort any ongoing requests

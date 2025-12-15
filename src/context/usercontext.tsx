@@ -7,29 +7,30 @@ import { useWebSocket } from "./websocket-context";
 import { toast } from "react-hot-toast";
 import { UserContextProps, ChatFriend, MinimalFriend } from "../utils/types";
 
- 
+
 
 const defaultValue: UserContextProps = {
   user: [],
   users: [],
-  sendFriendRequest: async () => {},
+  sendFriendRequest: async () => { },
   receivedRequests: [],
-  setReceivedRequests: () => {},
-  removeFriend: async () => {},
-  addFriend: async () => {},
-  blockUser: async () => {},
-  setUsers: () => {},
-  setFilteredUsers: () => {},
-  onchange: () => {},
-  rejectFriendRequest: async () => {},
+  setReceivedRequests: () => { },
+  removeFriend: async () => { },
+  addFriend: async () => { },
+  blockUser: async () => { },
+  setUsers: () => { },
+  setFilteredUsers: () => { },
+  onchange: () => { },
+  rejectFriendRequest: async () => { },
   friends: [],
   filteredFriends: [],
   searchUsers: async () => [],
   isLoadingUsers: false,
   isLoadingSearch: false,
-  fetchFriends: async (_opts?: { force?: boolean }) => {},
-  fetchUsers: async () => {},
-  fetchPendingRequests: async (_opts?: { force?: boolean }) => {},
+  fetchFriends: async (_opts?: { force?: boolean }) => { },
+  fetchUsers: async () => { },
+  fetchPendingRequests: async (_opts?: { force?: boolean }) => { },
+  sentRequestIds: new Set<string>(),
 };
 
 export const UserContext = createContext<UserContextProps>(defaultValue);
@@ -45,6 +46,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [filteredFriends, setFilteredFriends] = useState<ChatFriend[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<MinimalFriend[]>([]);
+  const [sentRequestIds, setSentRequestIds] = useState<Set<string>>(new Set());
 
   const swrKey = useMemo(() => ({
     friends: authToken && isAuthenticated ? `${apiEndpoint}/friends` : null,
@@ -202,14 +204,14 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-  setReceivedRequests(normalizePendingRequests(pendingRequests));
+    setReceivedRequests(normalizePendingRequests(pendingRequests));
   }, [pendingRequests, normalizePendingRequests]);
 
   useEffect(() => {
     if (!pendingData?.pending_requests) {
       return;
     }
-  setReceivedRequests(normalizePendingRequests(pendingData.pending_requests));
+    setReceivedRequests(normalizePendingRequests(pendingData.pending_requests));
   }, [pendingData, normalizePendingRequests]);
 
   async function sendFriendRequest(receipientId: string) {
@@ -217,6 +219,9 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       toast.error('Cannot send request right now. Please try again later.');
       return;
     }
+
+    // Optimistic update - add to sent requests immediately
+    setSentRequestIds(prev => new Set(prev).add(receipientId));
 
     const normalizedEndpoint = apiEndpoint.replace(/\/+$/, '');
     const payload = {
@@ -255,15 +260,27 @@ export default function UserProvider({ children }: { children: ReactNode }) {
         if (!response.ok) {
           console.error("Failed to send friend request:", data);
           toast.error(data.error || "Failed to send friend request.");
+          // Revert optimistic update on error
+          setSentRequestIds(prev => {
+            const next = new Set(prev);
+            next.delete(receipientId);
+            return next;
+          });
           return;
         }
       }
 
-      toast.success("Friend request sent successfully!");
+      toast.success("Friend request sent!");
       await mutate(swrKey.pending);
     } catch (error) {
       console.error("Error sending friend request:", error);
       toast.error("An error occurred while sending the friend request.");
+      // Revert optimistic update on error
+      setSentRequestIds(prev => {
+        const next = new Set(prev);
+        next.delete(receipientId);
+        return next;
+      });
     }
   }
 
@@ -276,17 +293,17 @@ export default function UserProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${authToken}`,
         },
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Failed to remove friend:', errorData);
         return errorData.message || 'Error occurred';
       }
-  
+
       const responseData = await response.json();
       toast.success('Friend removed successfully!');
       updateFriendList({ friend: friendId, action: 'remove' });
-      
+
       return responseData.message;
     } catch (error) {
       console.error('Error removing friend:', error);
@@ -303,22 +320,24 @@ export default function UserProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${authToken}`,
         },
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Failed to accept friend request:', errorData);
         return errorData.message || 'Error occurred';
       }
-  
+
       const responseData = await response.json();
       toast.success('Friend request accepted!');
-      
+
       // Refresh lists
       await Promise.all([
         mutate(swrKey.friends),
-        mutate(swrKey.pending)
+        mutate(swrKey.pending),
+        // Also refresh conversations as a new one might have been created
+        mutate(`${apiEndpoint}/conversations`)
       ]);
-      
+
       return responseData.message;
     } catch (error) {
       console.error('Error accepting friend request:', error);
@@ -336,20 +355,20 @@ export default function UserProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${authToken}`,
         },
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error(`Failed to ${action} user:`, errorData);
         return errorData.message || 'Error occurred';
       }
-  
+
       const responseData = await response.json();
       toast.success(`User ${action}ed successfully!`);
-      
+
       // Refresh relevant lists
       mutate(swrKey.users);
       mutate(swrKey.friends);
-      
+
       return responseData.message;
     } catch (error) {
       console.error(`Error ${action}ing user:`, error);
@@ -366,17 +385,17 @@ export default function UserProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${authToken}`,
         },
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Failed to reject friend request:', errorData);
         return errorData.message || 'Error occurred';
       }
-  
+
       const responseData = await response.json();
-      
+
       await mutate(swrKey.pending);
-      
+
       return responseData.message;
     } catch (error) {
       console.error('Error rejecting friend request:', error);
@@ -395,13 +414,14 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     blockUser,
     setUsers: setUsersState,
     setFilteredUsers,
-    onchange: () => {},
+    onchange: () => { },
     rejectFriendRequest,
     friends: friendsState,
     filteredFriends,
     searchUsers,
     isLoadingUsers,
     isLoadingSearch,
+    sentRequestIds,
     fetchFriends: async (options?: { force?: boolean }) => {
       await mutate(swrKey.friends);
       if (options?.force) {

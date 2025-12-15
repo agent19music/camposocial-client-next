@@ -45,7 +45,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
   onViewProfile,
   isLoading = false
 }) => {
-  const [isAdding, setIsAdding] = useState(false);
+  const [justSent, setJustSent] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { pendingRequests } = useWebSocket();
@@ -55,7 +55,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     addFriend,
     friends,
     receivedRequests,
-    fetchPendingRequests,
+    sentRequestIds,
   } = useUserContext();
 
   const suggestionId = suggestion.id?.toString();
@@ -85,8 +85,12 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     }) || null;
   }, [receivedRequests, suggestionId]);
 
-  const isPendingOutgoing = useMemo(() => {
+  // Check if we've sent a request (either tracked in context or locally)
+  const isSentOrPending = useMemo(() => {
     if (!suggestionId) return false;
+    // Check context-tracked sent requests first
+    if (sentRequestIds?.has(suggestionId)) return true;
+    // Then check pending requests from WebSocket
     if (!Array.isArray(pendingRequests)) return false;
     return pendingRequests.some((req: any) => {
       const user = req.user || req.requester || {};
@@ -98,17 +102,20 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
       ].filter(Boolean);
       return candidateIds.some((id: any) => id?.toString() === suggestionId);
     });
-  }, [pendingRequests, suggestionId]);
+  }, [pendingRequests, suggestionId, sentRequestIds]);
 
   const handleAddFriend = async (userId: string) => {
-    if (!userId || isExistingFriend || isPendingOutgoing) return;
-    setIsAdding(true);
+    if (!userId || isExistingFriend || isSentOrPending || justSent) return;
+    
+    // Optimistic update - instant feedback
+    setJustSent(true);
+    
     try {
       await sendFriendRequest(userId);
-      await fetchPendingRequests({ force: true });
-      await onAddFriend?.(userId);
-    } finally {
-      setIsAdding(false);
+      onAddFriend?.(userId);
+    } catch {
+      // Revert optimistic state on error
+      setJustSent(false);
     }
   };
 
@@ -248,28 +255,28 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                   disabled={
                     isLoading ||
                     isExistingFriend ||
-                    isPendingOutgoing ||
-                    isAdding ||
+                    isSentOrPending ||
+                    justSent ||
                     isAccepting
                   }
                 >
-                  <motion.div
-                    animate={{ rotate: isAdding ? 360 : 0, scale: isAccepting ? [1, 1.15, 1] : 1 }}
-                    transition={{
-                      duration: isAccepting ? 0.4 : 0.5,
-                      repeat: isAdding ? Infinity : 0,
-                      ease: "linear",
-                    }}
-                  >
+                  {isAccepting ? (
+                    <motion.div
+                      animate={{ scale: [1, 1.15, 1] }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                    </motion.div>
+                  ) : (
                     <UserPlus className="h-3 w-3 mr-1" />
-                  </motion.div>
+                  )}
                   {isExistingFriend
                     ? 'Friends'
                     : incomingRequest
                       ? (isAccepting ? 'Accepting...' : 'Accept Request')
-                      : isPendingOutgoing
-                        ? 'Pending'
-                        : (isAdding ? 'Adding...' : 'Add Friend')}
+                      : (justSent || isSentOrPending)
+                        ? 'Sent'
+                        : 'Add Friend'}
                 </Button>
                 
                 <Button 

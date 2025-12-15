@@ -78,6 +78,8 @@ const NewUserWelcome = () => {
     }
   ];
 
+  
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[600px] p-8 text-center">
       <motion.div

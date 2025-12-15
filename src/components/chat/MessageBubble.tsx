@@ -209,7 +209,7 @@ export default function MessageBubble({
               <div className="mt-2 space-y-2">
                 {message.media.map((item, index) => (
                   <div key={index}>
-                    {item.type === 'image' && (
+                    {item.type === 'image' && item.url && (
                       <div className="relative w-full h-auto min-h-[120px]">
                         <Image
                           src={item.url}
@@ -217,17 +217,30 @@ export default function MessageBubble({
                           fill
                           className="rounded-lg object-contain"
                           sizes="(max-width: 768px) 90vw, 600px"
+                          onError={(e) => {
+                            // Hide broken images
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                       </div>
                     )}
-                    {item.type === 'video' && (
+                    {item.type === 'video' && item.url && (
                       <video
-                        src={item.url}
                         controls
                         className="rounded-lg max-w-full"
-                      />
+                        onError={(e) => {
+                          // Hide video element if source fails to load
+                          console.warn('Video failed to load:', item.url);
+                          (e.target as HTMLVideoElement).style.display = 'none';
+                        }}
+                      >
+                        <source src={item.url} type="video/mp4" />
+                        <source src={item.url} type="video/webm" />
+                        <source src={item.url} type="video/ogg" />
+                        Your browser does not support the video tag.
+                      </video>
                     )}
-                    {item.type === 'file' && (
+                    {item.type === 'file' && item.url && (
                       <a
                         href={item.url}
                         download={item.name}

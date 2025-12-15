@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useChat } from '@/context/chatcontext';
 import { useContext } from 'react';
 import { AuthContext } from '@/context/authcontext';
@@ -16,10 +16,11 @@ import { toast } from 'react-hot-toast';
 
 export default function ChatPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, currentUser } = useContext(AuthContext);
-  const { 
-    getChatList, 
-    chatList, 
+  const {
+    getChatList,
+    chatList,
     fetchConversations,
     conversations,
     setFriendId,
@@ -32,11 +33,21 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
 
+  // Read user param from URL and auto-select friend
+  const userParam = searchParams.get('user');
+  
+  useEffect(() => {
+    if (userParam && !selectedFriend) {
+      setSelectedFriend(userParam);
+      setFriendId(userParam);
+    }
+  }, [userParam, selectedFriend, setFriendId]);
+
   const loadConversations = useCallback(async () => {
     setIsLoadingConversations(true);
     try {
       await getChatList();
-    await fetchConversations();
+      await fetchConversations();
     } catch (error) {
       console.error('Failed to load conversations:', error);
       toast.error('Failed to load conversations');
@@ -51,10 +62,8 @@ export default function ChatPage() {
       return;
     }
 
-    // Initialize encryption keys if not available
-    if (keyStatus === 'unavailable') {
-      generateKeys();
-    }
+    // Note: Key generation is handled automatically when sending messages
+    // We don't auto-generate on page load to avoid prompts before login completes
 
     loadConversations();
   }, [isAuthenticated, keyStatus, generateKeys, loadConversations, router]);
@@ -64,7 +73,7 @@ export default function ChatPage() {
     setFriendId(friend.id);
   };
 
-  const filteredChatList = chatList?.filter(user => 
+  const filteredChatList = chatList?.filter(user =>
     `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
@@ -86,7 +95,7 @@ export default function ChatPage() {
               <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
-          
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -118,16 +127,15 @@ export default function ChatPage() {
               {filteredChatList.map((user) => {
                 const conversation = conversations.find(c => c.friendId === user.id);
                 const isSelected = selectedFriend === user.id;
-                
+
                 return (
                   <div
                     key={user.id}
                     onClick={() => handleSelectFriend(user)}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                      isSelected 
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500' 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${isSelected
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     <div className="relative">
                       <Avatar>
@@ -140,7 +148,7 @@ export default function ChatPage() {
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
                       )}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline">
                         <h3 className="font-medium text-gray-900 dark:text-white truncate">
@@ -156,7 +164,7 @@ export default function ChatPage() {
                         {conversation?.lastMessage || 'Start a conversation'}
                       </p>
                     </div>
-                    
+
                     {conversation?.unreadCount && conversation.unreadCount > 0 && (
                       <div className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         {conversation.unreadCount}

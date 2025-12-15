@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'API endpoint not configured' }, { status: 500 });
   }
 
-  const origin = normalizeUrl(headers().get('origin'));
+  const headerList = await headers();
+  const origin = normalizeUrl(headerList.get('origin'));
 
   try {
     const controller = new AbortController();

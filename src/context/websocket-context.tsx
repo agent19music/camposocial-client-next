@@ -342,7 +342,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     newSocket.on('friend_request_response', (data: any) => {
       console.log('Friend request response received:', data);
       if (data.action === 'accepted') {
-        toast.success(`${data.recipient.display_name} accepted your friend request!`);
+        const displayName = data.recipient?.display_name || data.recipient?.username || data.friend?.display_name || 'Someone';
+        toast.success(`${displayName} accepted your friend request!`);
       }
       if (data.friend && data.action === 'accepted') {
         setFriends(prev => {

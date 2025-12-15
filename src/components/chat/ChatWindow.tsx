@@ -8,11 +8,11 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 
 const C = Palette;
 import Image from 'next/image';
-import { 
-  Send, 
-  Paperclip, 
-  Smile, 
-  Mic, 
+import {
+  Send,
+  Paperclip,
+  Smile,
+  Mic,
   ChevronDown,
   Phone,
   Video,
@@ -29,16 +29,16 @@ import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { secureDB } from '@/utils/secureStorage';
 import { toast } from 'react-hot-toast';
-import { ChatMessage, ChatMedia    } from '@/utils/types';
+import { ChatMessage, ChatMedia } from '@/utils/types';
 interface ChatWindowProps {
   friendId: string;
   onBack?: () => void;
 }
 
 export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
-  const { 
-    messages, 
-    sendMessage, 
+  const {
+    messages,
+    sendMessage,
     getMessages,
     addReaction,
     deleteMessage,
@@ -46,19 +46,20 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
     friendDetails,
     currentUser,
     setMessages,
-    chatList
+    chatList,
+    ensureConversation
   } = useChat();
-  
+
   const { socket, emit, on, isConnected } = useWebSocket();
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [friendTyping, setFriendTyping] = useState(false);
+  // isTyping from context handles the friend typing status
+  const { isTyping: friendTyping } = useChat();
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [editingMessage, setEditingMessage] = useState<any>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -67,6 +68,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
 
   // Load cached messages on mount
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const loadCachedMessages = useCallback(async (convId: string) => {
     try {
@@ -93,82 +95,52 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
   useEffect(() => {
     let active = true;
     const initialiseConversation = async () => {
-      if (!friendId || !currentUser) return;
+      if (!friendId) return;
       
-      // Generate conversation ID
-      const convId = [currentUser.id, friendId].sort().join('-');
-      setConversationId(convId);
+      setIsInitializing(true);
       
-      // Try to load from cache first
-      await loadCachedMessages(convId);
-      
-      // Then fetch fresh messages from server
-      const messages = await getMessages(friendId, 50);
-      if (!active) return;
+      try {
+        // Get or create the real conversation ID from server
+        const realConvId = await ensureConversation(friendId);
+        if (!active) return;
+        
+        if (realConvId) {
+          setConversationId(realConvId);
+          
+          // Try to load from cache first
+          await loadCachedMessages(realConvId);
+          
+          // Then fetch fresh messages from server
+          await getMessages(friendId, 50);
+        }
+      } catch (error) {
+        console.error('Failed to initialize conversation:', error);
+      } finally {
+        if (active) {
+          setIsInitializing(false);
+        }
+      }
     };
     initialiseConversation();
 
     return () => {
       active = false;
     };
-  }, [friendId, currentUser, getMessages, loadCachedMessages]);
-
-  // WebSocket event handlers
-  const handleReactionUpdate = useCallback((data: any) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === data.message_id
-        ? {
-            ...msg,
-            reactions: [
-              ...(msg.reactions || []).filter(r => r.userId !== data.user_id),
-              { userId: data.user_id, reactionType: data.reaction_type }
-            ]
-          }
-        : msg as ChatMessage
-    ));
-  }, [setMessages]);
-
-  // Handle message edit
-  const handleMessageEdit = useCallback((data: any) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === data.message_id
-        ? { ...msg, content: data.new_content, isEdited: true }
-        : msg
-    ));
-  }, [setMessages]);
-
-  // Handle message delete
-  const handleMessageDelete = useCallback((data: any) => {
-    setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
-  }, [setMessages]);
+  }, [friendId, ensureConversation, getMessages, loadCachedMessages]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
 
     const handleNewMessage = async (data: any) => {
       console.log('📨 New message received in ChatWindow:', data);
-      
+
       // Only process if it's for the current conversation
       if (conversationId && data.conversation_id !== conversationId) {
         return;
       }
-      
-      // Add to messages and cache
-      const newMessage: ChatMessage = {
-        id: data.id,
-        senderId: data.sender_id,
-        content: data.content,
-        timestamp: new Date(data.timestamp),
-        encrypted: data.encrypted || false,
-        isSent: true,
-        isRead: data.is_read || false,
-        media: data.media || [],
-        reactions: data.reactions || [],
-        replyTo: data.reply_to
-      };
-      
-      setMessages(prev => [...prev, newMessage]);
-      
+
+      // State update is handled by ChatContext
+
       // Cache the message
       try {
         await secureDB.cacheMessage({
@@ -182,7 +154,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
       } catch (error) {
         console.error('Failed to cache message:', error);
       }
-      
+
       // Play sound and vibrate only for received messages (not own)
       if (data.sender_id !== currentUser?.id) {
         playMessageSound();
@@ -190,55 +162,15 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
       }
     };
 
-    const handleTypingIndicator = (data: any) => {
-      console.log('✍️ Typing indicator:', data);
-      if (data.user_id === friendId) {
-        setFriendTyping(data.is_typing);
-        
-        // Auto-clear typing after 3 seconds
-        if (data.is_typing) {
-          setTimeout(() => setFriendTyping(false), 3000);
-        }
-      }
-    };
-
-    const handleMessageRead = async (data: any) => {
-      // Update message read status
-      const messageIds = data.message_ids || [];
-      setMessages(prev => prev.map(msg => 
-        messageIds.includes(msg.id) 
-          ? { ...msg, isRead: true }
-          : msg
-      ));
-      
-      // Update cache
-      try {
-        for (const msgId of messageIds) {
-          await secureDB.updateMessageStatus(String(msgId), { isRead: true });
-        }
-      } catch (error) {
-        console.error('Failed to update message status:', error);
-      }
-    };
-
     // Register event listeners using the proper on() method
+    // We only listen for new_message for side effects (sound, cache)
+    // State updates for messages, typing, reactions, etc. are handled by ChatContext
     const cleanupNewMessage = on('new_message', handleNewMessage);
-    const cleanupTyping = on('user_typing', handleTypingIndicator);
-    const cleanupRead = on('messages_read', handleMessageRead);
-    const cleanupReaction = on('reaction_added', handleReactionUpdate);
-    const cleanupEdit = on('message_edited', handleMessageEdit);
-    const cleanupDelete = on('message_deleted', handleMessageDelete);
 
     return () => {
-      // Cleanup all listeners
       cleanupNewMessage();
-      cleanupTyping();
-      cleanupRead();
-      cleanupReaction();
-      cleanupEdit();
-      cleanupDelete();
     };
-  }, [socket, isConnected, friendId, conversationId, currentUser, on, handleReactionUpdate, handleMessageEdit, handleMessageDelete, setMessages]);
+  }, [socket, isConnected, friendId, conversationId, currentUser, on]);
 
   // Auto-scroll to bottom for new messages
   useEffect(() => {
@@ -250,40 +182,38 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
   // Handle typing indicator
   const handleTyping = useCallback(() => {
     if (!friendId || !isConnected) return;
-    
-    if (!isTyping) {
-      setIsTyping(true);
-      emit('typing', { 
-        recipient_id: friendId,
-        is_typing: true 
-      });
-    }
+
+    // We don't need local isTyping state, just emit the event
+    // But we might want to debounce it
+    emit('typing', {
+      recipient_id: friendId,
+      is_typing: true
+    });
 
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      emit('typing', { 
+      emit('typing', {
         recipient_id: friendId,
-        is_typing: false 
+        is_typing: false
       });
-    }, 2000); // 2 seconds instead of 1 second
-  }, [isTyping, friendId, isConnected, emit]);
+    }, 2000);
+  }, [friendId, isConnected, emit]);
 
   // Handle infinite scroll
   const handleScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop } = e.currentTarget;
-    
+
     if (scrollTop === 0 && !isLoadingMore && hasMoreMessages && messages.length > 0) {
       setIsLoadingMore(true);
       const oldestMessage = messages[0];
-      
+
       // Load from cache first
       const cached = await secureDB.getCachedMessages(
         conversationId || '',
         20,
         new Date(oldestMessage.timestamp)
       );
-      
+
       if (cached.length > 0) {
         const formattedMessages: ChatMessage[] = cached.map(msg => ({
           id: parseInt(msg.id),
@@ -294,7 +224,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
           isSent: msg.isSent ?? false,
           isRead: msg.isRead ?? false,
           media: [] as ChatMedia[],
-          reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type }))   
+          reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type }))
         }));
         setMessages(prev => [...formattedMessages, ...prev]);
       } else {
@@ -304,9 +234,9 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
           setHasMoreMessages(false);
         }
       }
-      
+
       setIsLoadingMore(false);
-      
+
       // Maintain scroll position
       if (scrollContainerRef.current) {
         const oldHeight = scrollContainerRef.current.scrollHeight;
@@ -327,7 +257,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
     const messageContent = input.trim();
     setInput('');
     setReplyingTo(null);
-    
+
     // Optimistic update
     const tempMessage: ChatMessage = {
       id: Date.now(), // Temporary ID
@@ -341,21 +271,21 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
       reactions: [] as { userId: string; reactionType: string }[],
       encrypted: true
     };
-    
+
     setMessages(prev => [...prev, tempMessage]);
-    
+
     try {
       if (editingMessage) {
         await editMessage(editingMessage.id, messageContent);
         setEditingMessage(null);
       } else {
         await sendMessage(
-          messageContent, 
-          fileInputRef.current?.files || null, 
+          messageContent,
+          fileInputRef.current?.files || null,
           replyingTo?.id
         );
       }
-      
+
       // Cache the message
       await secureDB.cacheMessage({
         id: String(tempMessage.id),
@@ -368,13 +298,13 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
         isRead: false,
         reactions: []
       });
-      
+
       // Play send sound
       playSendSound();
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
-      
+
       // Add to pending messages for retry
       await secureDB.addPendingMessage({
         conversationId: conversationId || '',
@@ -394,15 +324,15 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
   const playMessageSound = () => {
     try {
       const audio = new Audio('/sounds/message-received.mp3');
-      audio.play().catch(() => {});
-    } catch {}
+      audio.play().catch(() => { });
+    } catch { }
   };
 
   const playSendSound = () => {
     try {
       const audio = new Audio('/sounds/message-sent.mp3');
-      audio.play().catch(() => {});
-    } catch {}
+      audio.play().catch(() => { });
+    } catch { }
   };
 
   const formatMessageDate = (date: Date): string => {
@@ -415,15 +345,15 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
   const groupedMessages = messages.reduce((groups: any[], message, index) => {
     const prevMessage = messages[index - 1];
     const nextMessage = messages[index + 1];
-    
-    const isFirstInGroup = !prevMessage || 
+
+    const isFirstInGroup = !prevMessage ||
       prevMessage.senderId !== message.senderId ||
       (new Date(message.timestamp).getTime() - new Date(prevMessage.timestamp).getTime()) > 60000;
-    
-    const isLastInGroup = !nextMessage || 
+
+    const isLastInGroup = !nextMessage ||
       nextMessage.senderId !== message.senderId ||
       (new Date(nextMessage.timestamp).getTime() - new Date(message.timestamp).getTime()) > 60000;
-    
+
     return [...groups, { ...message, isFirstInGroup, isLastInGroup }];
   }, []);
 
@@ -453,8 +383,8 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
             </button>
           )}
           <div className="relative">
-            <Image 
-              src={displayFriend?.avatar || '/default-avatar.png'} 
+            <Image
+              src={displayFriend?.avatar || '/default-avatar.png'}
               alt={displayFriend?.username || 'User avatar'}
               className="w-10 h-10 rounded-full object-cover"
               width={40}
@@ -475,7 +405,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
             ) : null}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
             <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -490,14 +420,20 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
       </div>
 
       {/* Connection Status */}
-      {!isConnected && (
+      {isInitializing && (
+        <div className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm text-center flex items-center justify-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+          Loading conversation...
+        </div>
+      )}
+      {!isConnected && !isInitializing && (
         <div className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-sm text-center">
-          Connecting to chat server...
+          Reconnecting...
         </div>
       )}
 
       {/* Messages Container */}
-      <ScrollArea 
+      <ScrollArea
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 px-4 py-4"
@@ -510,8 +446,8 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
 
         <AnimatePresence>
           {groupedMessages.map((message, index) => {
-            const showDate = index === 0 || 
-              new Date(messages[index - 1].timestamp).toDateString() !== 
+            const showDate = index === 0 ||
+              new Date(messages[index - 1].timestamp).toDateString() !==
               new Date(message.timestamp).toDateString();
 
             return (
@@ -545,7 +481,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
         </AnimatePresence>
 
         {friendTyping && (
-          <TypingIndicator 
+          <TypingIndicator
             userName={displayFriend?.username}
             userAvatar={displayFriend?.avatar}
           />
@@ -590,13 +526,13 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
             className="hidden"
             accept="image/*,video/*,.pdf,.doc,.docx"
           />
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <Paperclip className="w-5 h-5" />
           </button>
-          
+
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -617,7 +553,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
             />
           </div>
 
-          <button 
+          <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           >

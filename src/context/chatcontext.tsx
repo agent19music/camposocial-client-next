@@ -2,13 +2,25 @@
 
 import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback, useMemo } from "react";
 import { toast } from 'react-hot-toast';
-import * as openpgp from 'openpgp';
 import { AuthContext } from "./authcontext";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocket as useWebSocketContext } from "./websocket-context";
 import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
+import { 
+    encryptMessage as naclEncrypt, 
+    decryptMessage as naclDecrypt, 
+    KeyPair,
+    isValidPublicKey 
+} from "../lib/crypto";
+import { 
+    hasStoredKeys, 
+    getPublicKey as getStoredPublicKey,
+    retrieveKeyPair,
+    generateAndStoreKeyPair,
+    storeKeyPair
+} from "../lib/keyStorage";
 
- 
+
 
 export const ChatContext = createContext<ChatContextType>({
     sendMessage: async () => { },
@@ -25,6 +37,8 @@ export const ChatContext = createContext<ChatContextType>({
     getChatList: async () => [],
     chatList: [],
     generateKeys: async () => { },
+    unlockKeys: async () => false,
+    loadKeys: async () => { },
     exportPublicKey: async () => null,
     keyStatus: 'unavailable',
     fetchConversations: async () => [],
@@ -43,15 +57,15 @@ export const ChatContext = createContext<ChatContextType>({
 export default function ChatProvider({ children }: ChatProviderProps) {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
-    
+
     const currentUser = useMemo(() => {
         if (!rawCurrentUser) return null;
         const { id, firstName, lastName, email } = rawCurrentUser;
         return { id, firstName, lastName, email };
     }, [rawCurrentUser]);
-        
+
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [friendId, setFriendId] = useState<string | null>(null); 
+    const [friendId, setFriendId] = useState<string | null>(null);
     const [friendDetails, setFriendDetails] = useState<ChatFriend | null>(null);
 
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
@@ -59,16 +73,18 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const [isTyping, setIsTyping] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
-    
+
     // WebSocket integration
     const { socket, isConnected, joinConversationRoom } = useWebSocket();
     const { consumeOfflineConversationMessages } = useWebSocketContext();
-    
-    // OpenPGP key management
-    const [privateKey, setPrivateKey] = useState<openpgp.PrivateKey | null>(null);
-    const [publicKey, setPublicKey] = useState<openpgp.PublicKey | null>(null);
+
+    // NaCl E2EE key management (base64 encoded strings)
+    const [secretKey, setSecretKey] = useState<string | null>(null);
+    const [publicKey, setPublicKey] = useState<string | null>(null);
     const [keyStatus, setKeyStatus] = useState<KeyStatus>('unavailable');
-    const [friendPublicKeys, setFriendPublicKeys] = useState<Record<string, openpgp.PublicKey>>({});
+    const [friendPublicKeys, setFriendPublicKeys] = useState<Record<string, string>>({});  // userId -> base64 public key
+    const [keyGenerationAttempted, setKeyGenerationAttempted] = useState(false);
+    const [keyPassword, setKeyPassword] = useState<string | null>(null);  // Cached for session
 
     // Rate limiting and debouncing refs
     const lastRequestTimeRef = useRef(0);
@@ -89,39 +105,39 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     // Rate limiting function
     const canMakeRequest = useCallback((requestType: string): boolean => {
         const now = Date.now();
-        
+
         // Check if endpoint is known to be unavailable
         const endpointKey = requestType.split('_')[0]; // Extract base endpoint name
         if (endpointAvailabilityRef.current.get(endpointKey) === false) {
             console.warn(`Endpoint ${endpointKey} is known to be unavailable. Skipping request.`);
             return false;
         }
-        
+
         // Check if we're within the rate limit window
         if (now - rateLimitWindowRef.current > RATE_LIMIT_WINDOW) {
             // Reset rate limit window
             rateLimitWindowRef.current = now;
             requestCountRef.current = 0;
         }
-        
+
         // Check request count
         if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
             console.warn(`Rate limit exceeded for ${requestType}. Please try again later.`);
             return false;
         }
-        
+
         // Check minimum interval between requests
         if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
             console.warn(`Request too frequent for ${requestType}. Debouncing...`);
             return false;
         }
-        
+
         // Check if this request type is already active
         if (activeRequestsRef.current.has(requestType)) {
             console.warn(`Request ${requestType} already in progress. Skipping duplicate.`);
             return false;
         }
-        
+
         return true;
     }, []);
 
@@ -143,7 +159,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         endpointAvailabilityRef.current.set(endpoint, available);
     }, []);
 
-    const fetchConversations = useCallback(async (): Promise<ChatConversation[]> => { 
+    const fetchConversations = useCallback(async (): Promise<ChatConversation[]> => {
         // Don't proceed if required data is missing or already fetching
         if (!currentUser || !authToken || !isAuthenticated || !apiEndpoint || fetchingConversationsRef.current) {
             return [];
@@ -155,17 +171,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             rateLimitWindowRef.current = now;
             requestCountRef.current = 0;
         }
-        
+
         if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
             console.warn('Rate limit exceeded for fetch_conversations');
             return [];
         }
-        
+
         if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
             console.warn('Request too frequent for fetch_conversations');
             return [];
         }
-        
+
         if (activeRequestsRef.current.has('fetch_conversations')) {
             console.warn('fetch_conversations already in progress');
             return [];
@@ -223,7 +239,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 isEmpty: !conv.last_message,
                 isOnline: Boolean(conv.friend?.is_online || conv.is_online),
             })) || [];
-            
+
             setConversations(conversationsData);
             endpointAvailabilityRef.current.set('conversations', true);
             return conversationsData;
@@ -237,7 +253,34 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             fetchingConversationsRef.current = false;
             activeRequestsRef.current.delete('fetch_conversations');
         }
-        }, [currentUser, authToken, isAuthenticated, apiEndpoint]); // Only stable dependencies
+    }, [currentUser, authToken, isAuthenticated, apiEndpoint]); // Only stable dependencies
+
+    // Load cached conversations on mount
+    useEffect(() => {
+        if (currentUser?.id) {
+            const cached = localStorage.getItem(`conversations-${currentUser.id}`);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    // Convert string dates back to Date objects
+                    const hydrated = parsed.map((c: any) => ({
+                        ...c,
+                        lastMessageTime: c.lastMessageTime ? new Date(c.lastMessageTime) : null
+                    }));
+                    setConversations(hydrated);
+                } catch (e) {
+                    console.error("Failed to parse cached conversations", e);
+                }
+            }
+        }
+    }, [currentUser?.id]);
+
+    // Save conversations to cache whenever they change
+    useEffect(() => {
+        if (currentUser?.id && conversations.length > 0) {
+            localStorage.setItem(`conversations-${currentUser.id}`, JSON.stringify(conversations));
+        }
+    }, [conversations, currentUser?.id]);
 
     // Memoize setMessages to prevent unnecessary re-renders
     const setMessagesCallback = useCallback((messages: React.SetStateAction<ChatMessage[]>) => {
@@ -257,10 +300,40 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     // Removed: Problematic useEffect that causes circular dependency
     // This logic is now handled by the ChatWindow component directly
 
-    // Load user's keys from localStorage when component mounts
+    // Load user's keys from IndexedDB when component mounts
+    // Automatically uses the key password derived from login credentials
+    // If no keys exist, proactively generate them so we can receive encrypted messages
     useEffect(() => {
         if (currentUser?.id) {
-            loadKeys();
+            // Get the key password from session storage (set during login)
+            const storedKeyPassword = typeof window !== 'undefined' 
+                ? sessionStorage.getItem('e2ee_key_password') 
+                : null;
+            
+            const initializeKeys = async () => {
+                await loadKeys(storedKeyPassword || undefined);
+                
+                // If no keys exist and we have a password, proactively generate keys
+                // This ensures BOTH sender and recipient have keys for E2EE
+                const hasKeys = await hasStoredKeys();
+                if (!hasKeys && storedKeyPassword) {
+                    console.log('[E2EE] No keys found, proactively generating for user', currentUser.id);
+                    await generateKeys(storedKeyPassword);
+                } else if (hasKeys && storedKeyPassword) {
+                    // Keys exist - try to retrieve them with the password
+                    const keyPair = await retrieveKeyPair(storedKeyPassword);
+                    if (!keyPair) {
+                        // Keys exist but can't be decrypted - password mismatch
+                        // This happens when key derivation changed. Clear and regenerate.
+                        console.log('[E2EE] Keys exist but locked, clearing and regenerating for user', currentUser.id);
+                        const { deleteStoredKeys } = await import('../lib/keyStorage');
+                        await deleteStoredKeys();
+                        await generateKeys(storedKeyPassword);
+                    }
+                }
+            };
+            
+            initializeKeys();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.id]); // Use stable currentUser.id instead of whole object
@@ -289,34 +362,37 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
     // Cleanup effect
     useEffect(() => {
-            const activeRequests = activeRequestsRef.current;
+        const activeRequests = activeRequestsRef.current;
         return () => {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
-                activeRequests.clear();
+            activeRequests.clear();
         };
     }, []);
 
-    const decryptMessage = useCallback(async (content: string, senderId: string): Promise<string> => {
-        if (!privateKey) {
-            return content;
+    const decryptMessage = useCallback(async (
+        ciphertext: string, 
+        nonce: string | null, 
+        senderPublicKey: string | null
+    ): Promise<string> => {
+        // If no encryption data or keys, return ciphertext as-is
+        if (!secretKey || !nonce || !senderPublicKey) {
+            return ciphertext;
         }
 
         try {
-            const message = await openpgp.readMessage({ armoredMessage: content });
-            const { data: decrypted } = await openpgp.decrypt({
-                message,
-                decryptionKeys: privateKey
-            });
-
-            const decryptedString = String(decrypted);
-            return decryptedString;
+            const decrypted = naclDecrypt(ciphertext, nonce, senderPublicKey, secretKey);
+            if (!decrypted) {
+                console.error("Decryption failed: invalid keys or ciphertext");
+                return '[Unable to decrypt message]';
+            }
+            return decrypted;
         } catch (error) {
             console.error("Error decrypting message:", error);
-            return content;
+            return ciphertext;
         }
-    }, [privateKey]);
+    }, [secretKey]);
 
     // CRITICAL FIX: WebSocket effect for real-time messaging with proper cleanup
     useEffect(() => {
@@ -324,15 +400,20 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         const buildIncomingMessage = async (messageData: any): Promise<ChatMessage | null> => {
             const ciphertext = messageData.ciphertext || messageData.content;
-            const decrypted = messageData.encrypted && ciphertext
-                ? await decryptMessage(ciphertext, messageData.sender_id)
-                : messageData.content;
+            const nonce = messageData.nonce;
+            const senderPublicKey = messageData.sender_public_key;
+            
+            // Decrypt if encrypted and we have the necessary data
+            const decrypted = messageData.encrypted && ciphertext && nonce && senderPublicKey
+                ? await decryptMessage(ciphertext, nonce, senderPublicKey)
+                : messageData.content || ciphertext;
 
             return {
                 id: messageData.id,
                 senderId: messageData.sender_id,
                 content: decrypted,
                 ciphertext,
+                nonce,
                 timestamp: new Date(messageData.timestamp),
                 media: (messageData.media || []).map((item: any) => ({
                     id: item.id,
@@ -356,6 +437,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             const isActiveConversation = currentConversationId && incomingConversation === currentConversationId;
 
             if (!isActiveConversation) {
+                // Refresh conversations to show unread count and new message preview
                 await fetchConversations();
                 if (messageData.sender_username) {
                     toast.success(`New message from ${messageData.sender_username}`);
@@ -363,6 +445,10 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     toast.success('New message received');
                 }
                 return;
+            } else {
+                // Even if active, we want to update the conversation list to show the new last message
+                // We can do this optimistically or by fetching
+                fetchConversations();
             }
 
             const newMessage = await buildIncomingMessage(messageData);
@@ -406,6 +492,57 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         socket.on('user_typing', handleUserTyping);
         socket.on('friend_status_change', handleFriendStatus);
 
+        const handleMessageRead = (data: any) => {
+            const messageIds = data.message_ids || [];
+            setMessages(prev => prev.map(msg =>
+                messageIds.includes(msg.id)
+                    ? { ...msg, isRead: true }
+                    : msg
+            ));
+        };
+        socket.on('messages_read', handleMessageRead);
+
+        const handleReactionUpdate = (data: any) => {
+            setMessages(prev => prev.map(msg =>
+                msg.id === data.message_id
+                    ? {
+                        ...msg,
+                        reactions: [
+                            ...(msg.reactions || []).filter((r: any) => r.userId !== data.user_id),
+                            { userId: data.user_id, reactionType: data.reaction_type }
+                        ]
+                    }
+                    : msg
+            ));
+        };
+        socket.on('reaction_added', handleReactionUpdate);
+
+        const handleMessageEdit = (data: any) => {
+            setMessages(prev => prev.map(msg =>
+                msg.id === data.message_id
+                    ? { ...msg, content: data.new_content, isEdited: true }
+                    : msg
+            ));
+        };
+        socket.on('message_edited', handleMessageEdit);
+
+        const handleMessageDelete = (data: any) => {
+            setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
+        };
+        socket.on('message_deleted', handleMessageDelete);
+
+        const handleFriendRequestAccepted = (data: any) => {
+            // Refresh conversations immediately when a friend request is accepted
+            fetchConversations();
+            toast.success("Friend request accepted! You can now chat.");
+        };
+        socket.on('friend_request_accepted', handleFriendRequestAccepted);
+        socket.on('friend_request_response', (data: any) => {
+            if (data.action === 'accepted') {
+                handleFriendRequestAccepted(data);
+            }
+        });
+
         return () => {
             socket.off('new_message', handleNewMessage);
             if (typingTimeoutRef.current) {
@@ -413,9 +550,15 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }
             socket.off('user_typing', handleUserTyping);
             socket.off('friend_status_change', handleFriendStatus);
+            socket.off('friend_request_accepted', handleFriendRequestAccepted);
+            socket.off('friend_request_response');
+            socket.off('messages_read', handleMessageRead);
+            socket.off('reaction_added', handleReactionUpdate);
+            socket.off('message_edited', handleMessageEdit);
+            socket.off('message_deleted', handleMessageDelete);
         };
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [socket, isConnected, friendId, currentUser?.id, currentConversationId, decryptMessage, fetchConversations]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, isConnected, friendId, currentUser?.id, currentConversationId, decryptMessage, fetchConversations]);
 
     // Generate a unique conversation ID from two user IDs
 
@@ -433,7 +576,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${authToken}`,
-                    },
+                },
             });
 
             if (convResponse.status === 404) {
@@ -481,7 +624,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     // Legacy conversation existence check - inline implementation to avoid circular dependency
     const checkIfConversationExists = useCallback(async (friendId: string): Promise<boolean> => {
         if (!currentUser || !authToken) return false;
-        
+
         try {
             const response = await fetch(`${apiEndpoint}/conversations/with/${friendId}`, {
                 method: 'POST',
@@ -502,17 +645,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [currentUser, authToken, apiEndpoint]);
 
-    const fetchFriendPublicKey = useCallback(async (userId: string): Promise<openpgp.PublicKey | null> => {
-        // Check if we already have this friend's public key
+    const fetchFriendPublicKey = useCallback(async (userId: string): Promise<string | null> => {
+        // Check if we already have this friend's public key cached
         if (friendPublicKeys[userId]) {
             return friendPublicKeys[userId];
         }
 
-        if (!currentUser || !authToken || !canMakeRequest('fetch_friend_public_key')) {
+        if (!currentUser || !authToken) {
             return null;
         }
 
-        markRequestStart('fetch_friend_public_key');
+        // Note: No rate limiting for encryption key fetch - critical for E2EE
 
         try {
             const response = await fetch(`${apiEndpoint}/keys/${userId}`, {
@@ -534,44 +677,70 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             markEndpointAvailability('keys', true);
             const data = await response.json();
-            const publicKey = await openpgp.readKey({ armoredKey: data.public_key });
+            const fetchedPublicKey = data.public_key;
+
+            // Validate the key format
+            if (!isValidPublicKey(fetchedPublicKey)) {
+                console.error(`Invalid public key format for user ${userId}`);
+                return null;
+            }
 
             // Cache the key for future use
             setFriendPublicKeys(prev => ({
                 ...prev,
-                [userId]: publicKey
+                [userId]: fetchedPublicKey
             }));
 
-            return publicKey;
+            return fetchedPublicKey;
         } catch (error) {
             console.error(`Error fetching public key for user ${userId}:`, error);
             return null;
-        } finally {
-            markRequestEnd('fetch_friend_public_key');
         }
-    }, [friendPublicKeys, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability]);
+    }, [friendPublicKeys, currentUser, authToken, apiEndpoint, markEndpointAvailability]);
 
-    const encryptMessage = useCallback(async (content: string, recipientId: string): Promise<{ encrypted: string, isEncrypted: boolean }> => {
-        if (!publicKey || !friendPublicKeys[recipientId]) {
-            return { encrypted: content, isEncrypted: false };
+    const encryptMessage = useCallback(async (
+        content: string, 
+        recipientId: string,
+        overrideSecretKey?: string  // Allow passing freshly generated key directly
+    ): Promise<{ 
+        ciphertext: string, 
+        nonce: string | null, 
+        isEncrypted: boolean 
+    }> => {
+        // Use override key if provided (for freshly generated keys before state updates)
+        const effectiveSecretKey = overrideSecretKey || secretKey;
+        
+        // Check if we have our own secret key
+        if (!effectiveSecretKey) {
+            // If no keys, send unencrypted as fallback (user hasn't set up encryption)
+            console.warn("[E2EE] No local secret key available. Sending message unencrypted.");
+            return { ciphertext: content, nonce: null, isEncrypted: false };
+        }
+
+        // Get friend's public key - use cached or fetch
+        let friendKey = friendPublicKeys[recipientId];
+        
+        if (!friendKey) {
+            // Try to fetch the friend's key
+            friendKey = await fetchFriendPublicKey(recipientId);
+            if (!friendKey) {
+                // Friend hasn't set up encryption - send unencrypted as fallback
+                console.warn(`[E2EE] No public key found for user ${recipientId}. Sending message unencrypted.`);
+                return { ciphertext: content, nonce: null, isEncrypted: false };
+            }
         }
 
         try {
-            const message = await openpgp.createMessage({ text: content });
-            const encrypted = await openpgp.encrypt({
-                message,
-                encryptionKeys: [publicKey, friendPublicKeys[recipientId]]
-            });
-
-            // The openpgp.encrypt returns an armored string when used with armored keys
-            const encryptedString = String(encrypted);
-
-            return { encrypted: encryptedString, isEncrypted: true };     
+            // Encrypt using NaCl box (ECDH + XSalsa20-Poly1305)
+            const { ciphertext, nonce } = naclEncrypt(content, friendKey, effectiveSecretKey);
+            return { ciphertext, nonce, isEncrypted: true };
         } catch (error) {
             console.error("Error encrypting message:", error);
-            return { encrypted: content, isEncrypted: false };
+            // Fallback to unencrypted if encryption fails
+            console.warn("Encryption failed. Sending message unencrypted.");
+            return { ciphertext: content, nonce: null, isEncrypted: false };
         }
-    }, [publicKey, friendPublicKeys]);
+    }, [secretKey, friendPublicKeys, fetchFriendPublicKey, keyStatus]);
 
     const ensureConversation = useCallback(async (targetId: string): Promise<string | null> => {
         if (!currentUser || !authToken) return null;
@@ -599,15 +768,20 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 for (const payload of queued) {
                     const normalized = payload.message || payload;
                     const ciphertext = normalized.ciphertext || normalized.content;
-                    const decrypted = normalized.encrypted && ciphertext
-                        ? await decryptMessage(ciphertext, normalized.sender_id)
-                        : normalized.content;
+                    const nonce = normalized.nonce;
+                    const senderPublicKey = normalized.sender_public_key;
+                    
+                    // Decrypt if encrypted and we have necessary data
+                    const decrypted = normalized.encrypted && ciphertext && nonce && senderPublicKey
+                        ? await decryptMessage(ciphertext, nonce, senderPublicKey)
+                        : normalized.content || ciphertext;
 
                     const newMessage: ChatMessage = {
                         id: normalized.id,
                         senderId: normalized.sender_id,
                         content: decrypted,
                         ciphertext,
+                        nonce,
                         timestamp: new Date(normalized.timestamp),
                         media: (normalized.media || []).map((item: any) => ({
                             id: item.id,
@@ -638,16 +812,16 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     avatar: data.friend.avatar || '',
                     displayName: data.friend.display_name || `${data.friend.first_name} ${data.friend.last_name}`,
                     isOnline: Boolean(data.is_online),
-                        lastSeen: data.last_seen ? new Date(data.last_seen) : null,
+                    lastSeen: data.last_seen ? new Date(data.last_seen) : null,
                     isCloseFriend: Boolean(data.is_close_friend),
                     friendshipId: data.friendship_id || 0,
                     conversationId,
-                        unreadCount: data.unread_count || 0,
-                        mutualFriends: data.mutual_friends || 0,
-                        category: data.category || 'friends',
-                        bio: data.friend.bio || '',
-                        messagePreview: data.last_message?.content || null,
-                        messageTime: data.last_message?.timestamp ? new Date(data.last_message.timestamp) : new Date(),
+                    unreadCount: data.unread_count || 0,
+                    mutualFriends: data.mutual_friends || 0,
+                    category: data.category || 'friends',
+                    bio: data.friend.bio || '',
+                    messagePreview: data.last_message?.content || null,
+                    messageTime: data.last_message?.timestamp ? new Date(data.last_message.timestamp) : new Date(),
                 };
                 setFriendDetails(normalized);
             }
@@ -664,6 +838,24 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         if (!canMakeRequest('send_message')) {
             return;
+        }
+
+        // Auto-generate encryption keys if we have a key password but no keys yet
+        // Track freshly generated keypair for immediate use (avoids React state timing issues)
+        let freshKeyPair: { publicKey: string; secretKey: string } | null = null;
+        
+        // Generate keys if: unavailable (no keys) OR locked (keys exist but wrong password - regenerate)
+        if ((keyStatus === 'unavailable' || keyStatus === 'locked') && !secretKey) {
+            const storedKeyPassword = typeof window !== 'undefined' 
+                ? sessionStorage.getItem('e2ee_key_password') 
+                : null;
+            if (storedKeyPassword) {
+                try {
+                    freshKeyPair = await generateKeys(storedKeyPassword);
+                } catch (e) {
+                    console.warn('[E2EE] Could not auto-generate keys:', e);
+                }
+            }
         }
 
         markRequestStart('send_message');
@@ -706,12 +898,15 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 }
             }
 
-            const { encrypted, isEncrypted } = await encryptMessage(content, friendId);
+            // Pass freshly generated secret key if available (avoids React state timing issues)
+            const { ciphertext, nonce, isEncrypted } = await encryptMessage(content, friendId, freshKeyPair?.secretKey);
 
             const optimisticMessage: ChatMessage = {
                 id: Date.now(),
                 senderId: currentUser.id,
-                content: encrypted,
+                content: content,  // Store plaintext locally for optimistic UI
+                ciphertext,
+                nonce: nonce || undefined,
                 timestamp: new Date(),
                 media: uploadedMedia,
                 reactions: [],
@@ -721,7 +916,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 encrypted: isEncrypted
             };
 
-    setMessages(prev => [optimisticMessage, ...prev]);
+            setMessages(prev => [optimisticMessage, ...prev]);
 
             const response = await fetch(`${apiEndpoint}/messages`, {
                 method: 'POST',
@@ -730,7 +925,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     Authorization: `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({
-                    content: encrypted,
+                    content: ciphertext,
+                    nonce: nonce,  // Send nonce for E2EE decryption
                     recipient_id: friendId,
                     conversation_id: conversationId,
                     media: uploadedMedia,
@@ -758,7 +954,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         isSent: true,
                         timestamp: new Date(result.message_data.timestamp),
                         content,
-                        ciphertext: encrypted,
+                        ciphertext,
+                        nonce: nonce || undefined,
                     }
                     : msg
             ));
@@ -778,13 +975,13 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
     const sendTypingIndicator = useCallback((isTyping: boolean) => {
         if (socket && isConnected && friendId && currentConversationId) {
-      socket.emit('typing', {
-        recipient_id: friendId,
-        conversation_id: currentConversationId,
-        is_typing: isTyping
-      });
-    }
-  }, [socket, isConnected, friendId, currentConversationId]);
+            socket.emit('typing', {
+                recipient_id: friendId,
+                conversation_id: currentConversationId,
+                is_typing: isTyping
+            });
+        }
+    }, [socket, isConnected, friendId, currentConversationId]);
 
     const getMessages = useCallback(async (friendId: string, batchSize: number, lastMessageId?: number): Promise<ChatMessage[]> => {
         if (!currentUser || !authToken || fetchingMessagesRef.current) {
@@ -834,16 +1031,22 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             markEndpointAvailability('messages', true);
             const data = await response.json();
             const messagesData = await Promise.all((data.messages || []).map(async (msg: any) => {
-                const encryptedContent = msg.ciphertext || msg.content;
-                let decryptedContent = encryptedContent;
-                if (msg.encrypted && encryptedContent) {
-                    decryptedContent = await decryptMessage(encryptedContent, msg.sender_id);
+                const ciphertext = msg.ciphertext || msg.content;
+                const nonce = msg.nonce;
+                const senderPublicKey = msg.sender_public_key;
+                
+                // Decrypt if encrypted and we have necessary data
+                let decryptedContent = ciphertext;
+                if (msg.encrypted && ciphertext && nonce && senderPublicKey) {
+                    decryptedContent = await decryptMessage(ciphertext, nonce, senderPublicKey);
                 }
 
                 return {
                     id: msg.id,
                     senderId: msg.sender_id,
                     content: decryptedContent,
+                    ciphertext,
+                    nonce,
                     timestamp: new Date(msg.timestamp),
                     media: (msg.media || []).map((mediaItem: any) => ({
                         url: mediaItem.url,
@@ -1075,76 +1278,149 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
 
 
-    const generateKeys = async () => {
+    /**
+     * Generate new E2EE keys with password protection
+     * @param password - Password to encrypt the private key (auto-derived from login if not provided)
+     */
+    const generateKeys = async (password?: string): Promise<{ publicKey: string; secretKey: string } | null> => {
         if (!currentUser) {
-            toast.error("You must be logged in to generate keys");
-            return;
+            console.warn("Cannot generate keys: not logged in");
+            return null;
         }
 
-        if (!canMakeRequest('generate_keys')) {
-            return;
+        // Note: No rate limiting for key generation - critical for E2EE
+
+        if (keyGenerationAttempted) {
+            return null;
         }
 
-        markRequestStart('generate_keys');
+        // Use stored key password from session (derived from login) or provided password
+        const storedKeyPassword = typeof window !== 'undefined' 
+            ? sessionStorage.getItem('e2ee_key_password') 
+            : null;
+        const keyPwd = password || keyPassword || storedKeyPassword;
+        
+        if (!keyPwd) {
+            // Don't show error - just log and let user re-login if needed
+            console.warn("No key password available. User may need to re-login for E2EE.");
+            setKeyStatus('unavailable');
+            return null;
+        }
+
+        setKeyGenerationAttempted(true);
 
         try {
             setKeyStatus('generating');
             toast.loading("Generating encryption keys...");
 
-            const { privateKey, publicKey } = await openpgp.generateKey({
-                type: 'rsa',
-                rsaBits: 4096,  // Match server's RSA key size
-                userIDs: [{ name: currentUser.firstName, email: currentUser.email }],
-                passphrase: '',
-                format: 'armored'
-            });
+            // Generate NaCl keypair and store in IndexedDB with password protection
+            const keyPair = await generateAndStoreKeyPair(keyPwd);
 
-            const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: privateKey });
-            const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
-
-            setPrivateKey(privateKeyObj);
-            setPublicKey(publicKeyObj);
+            setSecretKey(keyPair.secretKey);
+            setPublicKey(keyPair.publicKey);
+            setKeyPassword(keyPwd);  // Cache for session
             setKeyStatus('available');
 
-            if (currentUser) {
-                localStorage.setItem(`pgp-private-key-${currentUser.id}`, privateKey);
+            // Upload public key to server - MUST complete for E2EE to work
+            try {
+                await uploadPublicKey(keyPair.publicKey);
+            } catch (uploadErr) {
+                console.error('[E2EE] Failed to upload public key:', uploadErr);
+                // Still continue - keys are generated locally, upload can be retried
             }
-            localStorage.setItem(`pgp-public-key-${currentUser.id}`, publicKey);
-
-            await uploadPublicKey(publicKey);
 
             toast.dismiss();
             toast.success("Encryption keys generated successfully");
+            
+            // Return the keypair for immediate use (avoids React state timing issues)
+            return keyPair;
         } catch (error) {
             console.error("Error generating keys:", error);
             setKeyStatus('unavailable');
             toast.dismiss();
             toast.error("Failed to generate encryption keys");
+            return null;
         } finally {
-            markRequestEnd('generate_keys');
+            // Reset attempt flag after a delay if it failed, to allow retrying manually later
+            if (keyStatus === 'unavailable') {
+                setTimeout(() => setKeyGenerationAttempted(false), 10000);
+            }
         }
     };
 
-    const loadKeys = async () => {
+    /**
+     * Load keys from IndexedDB with password
+     * @param password - Password to decrypt the private key
+     */
+    const loadKeys = async (password?: string) => {
         if (!currentUser) return;
 
         try {
-            const storedPrivateKey = localStorage.getItem(`pgp-private-key-${currentUser.id}`);
-            const storedPublicKey = localStorage.getItem(`pgp-public-key-${currentUser.id}`);
-
-            if (storedPrivateKey && storedPublicKey) {
-                const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: storedPrivateKey });
-                const publicKeyObj = await openpgp.readKey({ armoredKey: storedPublicKey });
-
-                setPrivateKey(privateKeyObj);
-                setPublicKey(publicKeyObj);
-                setKeyStatus('available');
-            } else {
+            // Clean up old PGP keys from localStorage (migration from old system)
+            if (typeof window !== 'undefined') {
+                const oldPrivateKey = localStorage.getItem(`pgp-private-key-${currentUser.id}`);
+                const oldPublicKey = localStorage.getItem(`pgp-public-key-${currentUser.id}`);
+                if (oldPrivateKey || oldPublicKey) {
+                    localStorage.removeItem(`pgp-private-key-${currentUser.id}`);
+                    localStorage.removeItem(`pgp-public-key-${currentUser.id}`);
+                }
+            }
+            
+            // Check if keys exist in IndexedDB (validates NaCl format)
+            const hasKeys = await hasStoredKeys();
+            if (!hasKeys) {
                 setKeyStatus('unavailable');
+                return;
+            }
+
+            // Get public key (doesn't need password)
+            const storedPublicKey = await getStoredPublicKey();
+            if (storedPublicKey) {
+                setPublicKey(storedPublicKey);
+            }
+
+            // If password provided or cached, decrypt secret key
+            const pwd = password || keyPassword;
+            if (pwd) {
+                const keyPair = await retrieveKeyPair(pwd);
+                if (keyPair) {
+                    setSecretKey(keyPair.secretKey);
+                    setPublicKey(keyPair.publicKey);
+                    setKeyPassword(pwd);  // Cache for session
+                    setKeyStatus('available');
+                } else {
+                    // Wrong password or corrupted keys
+                    setKeyStatus('locked');
+                }
+            } else {
+                // Keys exist but need password to unlock
+                setKeyStatus('locked');
             }
         } catch (error) {
             console.error("Error loading keys:", error);
             setKeyStatus('unavailable');
+        }
+    };
+
+    /**
+     * Unlock keys with password (for existing keys)
+     */
+    const unlockKeys = async (password: string): Promise<boolean> => {
+        try {
+            const keyPair = await retrieveKeyPair(password);
+            if (keyPair) {
+                setSecretKey(keyPair.secretKey);
+                setPublicKey(keyPair.publicKey);
+                setKeyPassword(password);
+                setKeyStatus('available');
+                return true;
+            }
+            toast.error("Invalid password");
+            return false;
+        } catch (error) {
+            console.error("Error unlocking keys:", error);
+            toast.error("Failed to unlock keys");
+            return false;
         }
     };
 
@@ -1153,36 +1429,25 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             toast.error("No public key available");
             return null;
         }
-
-        try {
-            const armoredKey = openpgp.armor(openpgp.enums.armor.message, publicKey.toPacketList());
-            return armoredKey;
-        } catch (error) {
-            console.error("Error exporting public key:", error);
-            toast.error("Failed to export public key");
-            return null;
-        }
+        return publicKey;  // Already base64 encoded
     };
 
-    const uploadPublicKey = async (armoredPublicKey: string): Promise<any> => {
+    const uploadPublicKey = async (base64PublicKey: string): Promise<any> => {
         if (!currentUser || !authToken) {
             throw new Error('Authentication required');
         }
 
-        if (!canMakeRequest('upload_public_key')) {
-            throw new Error('Rate limited');
-        }
-
-        markRequestStart('upload_public_key');
+        // Note: No rate limiting for public key upload - critical for E2EE
+        const url = `${apiEndpoint}/keys`;
 
         try {
-            const response = await fetch(`${apiEndpoint}/keys`, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${authToken}`,
                 },
-                body: JSON.stringify({ public_key: armoredPublicKey }),
+                body: JSON.stringify({ public_key: base64PublicKey }),
             });
 
             if (response.status === 404) {
@@ -1197,8 +1462,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             markEndpointAvailability('keys', true);
             return response.json();
-        } finally {
-            markRequestEnd('upload_public_key');
+        } catch (err) {
+            console.error('[E2EE] Failed to upload public key:', err);
+            throw err;
         }
     };
 
@@ -1219,6 +1485,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 getChatList,
                 chatList,
                 generateKeys,
+                unlockKeys,
+                loadKeys,
                 exportPublicKey,
                 keyStatus,
                 fetchConversations,

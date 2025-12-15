@@ -60,6 +60,7 @@ export interface ChatMessage {
   senderId: string;
   content: string;
   ciphertext?: string | null;
+  nonce?: string;  // E2EE nonce for NaCl box decryption
   timestamp: Date;
   media: ChatMedia[] | null;
   reactions: { userId: string; reactionType: string }[];
@@ -116,7 +117,7 @@ export interface ChatListUser {
   isCloseFriend: boolean;
 }
 
-export type KeyStatus = 'generating' | 'available' | 'unavailable';
+export type KeyStatus = 'generating' | 'available' | 'unavailable' | 'locked';
 
 export interface ChatContextType {
   sendMessage: (content: string, media: FileList | null, replyTo?: number) => Promise<void>;
@@ -132,7 +133,9 @@ export interface ChatContextType {
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   getChatList: () => Promise<ChatListUser[]>;
   chatList: ChatListUser[] | undefined;
-  generateKeys: () => Promise<void>;
+  generateKeys: (password?: string) => Promise<void>;
+  unlockKeys: (password: string) => Promise<boolean>;
+  loadKeys: (password?: string) => Promise<void>;
   exportPublicKey: () => Promise<string | null>;
   keyStatus: KeyStatus;
   fetchConversations: () => Promise<ChatConversation[]>;
@@ -346,6 +349,7 @@ export interface UserContextProps {
   fetchFriends: (options?: { force?: boolean }) => Promise<void>;
   fetchUsers: () => Promise<void>;
   fetchPendingRequests: (options?: { force?: boolean }) => Promise<void>;
+  sentRequestIds: Set<string>;
 }
 
 export interface UserEvent {
