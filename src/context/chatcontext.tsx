@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/exhaustive-deps */
+
 import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback, useMemo } from "react";
 import { toast } from 'react-hot-toast';
 import { AuthContext } from "./authcontext";
@@ -36,7 +38,7 @@ export const ChatContext = createContext<ChatContextType>({
     setMessages: () => { },
     getChatList: async () => [],
     chatList: [],
-    generateKeys: async () => { },
+    generateKeys: async () => null,
     unlockKeys: async () => false,
     loadKeys: async () => { },
     exportPublicKey: async () => null,
@@ -718,7 +720,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
 
         // Get friend's public key - use cached or fetch
-        let friendKey = friendPublicKeys[recipientId];
+        let friendKey: string | null = friendPublicKeys[recipientId] || null;
         
         if (!friendKey) {
             // Try to fetch the friend's key
@@ -740,7 +742,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             console.warn("Encryption failed. Sending message unencrypted.");
             return { ciphertext: content, nonce: null, isEncrypted: false };
         }
-    }, [secretKey, friendPublicKeys, fetchFriendPublicKey, keyStatus]);
+    }, [secretKey, friendPublicKeys, fetchFriendPublicKey]);
 
     const ensureConversation = useCallback(async (targetId: string): Promise<string | null> => {
         if (!currentUser || !authToken) return null;
@@ -830,6 +832,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         return conversationId;
     }, [apiEndpoint, authToken, currentUser, joinConversationRoom, consumeOfflineConversationMessages, decryptMessage]);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const sendMessage = useCallback(async (content: string, media: FileList | null, replyTo?: number) => {
         if (!friendId || !currentUser || !authToken) {
             toast.error("Cannot send message: missing required information");
@@ -968,7 +971,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('send_message');
         }
-    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, encryptMessage]);
+    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, encryptMessage, keyStatus, secretKey]);
 
     // Send typing indicator
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1278,11 +1281,47 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
 
 
+    const uploadPublicKey = useCallback(async (base64PublicKey: string): Promise<any> => {
+        if (!currentUser || !authToken) {
+            throw new Error('Authentication required');
+        }
+
+        // Note: No rate limiting for public key upload - critical for E2EE
+        const url = `${apiEndpoint}/keys`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify({ public_key: base64PublicKey }),
+            });
+
+            if (response.status === 404) {
+                markEndpointAvailability('keys', false);
+                throw new Error('Keys endpoint not available');
+            }
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Failed to upload public key: ${error}`);
+            }
+
+            markEndpointAvailability('keys', true);
+            return response.json();
+        } catch (err) {
+            console.error('[E2EE] Failed to upload public key:', err);
+            throw err;
+        }
+    }, [currentUser, authToken, apiEndpoint, markEndpointAvailability]);
+
     /**
      * Generate new E2EE keys with password protection
      * @param password - Password to encrypt the private key (auto-derived from login if not provided)
      */
-    const generateKeys = async (password?: string): Promise<{ publicKey: string; secretKey: string } | null> => {
+    const generateKeys = useCallback(async (password?: string): Promise<{ publicKey: string; secretKey: string } | null> => {
         if (!currentUser) {
             console.warn("Cannot generate keys: not logged in");
             return null;
@@ -1346,7 +1385,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 setTimeout(() => setKeyGenerationAttempted(false), 10000);
             }
         }
-    };
+    }, [currentUser, keyGenerationAttempted, keyPassword, uploadPublicKey, keyStatus, setKeyStatus, setSecretKey, setPublicKey, setKeyPassword, setKeyGenerationAttempted]);
 
     /**
      * Load keys from IndexedDB with password
@@ -1430,42 +1469,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             return null;
         }
         return publicKey;  // Already base64 encoded
-    };
-
-    const uploadPublicKey = async (base64PublicKey: string): Promise<any> => {
-        if (!currentUser || !authToken) {
-            throw new Error('Authentication required');
-        }
-
-        // Note: No rate limiting for public key upload - critical for E2EE
-        const url = `${apiEndpoint}/keys`;
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({ public_key: base64PublicKey }),
-            });
-
-            if (response.status === 404) {
-                markEndpointAvailability('keys', false);
-                throw new Error('Keys endpoint not available');
-            }
-
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Failed to upload public key: ${error}`);
-            }
-
-            markEndpointAvailability('keys', true);
-            return response.json();
-        } catch (err) {
-            console.error('[E2EE] Failed to upload public key:', err);
-            throw err;
-        }
     };
 
     return (

@@ -96,13 +96,15 @@ export function useWebSocket(): WebSocketHook {
       console.error('❌ Socket error:', error);
     });
 
+    const joinedRoomsAtSetup = joinedRoomsRef.current;
+
     return () => {
       console.log('🧹 Cleaning up socket connection');
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
-      joinedRoomsRef.current.clear();
+      joinedRoomsAtSetup.clear();
     };
   }, [authToken]);
 

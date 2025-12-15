@@ -133,7 +133,7 @@ export interface ChatContextType {
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   getChatList: () => Promise<ChatListUser[]>;
   chatList: ChatListUser[] | undefined;
-  generateKeys: (password?: string) => Promise<void>;
+  generateKeys: (password?: string) => Promise<{ publicKey: string; secretKey: string } | null>;
   unlockKeys: (password: string) => Promise<boolean>;
   loadKeys: (password?: string) => Promise<void>;
   exportPublicKey: () => Promise<string | null>;

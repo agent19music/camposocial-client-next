@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useChat } from '@/context/chatcontext';
 import { useContext } from 'react';
@@ -14,7 +14,7 @@ import { Search, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
-export default function ChatPage() {
+function ChatPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, currentUser } = useContext(AuthContext);
@@ -207,5 +207,13 @@ export default function ChatPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">Loading chat...</div>}>
+      <ChatPageInner />
+    </Suspense>
   );
 }

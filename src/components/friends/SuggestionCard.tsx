@@ -56,6 +56,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     friends,
     receivedRequests,
     sentRequestIds,
+    fetchPendingRequests,
   } = useUserContext();
 
   const suggestionId = suggestion.id?.toString();
