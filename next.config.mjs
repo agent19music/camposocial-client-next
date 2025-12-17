@@ -41,6 +41,7 @@ const nextConfig = {
           'www.eve.co.ke',
           'beautinow.com',
           'cdn.cosmostore.org',
+          'tapback.co',
           'static.thcdn.com'], 
       },
 };

@@ -21,9 +21,36 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import { DarkColors, Colors as Palette } from "../../constants/Colors";
-import {HeartStraightIcon,UsersThreeIcon,ShoppingBagOpenIcon,ChatsCircleIcon,CalendarDotsIcon,ChatCircleTextIcon} from '@phosphor-icons/react'
-import Footer from "@/components/footer";
+import {
+  HeartStraightIcon,
+  UsersThreeIcon,
+  ShoppingBagOpenIcon,
+  ChatsCircleIcon,
+  CalendarDotsIcon,
+  ChatCircleTextIcon,
+  GraduationCap,
+  Handshake,
+  Star,
+  Lock,
+  ChatTeardrop,
+  Books
+} from '@phosphor-icons/react'
 import { useTheme } from "@/context/themecontext";
+
+// Landing page components
+import { SectionScrollConnector } from "@/components/landing/scroll-trail-icon";
+import {
+  BentoGrid,
+  BentoCard,
+  BentoSection,
+  PlaceholderImage,
+  ProductCard,
+  EventCard,
+  ChatPreview,
+  StatCard,
+  UserAvatarGroup,
+} from "@/components/landing/bento-showcase";
+import AnimatedFooter from "@/components/landing/animated-footer";
 
 const features = [
   {
@@ -62,7 +89,7 @@ export default function Home() {
 
 
   return (
-   <div className="min-h-screen bg-background bg-stone-50"
+   <div className="min-h-screen bg-stone-50 dark:bg-stone-950"
  style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
         }}>
@@ -119,7 +146,7 @@ export default function Home() {
         HERO SECTION - TRANSFORMED
         ========================================================
       */}
- <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden bg:[#f1efe7] dark:bg-background min-h-[85vh]"
+ <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden min-h-[85vh]"
 
  >
 
@@ -256,7 +283,7 @@ export default function Home() {
         NEW STATS SECTION (Separated from Hero)
         ========================================================
       */}
-      <section className="py-20 px-6 sm:px-8 lg:px-10 dark:bg-background">
+      <section className="py-20 px-6 sm:px-8 lg:px-10">
         <div className="max-w-6xl mx-auto">
           <motion.div 
             className="grid grid-cols-2 lg:grid-cols-4 gap-8 pt-10  max-w-4xl mx-auto"
@@ -274,11 +301,11 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-3xl font-semibold mb-1" style={{ color: 'var(--color-heading)'}}>
+                <div className="text-3xl font-semibold mb-1 text-stone-800 dark:text-stone-100">
                   {stat.value.replace('+', '')}
-                  {stat.value.includes('+') && <span style={{ color: '#ff9013' }}>+</span>}
+                  {stat.value.includes('+') && <span className="text-[#ff9013]">+</span>}
                 </div>
-                <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                <div className="text-sm font-medium text-stone-500 dark:text-stone-400">
                   {stat.label}
                 </div>
               </motion.div>
@@ -288,7 +315,7 @@ export default function Home() {
       </section>
 
       {/* Features Section - Clean grid layout */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10 dark:bg-background">
+      <section className="py-24 px-6 sm:px-8 lg:px-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <motion.div
@@ -297,10 +324,10 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
             >
-                <h2 className="text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900 dark:text-white mb-4" style={{ fontFamily: 'Helvetica'   ,color: 'var(--color-heading)'}}>
+                <h2 className="text-4xl lg:text-5xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'Helvetica', color: 'var(--color-heading)' }}>
                 Built for Campus Life
               </h2>
-              <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto" >
+              <p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl mx-auto" >
                 Everything you need to thrive in your university community.
               </p>
             </motion.div>
@@ -315,17 +342,17 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
               >
-                <div className="bg-[#FAFAF9] dark:bg-[#1A1A19]  p-8 h-full rounded-2xl  shadow-lg transition-all duration-300 group backdrop-blur-sm">
+                <div className="bg-white dark:bg-stone-900 p-8 h-full rounded-2xl border border-stone-200 dark:border-stone-800 transition-all duration-300 group hover:-translate-y-1">
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300"
                     
                   >
-                      <feature.icon className="h-6 w-6 text-[#ff9013] "  />
+                      <feature.icon className="h-6 w-6 text-stone-700 dark:text-stone-300"  />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -335,48 +362,297 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer - Minimal Apple style */}
-      <footer className="py-2 px-6 sm:px-8 lg:px-10 dark:bg-background">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <Image
-                src={theme !== 'dark'
-                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
-                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
-                }
-                alt="CampoSocial"
-                width={36}
-                height={36}
-                className="rounded-xl shadow-sm"
+      {/* Scroll Connector - Features to Marketplace */}
+      <SectionScrollConnector icon="shop" side="right" height={180} />
+
+      {/* Marketplace Showcase Section */}
+      <BentoSection
+        title="Campus Marketplace"
+        subtitle="Buy, sell, and discover from fellow students. Textbooks, dorm essentials, handmade goods, and more."
+      >
+        <BentoGrid columns={3}>
+          <BentoCard className="md:col-span-2 md:row-span-2 overflow-hidden">
+            <div className="h-full flex flex-col">
+              <div className="relative rounded-xl mb-4 flex-1 min-h-[200px] overflow-hidden">
+                <Image
+                  src="/popupstores.png" 
+                  alt="Students at campus coffee shop marketplace pop-up"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Featured Seller</span>
+                <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mt-1">Campus Coffee Pop-Up</h3>
+                <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">Weekly vendor marketplace at the campus café</p>
+              </div>
+            </div>
+          </BentoCard>
+          
+          <ProductCard
+            image="/sadeshirtthrift.jpg"
+            imageAlt="Vintage Sade graphic tee with classic tour design, oversized fit, perfect condition"
+            title="Vintage Sade Shirt"
+            price="$28"
+            seller="@vintagevibes"
+          />
+          
+          <ProductCard
+            image="/adidassamba.jpg"
+            imageAlt="Samba classic shoes in white leather with iconic three stripes, gently worn"
+            title="Adidas Samba Shoes"
+            price="$65"
+            seller="@sneakerhead"
+          />
+          
+          <ProductCard
+            image="/manutd2007homekitthrift.jpg"
+            imageAlt="Manchester United official kit jersey, authentic merchandise, great condition"
+            title="Man Utd Jersey"
+            price="$45"
+            seller="@footie_fan"
+          />
+          
+          <ProductCard
+            image="/lipaccessories.jpg"
+            imageAlt="Makeup collection with trendy lip accessories, glosses and liners in various shades"
+            title="Lip Accessories Set"
+            price="$22"
+            seller="@beauty_hub"
+          />
+                    <ProductCard
+            image="/floralcupcakes.jpg"
+            imageAlt="Assorted floral-themed cupcakes with intricate icing designs, perfect for events"
+            title="Floral Cupcakes"
+            price="$7"
+            seller="@sweettooth"
+          />
+          
+          
+          <BentoCard>
+            <StatCard label="Active Listings" value="2,400+" />
+          </BentoCard>
+          
+          <BentoCard>
+            <StatCard label="Sold This Week" value="180" />
+          </BentoCard>
+        </BentoGrid>
+      </BentoSection>
+
+      {/* Scroll Connector - Marketplace to Events */}
+      <SectionScrollConnector icon="ticket" side="left" height={180} />
+
+      {/* Events Showcase Section */}
+      <BentoSection
+        title="Campus Events"
+        subtitle="Never miss a party, study session, club meeting, or campus happening. All in one place."
+      >
+        <BentoGrid columns={4}>
+          <EventCard
+            image="/chilloutside.png"
+            imageAlt="Outdoor sunset concert on the main quad"
+            title="Sunset Sessions"
+            date="Fri, Nov 15"
+            location="Main Quad"
+            attendees={234}
+          />
+          
+          <EventCard
+            image="/naturetrail.png"
+            imageAlt="Students hiking on nature trail"
+            title="Nature Hike"
+            date="Sun, Nov 17"
+            location="Greenwood Park"
+            attendees={56}
+          />
+  
+          
+          <EventCard
+            image="/christmasparty.png"
+            imageAlt="Holiday party celebration on campus"
+            title="Holiday Party"
+            date="Sat, Dec 16"
+            location="Main Quad"
+            attendees={450}
+          />
+          
+          <EventCard
+            image="/clubmeet.png"
+            imageAlt="Students in study lounge planning session"
+            title="Club Planning"
+            date="Sun, Nov 17"
+            location="Student Center"
+            attendees={45}
+          />
+          
+          <BentoCard className="md:col-span-2">
+            <div className="h-full flex flex-col justify-center items-center text-center p-4">
+              <div className="text-4xl font-bold text-stone-800 dark:text-stone-100 mb-2">50+</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Events This Week</div>
+            </div>
+          </BentoCard>
+          
+          <BentoCard className="md:col-span-2">
+            <div className="h-full flex flex-col justify-center items-center text-center p-4">
+              <div className="text-4xl font-bold text-stone-800 dark:text-stone-100 mb-2">12k</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Students Attending</div>
+            </div>
+          </BentoCard>
+        </BentoGrid>
+      </BentoSection>
+
+      {/* Scroll Connector - Events to Chat */}
+      <SectionScrollConnector icon="paperplane" side="right" height={180} />
+
+      {/* Chat & Messaging Section */}
+      <BentoSection
+        title="Connect & Chat"
+        subtitle="Message friends, join group chats, and stay connected with your campus community."
+      >
+        <BentoGrid columns={3}>
+          <BentoCard className="md:col-span-2">
+            <div className="space-y-3">
+              <ChatPreview
+                avatar=""
+                avatarAlt="Profile photo: Smiling college student with curly hair, wearing a university hoodie, natural lighting"
+                name="Study Group"
+                message="Anyone have notes from today's lecture?"
+                time="2m ago"
+                unread={3}
               />
-              <Image
-                  src={theme !== 'dark'
-                  ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
-                  : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
-                }
-                alt="University Logo"
-                width={100}
-                height={100}
-                className="  rounded-sm"
+              <ChatPreview
+                avatar=""
+                avatarAlt="Profile photo: Student wearing glasses and a beanie, friendly expression, campus background"
+                name="Alex Chen"
+                message="See you at the coffee shop!"
+                time="15m ago"
+              />
+              <ChatPreview
+                avatar=""
+                avatarAlt="Profile photo: Group of friends at a football game, team colors, excited expressions"
+                name="Dorm Floor 4"
+                message="Pizza night tonight?"
+                time="1h ago"
+                unread={12}
               />
             </div>
-            
-             <div className="text-center mt-8">
-             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-             Made by an over caffeinated undergrad 
-              <Image 
-                src="https://pub-abe4a6405e724602a7fac9bf761e290c.r2.dev/sean_pfp_peace-removebg-preview.png" 
-                alt="Sean" 
-                width={40} 
-                height={40} 
-                className="inline-block" 
+          </BentoCard>
+          
+          <BentoCard>
+            <div className="h-full flex flex-col justify-center items-center text-center p-4">
+              <Lock className="w-12 h-12 text-stone-700 dark:text-stone-300 mb-4" weight="duotone" />
+              <div className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">End-to-End</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Encrypted Messages</div>
+            </div>
+          </BentoCard>
+          
+          <BentoCard>
+            <StatCard label="Active Chats" value="5.2k" />
+          </BentoCard>
+          
+          <BentoCard className="md:col-span-2">
+            <div className="h-full flex items-center justify-between p-2">
+              <div>
+                <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Group Chats</div>
+                <div className="text-sm text-stone-600 dark:text-stone-400">Study groups, clubs, dorms & more</div>
+              </div>
+              <div className="text-3xl font-bold text-stone-800 dark:text-stone-100">340+</div>
+            </div>
+          </BentoCard>
+        </BentoGrid>
+      </BentoSection>
+
+      {/* Scroll Connector - Chat to Community */}
+      <SectionScrollConnector icon="users" side="left" height={180} />
+
+      {/* Community Section */}
+      <BentoSection
+        title="Your Campus Community"
+        subtitle="Find your people. From study buddies to lifelong friends."
+      >
+        <BentoGrid columns={3}>
+          <BentoCard className="md:col-span-2 overflow-hidden">
+            <div className="relative rounded-xl h-full min-h-[200px] overflow-hidden">
+              <Image
+                src="/unisocial.png"
+                alt="Students collaborating in campus lounge"
+                fill
+                className="object-cover"
               />
+            </div>
+          </BentoCard>
+          
+          <BentoCard>
+            <div className="h-full flex flex-col justify-center items-center text-center p-4">
+              <UserAvatarGroup count={5} />
+              <div className="mt-4 text-lg font-semibold text-stone-800 dark:text-stone-100">8,500+</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Students Connected</div>
+            </div>
+          </BentoCard>
+          
+          <BentoCard>
+            <div className="h-full flex flex-col justify-center p-4">
+              <GraduationCap className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">50+</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Universities</div>
+            </div>
+          </BentoCard>
+          
+          <BentoCard>
+            <div className="h-full flex flex-col justify-center p-4">
+              <Handshake className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">25k</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Friendships Made</div>
+            </div>
+          </BentoCard>
+          
+          <BentoCard>
+            <div className="h-full flex flex-col justify-center p-4">
+              <Star className="w-8 h-8 text-[#ff9013] mb-2" weight="duotone" />
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">4.9</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">App Store Rating</div>
+            </div>
+          </BentoCard>
+        </BentoGrid>
+      </BentoSection>
+
+      {/* Final CTA Section */}
+      <section className="py-24 px-6 sm:px-8 lg:px-10">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl lg:text-6xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'Helvetica', color: 'var(--color-heading)' }}>
+              Ready to join your campus?
+            </h2>
+            <p className="text-xl text-stone-600 dark:text-stone-400 mb-10 max-w-2xl mx-auto">
+              Connect with thousands of students. Buy, sell, chat, and discover events all in one place.
             </p>
-          </div>
-          </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white rounded-full transition-all duration-300 hover:-translate-y-1"
+                style={{ backgroundColor: '#ff9013' }}
+              >
+                Get Started Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-stone-700 dark:text-stone-100 bg-stone-100 dark:bg-stone-800 rounded-full transition-all duration-300 hover:-translate-y-1"
+              >
+                I Have an Account
+              </Link>
+            </div>
+          </motion.div>
         </div>
-      </footer>
+      </section>
+
+      {/* Animated Footer */}
+      <AnimatedFooter />
     </div>
   );
 }
