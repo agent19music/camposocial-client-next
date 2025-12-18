@@ -375,7 +375,7 @@ export default function Home() {
             <div className="h-full flex flex-col">
               <div className="relative rounded-xl mb-4 flex-1 min-h-[200px] overflow-hidden">
                 <Image
-                  src="/popupstores.png" 
+                  src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/popupstores.jpg" 
                   alt="Students at campus coffee shop marketplace pop-up"
                   fill
                   className="object-cover"
@@ -390,7 +390,7 @@ export default function Home() {
           </BentoCard>
           
           <ProductCard
-            image="/sadeshirtthrift.jpg"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/sadeshirtthrift.jpg"
             imageAlt="Vintage Sade graphic tee with classic tour design, oversized fit, perfect condition"
             title="Vintage Sade Shirt"
             price="$28"
@@ -398,7 +398,7 @@ export default function Home() {
           />
           
           <ProductCard
-            image="/adidassamba.jpg"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/adidassamba.jpg"
             imageAlt="Samba classic shoes in white leather with iconic three stripes, gently worn"
             title="Adidas Samba Shoes"
             price="$65"
@@ -406,7 +406,7 @@ export default function Home() {
           />
           
           <ProductCard
-            image="/manutd2007homekitthrift.jpg"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/manutd2007homekitthrift.jpg"
             imageAlt="Manchester United official kit jersey, authentic merchandise, great condition"
             title="Man Utd Jersey"
             price="$45"
@@ -414,14 +414,14 @@ export default function Home() {
           />
           
           <ProductCard
-            image="/lipaccessories.jpg"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/lipaccessories.jpg"
             imageAlt="Makeup collection with trendy lip accessories, glosses and liners in various shades"
             title="Lip Accessories Set"
             price="$22"
             seller="@beauty_hub"
           />
                     <ProductCard
-            image="/floralcupcakes.jpg"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/floralcupcakes.jpg"
             imageAlt="Assorted floral-themed cupcakes with intricate icing designs, perfect for events"
             title="Floral Cupcakes"
             price="$7"
@@ -449,7 +449,7 @@ export default function Home() {
       >
         <BentoGrid columns={4}>
           <EventCard
-            image="/chilloutside.png"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/chilloutside.jpg"
             imageAlt="Outdoor sunset concert on the main quad"
             title="Sunset Sessions"
             date="Fri, Nov 15"
@@ -458,7 +458,7 @@ export default function Home() {
           />
           
           <EventCard
-            image="/naturetrail.png"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/naturetrail.jpg"
             imageAlt="Students hiking on nature trail"
             title="Nature Hike"
             date="Sun, Nov 17"
@@ -468,7 +468,7 @@ export default function Home() {
   
           
           <EventCard
-            image="/christmasparty.png"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/christmasparty.jpg"
             imageAlt="Holiday party celebration on campus"
             title="Holiday Party"
             date="Sat, Dec 16"
@@ -477,7 +477,7 @@ export default function Home() {
           />
           
           <EventCard
-            image="/clubmeet.png"
+            image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/clubmeet.jpg"
             imageAlt="Students in study lounge planning session"
             title="Club Planning"
             date="Sun, Nov 17"
@@ -513,24 +513,24 @@ export default function Home() {
           <BentoCard className="md:col-span-2">
             <div className="space-y-3">
               <ChatPreview
-                avatar=""
-                avatarAlt="Profile photo: Smiling college student with curly hair, wearing a university hoodie, natural lighting"
+                avatar="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/grouppfp.png"
+                avatarAlt="Profile photo: Group study session with students"
                 name="Study Group"
                 message="Anyone have notes from today's lecture?"
                 time="2m ago"
                 unread={3}
               />
               <ChatPreview
-                avatar=""
-                avatarAlt="Profile photo: Student wearing glasses and a beanie, friendly expression, campus background"
-                name="Alex Chen"
-                message="See you at the coffee shop!"
+                avatar="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/fanumtax.png"
+                avatarAlt="Profile photo: Sean"
+                name="Sean"
+                message="So, what's your favourite class this semester?"
                 time="15m ago"
               />
               <ChatPreview
-                avatar=""
-                avatarAlt="Profile photo: Group of friends at a football game, team colors, excited expressions"
-                name="Dorm Floor 4"
+                avatar="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/chunli.png"
+                avatarAlt="Profile photo: Chunli"
+                name="Chunli"
                 message="Pizza night tonight?"
                 time="1h ago"
                 unread={12}
@@ -574,7 +574,7 @@ export default function Home() {
           <BentoCard className="md:col-span-2 overflow-hidden">
             <div className="relative rounded-xl h-full min-h-[200px] overflow-hidden">
               <Image
-                src="/unisocial.png"
+                src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/unisocial.png"
                 alt="Students collaborating in campus lounge"
                 fill
                 className="object-cover"

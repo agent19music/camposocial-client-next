@@ -47,8 +47,8 @@ export default function AnimatedFooter() {
   ];
 
   const legalLinks = [
-    { label: "Privacy Policy", href: "/comingsoon" },
-    { label: "Terms & Conditions", href: "/comingsoon" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
   ];
 
   return (

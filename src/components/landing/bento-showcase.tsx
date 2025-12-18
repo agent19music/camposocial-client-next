@@ -276,9 +276,9 @@ export const ChatPreview: React.FC<ChatPreviewProps> = ({
   unread,
 }) => (
   <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 hover:-translate-y-1 transition-transform duration-200">
-    <div className="relative flex-shrink-0 w-8 h-8">
-      <Avatar className="w-8 h-8 rounded-full">
-        <AvatarImage src={"https://tapback.co/api/avatar.webp"} />
+    <div className="relative flex-shrink-0 w-12 h-12">
+      <Avatar className="w-12 h-12 rounded-full">
+        <AvatarImage src={avatar || ""} alt={avatarAlt} />
         <AvatarFallback>
           {name[0]}
         </AvatarFallback>
@@ -323,6 +323,14 @@ interface UserAvatarGroupProps {
   count?: number;
 }
 
+const avatarImages = [
+ "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/chunli.png",
+ "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/billie.png",
+  "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/ken.png",
+  "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/dreadsguy.png",
+  "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/laughafro.png",
+];
+
 export const UserAvatarGroup: React.FC<UserAvatarGroupProps> = ({
   count = 5,
 }) => (
@@ -330,17 +338,16 @@ export const UserAvatarGroup: React.FC<UserAvatarGroupProps> = ({
     {Array.from({ length: Math.min(count, 5) }).map((_, i) => (
       <div
         key={i}
-        className={cn(
-          "w-10 h-10 rounded-full border-2 border-white dark:border-stone-900",
-          [
-            "bg-stone-200 dark:bg-stone-700",
-            "bg-stone-300 dark:bg-stone-600",
-            "bg-stone-200 dark:bg-stone-700",
-            "bg-stone-300 dark:bg-stone-600",
-            "bg-stone-200 dark:bg-stone-700",
-          ][i % 5]
-        )}
-      />
+        className="w-12 h-12 rounded-full border-2 border-white dark:border-stone-900 overflow-hidden"
+      >
+        <Image
+          src={avatarImages[i % avatarImages.length]}
+          width={100}
+          height={100}
+          alt={`Student avatar ${i + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
     ))}
     {count > 5 && (
       <div className="w-10 h-10 rounded-full border-2 border-white dark:border-stone-900 bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-xs font-medium text-stone-600 dark:text-stone-400">
