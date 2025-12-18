@@ -30,9 +30,8 @@ const StarRating = ({ rating }: { rating: number }) => {
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`w-5 h-5 ${
-            star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
-          }`}
+          className={`w-5 h-5 ${star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
+            }`}
         />
       ))}
     </div>
@@ -102,39 +101,48 @@ export default function SingleProductPage() {
   const [review, setReview] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const {authToken} = useContext(AuthContext)
+  const { authToken } = useContext(AuthContext)
 
   const params = useParams()
 
-  console.log(selectedProduct);
-  
-
   useEffect(() => {
     let isMounted = true;
+
     const fetchProductData = async () => {
+      if (!params.slug) return;
+
       setIsLoading(true);
       try {
-        const productId = deslugify(params.slug as string);
-        const response = await fetch(`${apiEndpoint}/products/${productId}`);
-        if (isMounted && response.ok) {
+        const slug = params.slug as string;
+        const response = await fetch(`${apiEndpoint}/products/${slug}`);
+
+        // Only process if still mounted
+        if (!isMounted) return;
+
+        if (response.ok) {
           const data = await response.json();
           setSelectedProduct(data);
-          setSelectedImage(data.images[0]);
+          if (data.images?.[0]) {
+            setSelectedImage(data.images[0]);
+          }
         } else {
-          throw new Error('Failed to fetch product data');
+          console.error('Product fetch failed:', response.status);
+          toast.error('Product not found');
         }
       } catch (error) {
-        console.error('Error fetching product data:', error);
-        if (isMounted) toast.error('Failed to load product data');
+        if (isMounted) {
+          console.error('Error fetching product data:', error);
+          toast.error('Failed to load product');
+        }
       } finally {
         if (isMounted) setIsLoading(false);
       }
     };
-  
+
     fetchProductData();
     return () => { isMounted = false; };
-  }, [params.slug, setSelectedProduct, apiEndpoint, deslugify]);
-  
+  }, [params.slug, apiEndpoint]);
+
 
   // deslugify now provided by context
   const averageRating = selectedProduct?.reviews
@@ -144,37 +152,40 @@ export default function SingleProductPage() {
     : 0
 
   const marketplaceLinks = [
-    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" />, onClick: () => {} },
-    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" />, onClick: () => {} },
-    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" />, onClick: () => {} },
-    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => {} },
-    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => {} },
+    { href: "/art", label: "Art ", icon: <Paintbrush className="h-4 w-4" />, onClick: () => { } },
+    { href: "/food", label: "Food ", icon: <Cookie className="h-4 w-4" />, onClick: () => { } },
+    { href: "/books", label: "Books", icon: <Book className="h-4 w-4" />, onClick: () => { } },
+    { href: "/clothing", label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => { } },
+    { href: "/tech", label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => { } },
   ]
 
   // addToCart now provided by context
 
   return (
-    <div className="w-screen h-screen lg:container mx-auto p-4">
+    <div className="min-h-screen w-full">
       <Header />
-      <div className="flex flex-col md:flex-row">
-       <div className="md:w-64 flex-shrink-0">
-                <SideNav links = {marketplaceLinks} />
-              </div>
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
+        {/* Sidebar - hidden on mobile, shown on lg+ */}
+        <div className="hidden lg:block lg:w-64 flex-shrink-0 p-4">
+          <SideNav links={marketplaceLinks} />
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 px-4 py-6 md:px-6 lg:px-8 overflow-x-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
             {/* Image Gallery */}
             <div className="space-y-4">
               {isLoading ? (
                 <Skeleton className="w-full aspect-square rounded-lg" />
               ) : (
                 <div className="relative aspect-square">
-                      <Image
-                src={selectedImage}
-                alt={selectedProduct?.title || "Product image"}
-                fill
-                loading="lazy" // Enables lazy loading
-                className="object-contain rounded-lg"
-                />
+                  <Image
+                    src={selectedImage}
+                    alt={selectedProduct?.title || "Product image"}
+                    fill
+                    loading="lazy" // Enables lazy loading
+                    className="object-contain rounded-lg"
+                  />
 
                 </div>
               )}
@@ -194,9 +205,8 @@ export default function SingleProductPage() {
                         src={image}
                         alt={`${selectedProduct.title} thumbnail ${index + 1}`}
                         fill
-                        className={`object-contain rounded-md ${
-                          selectedImage === image ? "border border-primary" : ""
-                        }`}
+                        className={`object-contain rounded-md ${selectedImage === image ? "border border-primary" : ""
+                          }`}
                       />
                     </button>
                   ))
@@ -222,8 +232,8 @@ export default function SingleProductPage() {
                     </span>
                   </div>
                   <p className="text-gray-600">{selectedProduct?.description}</p>
-                  {!selectedVariation&&<p className="text-xl font-bold">${selectedProduct?.variations[0].price}</p>}
-                  {selectedVariation &&<p className="text-xl font-bold">${selectedVariation?.price}</p>}
+                  {!selectedVariation && <p className="text-xl font-bold">${selectedProduct?.variations[0].price}</p>}
+                  {selectedVariation && <p className="text-xl font-bold">${selectedVariation?.price}</p>}
                   <p className="text-sm text-gray-500">Category: {selectedProduct?.category}</p>
                   <p className="text-sm text-gray-500">Brand: {selectedProduct?.brand}</p>
                 </>
@@ -234,10 +244,10 @@ export default function SingleProductPage() {
                 <Skeleton className="h-40 w-full" />
               ) : (
                 selectedProduct?.variations && (
-                  <ProductVariations 
-                  onVariationChange={setSelectedVariation}
-                  variations={selectedProduct.variations}
-                  selectedProduct={selectedProduct} />
+                  <ProductVariations
+                    onVariationChange={setSelectedVariation}
+                    variations={selectedProduct.variations}
+                    selectedProduct={selectedProduct} />
                 )
               )}
 
@@ -250,10 +260,10 @@ export default function SingleProductPage() {
                     <Skeleton className="h-3 w-32 mt-1" />
                   </div>
                 </div>
-              ) : (
+              ) : selectedProduct?.seller ? (
                 <div
                   className="flex items-center space-x-4 hover:cursor-pointer"
-                  onClick={() => selectedProduct?.seller && navigateToSingleSellerView({  
+                  onClick={() => navigateToSingleSellerView({
                     name: selectedProduct.seller.name,
                     avatar: selectedProduct.seller.avatar,
                     id: selectedProduct.seller.id,
@@ -263,29 +273,29 @@ export default function SingleProductPage() {
                   })}
                 >
                   <Avatar className="w-12 h-12">
-                    <AvatarImage src={selectedProduct?.seller.avatar} alt={selectedProduct?.seller.name} />
-                    <AvatarFallback>{selectedProduct?.seller.name ? selectedProduct.seller.name[0] : "?"}</AvatarFallback>
+                    <AvatarImage src={selectedProduct.seller.avatar} alt={selectedProduct.seller.name} />
+                    <AvatarFallback>{selectedProduct.seller.name ? selectedProduct.seller.name[0] : "?"}</AvatarFallback>
                   </Avatar>
                   <div className="flex items-center">
-                    <p className="font-semibold">{selectedProduct?.seller.name}</p>
-                    {selectedProduct?.seller.is_verified && ( //@ts-ignore
+                    <p className="font-semibold">{selectedProduct.seller.name}</p>
+                    {selectedProduct.seller.is_verified && (
                       <CheckCircle className="w-4 h-4 text-green-500 ml-1" />
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Add to Cart Button */}
-              <Button 
-            className="w-full" 
-            disabled={isLoading} 
-            onClick={async () => {
-              const res = await addToCart(selectedProduct?.id || '', 1, selectedVariation?.id);
-              if (res) toast.success("Product added to cart successfully!");
-              else toast.error("Failed to add product to cart");
-            }}>
-              Add to Cart
-          </Button>
+              <Button
+                className="w-full"
+                disabled={isLoading}
+                onClick={async () => {
+                  const res = await addToCart(selectedProduct?.id || '', 1, selectedVariation?.id);
+                  if (res) toast.success("Product added to cart successfully!");
+                  else toast.error("Failed to add product to cart");
+                }}>
+                Add to Cart
+              </Button>
 
 
               {/* Contact Information */}
@@ -294,9 +304,9 @@ export default function SingleProductPage() {
                 <p className="text-sm text-gray-600">{selectedProduct?.contact_info}</p>
               </div> */}
 
-             
+
             </div>
-            <CartComponent/>
+            <CartComponent />
           </div>
 
           {/* Review System */}
@@ -323,48 +333,48 @@ export default function SingleProductPage() {
               <Button>Submit Review</Button>
             </CardContent>
           </Card> */}
-          <ReviewForm product_id={selectedProduct?.id || ''}/>
+          <ReviewForm product_id={selectedProduct?.id || ''} />
 
-           {/* Reviews */}
-           <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
-                <div className="space-y-4">
-                  {isLoading ? (
-                    Array(3).fill(0).map((_, index) => (
-                      <Card key={index} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <Skeleton className="w-8 h-8 rounded-full" />
-                              <Skeleton className="h-4 w-24" />
-                            </div>
-                            <Skeleton className="h-4 w-24" />
-                          </div>
-                          <Skeleton className="h-16 w-full mt-2" />
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    selectedProduct?.reviews?.map((review) => (
-                      <Card key={review.id} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <Avatar className="w-8 h-8">
-                              <AvatarImage src={review?.avatar} alt={review?.username} />
-                                <AvatarFallback>{review.username[0].toUpperCase()}</AvatarFallback>
-                              </Avatar>
-                              <p className="font-semibold">{review.username}</p>
-                            </div>
-                            <StarRating rating={review?.rating} />
-                          </div>
-                          <p className="mt-2 ">{review.text}</p>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </div>
+          {/* Reviews */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
+            <div className="space-y-4">
+              {isLoading ? (
+                Array(3).fill(0).map((_, index) => (
+                  <Card key={index} className="bg-gray-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Skeleton className="w-8 h-8 rounded-full" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-16 w-full mt-2" />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                selectedProduct?.reviews?.map((review) => (
+                  <Card key={review.id} className="bg-gray-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={review?.avatar} alt={review?.username} />
+                            <AvatarFallback>{review.username[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <p className="font-semibold">{review.username}</p>
+                        </div>
+                        <StarRating rating={review?.rating} />
+                      </div>
+                      <p className="mt-2 ">{review.text}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

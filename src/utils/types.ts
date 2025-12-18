@@ -94,7 +94,7 @@ export interface ChatFriend {
   category: string;
   bio: string;
   messagePreview: string | null;
-  messageTime: Date ;
+  messageTime: Date;
 }
 
 export interface ChatConversation {
@@ -141,7 +141,7 @@ export interface ChatContextType {
   fetchConversations: () => Promise<ChatConversation[]>;
   checkIfConversationExists: (friendId: string) => Promise<boolean>;
   conversations: ChatConversation[];
-  getFriendDetails: (friendId: string) => Promise<{name: string; avatar: string; isOnline: boolean} | null>;
+  getFriendDetails: (friendId: string) => Promise<{ name: string; avatar: string; isOnline: boolean } | null>;
   friendDetails: ChatFriend | null;
   currentUser: ChatUser | null;
   sendTypingIndicator: (isTyping: boolean) => void;
@@ -266,6 +266,7 @@ export interface Seller {
 
 export interface Product {
   id: string;
+  slug?: string;  // SEO-friendly URL slug (optional for backwards compat)
   average_rating: number;
   category: string;
   created_at: string;

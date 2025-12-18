@@ -20,20 +20,20 @@ const defaultValue: MarketplaceContextProps = {
   onchange: false,
   selectedProduct: null,
   selectedSeller: null,
-  setSelectedProduct: () => {}, // No-op function for default
-  setSelectedSeller: () =>{},
-  setIsPayed: ()=> {},
-  setOnchange: () => {},
-  navigateToSingleProductView: () => {},
-  navigateToSingleSellerView: () => {}, // No-op function for default
-  setUpdateCart: () => {},
+  setSelectedProduct: () => { }, // No-op function for default
+  setSelectedSeller: () => { },
+  setIsPayed: () => { },
+  setOnchange: () => { },
+  navigateToSingleProductView: () => { },
+  navigateToSingleSellerView: () => { }, // No-op function for default
+  setUpdateCart: () => { },
   updateCart: false,
   getLatestOrderId: async () => null,
-  setOrderId: () => {},
+  setOrderId: () => { },
   orderId: null,
   sellerStatusChange: false,
-  setSellerStausChange: () => {},
-  addToCart: async () => {},
+  setSellerStausChange: () => { },
+  addToCart: async () => { },
   deslugify: () => "",
 };
 
@@ -48,20 +48,20 @@ interface MarketplaceProviderProps {
 // MarketplaceProvider component to wrap the application
 export default function MarketplaceProvider({ children }: MarketplaceProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // Get the API endpoint from environment variables
-  const {authToken} = useContext(AuthContext); // Get the authToken from the AuthContext
+  const { authToken } = useContext(AuthContext); // Get the authToken from the AuthContext
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
-  const [isPayed, setIsPayed]= useState(false);
+  const [isPayed, setIsPayed] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [onchange, setOnchange] = useState(false);
   const [category, setCategory] = useState("Fun"); // Default category
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null); 
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null); // Initially no yap is selected
   const [updateCart, setUpdateCart] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [sellerStatusChange, setSellerStausChange] = useState(false);   
+  const [sellerStatusChange, setSellerStausChange] = useState(false);
 
 
 
@@ -89,7 +89,7 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
   function slugify(int: string): string {
     const baseSlug = int;
     // Generate a nanoid without hyphens
-    const safeNanoid = nanoid(12).replace(/-/g, ''); 
+    const safeNanoid = nanoid(12).replace(/-/g, '');
     return `${baseSlug}-${safeNanoid}`;
   }
 
@@ -100,13 +100,12 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
   }
 
   // Function to navigate to a single product view
-  function navigateToSingleProductView(product: Product) {    
-    const slug = slugify(product.id);
-    
-    setSelectedProduct(product);    
-    router.push(`/marketplace/products/${slug}`); // Navigate to the single product page
-    
+  function navigateToSingleProductView(product: Product) {
+    // Use server-generated slug for SEO-friendly URLs
+    const slug = product.slug || slugify(product.id);
 
+    setSelectedProduct(product);
+    router.push(`/marketplace/products/${slug}`);
   }
 
   async function getLatestOrderId() {
@@ -125,15 +124,15 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
 
     const data = await response.json();
     return data;
-   }
+  }
 
-   // Function to navigate to a single seller view
-   function navigateToSingleSellerView(seller:Seller ) {    
+  // Function to navigate to a single seller view
+  function navigateToSingleSellerView(seller: Seller) {
     const slug = slugify(seller.id);
-    
-    setSelectedSeller(seller);    
+
+    setSelectedSeller(seller);
     router.push(`/marketplace/sellers/${slug}`); // Navigate to the single seller page
-    
+
 
   }
 
@@ -188,7 +187,7 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     setSellerStausChange,
     addToCart,
     deslugify
-    
+
     // Include this in the context data
   };
 
