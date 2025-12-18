@@ -16,8 +16,8 @@ import type { EventComment, EventTicketGroup, EventTicketGroupInput, EventCommen
 // ===================== Auth =====================
 export type CurrentUser = {
   id: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;  // API returns snake_case
+  last_name: string;
   address: string;
   phone_no: string;
   email: string;

@@ -28,20 +28,24 @@ export default function SellerSignup() {
 
   const router = useRouter();
   const { currentUser, authToken } = useContext(AuthContext);
-  const {setSellerStausChange, sellerStatusChange} = useContext(MarketplaceContext)
+  const { setSellerStausChange, sellerStatusChange } = useContext(MarketplaceContext)
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL;
 
   useEffect(() => {
     if (currentUser) {
       setEmail(currentUser.email || '');
+      // API returns snake_case properties (first_name, last_name)
       setName(
-        currentUser.firstName && currentUser.lastName 
-          ? `${currentUser.firstName} ${currentUser.lastName}`
-          : ''
+        currentUser.first_name && currentUser.last_name
+          ? `${currentUser.first_name} ${currentUser.last_name}`
+          : (currentUser.display_name || '')
       );
       setPhone(currentUser.phone_no || '');
       setAvatar(currentUser.avatar || '');
+
+      // Log for debugging
+      console.log('CurrentUser data:', currentUser);
     }
   }, [currentUser]);
 
@@ -54,13 +58,13 @@ export default function SellerSignup() {
           toast.error('File size should be less than 5MB');
           return;
         }
-        
+
         // Validate file type
         if (!file.type.startsWith('image/')) {
           toast.error('Only image files are allowed');
           return;
         }
-        
+
         setAvatarFile(file);
         const fileURL = URL.createObjectURL(file);
         setAvatar(fileURL);
@@ -98,7 +102,7 @@ export default function SellerSignup() {
   const addUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-    
+
     if (!validateForm()) {
       return;
     }
@@ -107,11 +111,11 @@ export default function SellerSignup() {
 
     try {
       const formData = new FormData();
-      
+
       // Append form data
       formData.append('display_name', displayName.trim());
       formData.append('about', about.trim());
-      
+
       if (phone) {
         formData.append('phone', phone);
       }
@@ -128,9 +132,14 @@ export default function SellerSignup() {
         throw new Error('Authentication token is missing');
       }
 
+      console.log('[Seller Signup] Submitting with auth token');
+
       // Use the API route instead of direct backend call
       const response = await fetch('/api/seller/signup', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: formData,
         credentials: 'include', // Include cookies for authentication
       });
@@ -196,14 +205,14 @@ export default function SellerSignup() {
               Complete your seller profile to start selling on our marketplace
             </p>
           </div>
-          
+
           {error && (
             <Alert variant="destructive">
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           <div className="space-y-4">
             <div className="flex justify-center">
               <div className="relative">
@@ -283,8 +292,8 @@ export default function SellerSignup() {
                 required
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={loading}
             >
@@ -300,8 +309,8 @@ export default function SellerSignup() {
       </div>
       <div className="hidden bg-muted lg:flex lg:items-center lg:justify-center">
         <Image
-          src="/logo.png"
-          alt="Logo"
+          src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
+          alt="CampoSocial Logo"
           width={288}
           height={162}
           className="object-contain"

@@ -19,10 +19,35 @@ export default function Marketplace() {
   const [activeFilter, setActiveFilter] = useState("all")
 
   const router = useRouter();
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, authToken } = useContext(AuthContext);
   const { products } = useContext(MarketplaceContext)
-  
+
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
+  const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL || 'http://localhost:3001';
+
+  // Handle seller dashboard redirect with auth cookie handoff
+  const handleSellerDashboardClick = async () => {
+    try {
+      // Set auth cookie for cross-app auth before redirect
+      await fetch(`${apiEndpoint}/auth/set-cookie`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        credentials: 'include',
+      });
+
+      // For local dev, pass token via URL since cookies don't share across ports
+      const tokenParam = authToken ? `?token=${encodeURIComponent(authToken)}` : '';
+      window.location.href = `${sellerDashboardUrl}/dashboard${tokenParam}`;
+    } catch (error) {
+      console.error('Error setting auth cookie:', error);
+      // Still try to redirect with token in URL
+      const tokenParam = authToken ? `?token=${encodeURIComponent(authToken)}` : '';
+      window.location.href = `${sellerDashboardUrl}/dashboard${tokenParam}`;
+    }
+  };
 
   const marketplaceLinks = [
     { label: "Art", icon: <Paintbrush className="h-4 w-4" />, onClick: () => router.push("/art") },
@@ -31,7 +56,7 @@ export default function Marketplace() {
     { label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => router.push("/clothing") },
     { label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => router.push("/tech") },
     currentUser?.is_seller
-      ? { label: "My Dashboard", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/sellerdashboard") }
+      ? { label: "Seller Dashboard", icon: <Warehouse className="h-4 w-4" />, onClick: handleSellerDashboardClick }
       : { label: "Become a seller", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/marketplace/sellersignup") },
   ];
 
@@ -42,7 +67,7 @@ export default function Marketplace() {
       setIsSearching(false)
       return;
     }
-    
+
     setIsSearching(true)
     try {
       const response = await fetch(`${apiEndpoint}/marketplace/search?q=${encodeURIComponent(query)}`)
@@ -72,13 +97,13 @@ export default function Marketplace() {
   // Determine which products to display
   const getFilteredProducts = () => {
     let filtered = searchQuery.trim() ? searchResults : products;
-    
+
     if (activeFilter !== "all" && filtered) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.category?.toLowerCase() === activeFilter.toLowerCase()
       );
     }
-    
+
     return filtered;
   };
 
@@ -102,66 +127,66 @@ export default function Marketplace() {
   const handleMobileFilter = (filterId: string) => {
     setActiveFilter(filterId);
   };
-  
+
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
-      <Header 
+      <Header
         onSearch={handleMobileSearch}
         onFilterSelect={handleMobileFilter}
         searchQuery={searchQuery}
         activeFilter={activeFilter}
       />
       <main className="mobile-content-padding lg:pb-4">
-      <div className="flex flex-col md:flex-row">
-        {/* Left SideNav - Desktop Only */}
-      
-        <div className="hidden md:block md:w-64 flex-shrink-0">
-          <SideNav links = {marketplaceLinks} />
-        </div>
- 
-        
-        {/* Right Content */}
-        <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2">
-          
-          {/* Desktop Search bar - Hidden on Mobile */}
-          <div className="hidden lg:flex w-full justify-center items-center">
-            <div className="relative mx-auto">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search products ..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-full"
-              />
-              {isSearching && (
-                <div className="absolute right-2.5 top-2.5">
-                  <div className="animate-spin h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full"></div>
+        <div className="flex flex-col md:flex-row">
+          {/* Left SideNav - Desktop Only */}
+
+          <div className="hidden md:block md:w-64 flex-shrink-0">
+            <SideNav links={marketplaceLinks} />
+          </div>
+
+
+          {/* Right Content */}
+          <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2">
+
+            {/* Desktop Search bar - Hidden on Mobile */}
+            <div className="hidden lg:flex w-full justify-center items-center">
+              <div className="relative mx-auto">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search products ..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-full"
+                />
+                {isSearching && (
+                  <div className="absolute right-2.5 top-2.5">
+                    <div className="animate-spin h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full"></div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Grid of products */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 place-items-center justify-center  md:grid-cols-3 gap-6 lg:h-[82vh] md:h-[82vh] lg:overflow-y-scroll ">
+              {displayProducts && displayProducts.length > 0 ? (
+                displayProducts.map((product, index) => (
+                  <ProductCard key={`${product.id}-${index}`} product={product} />
+                ))
+              ) : searchQuery.trim() ? (
+                <div className="col-span-full text-center text-muted-foreground py-8">
+                  No products found for &quot;{searchQuery}&quot;
+                </div>
+              ) : (
+                <div className="col-span-full text-center text-muted-foreground py-8">
+                  No products available
                 </div>
               )}
             </div>
-          </div>
-          
-          {/* Grid of products */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 place-items-center justify-center  md:grid-cols-3 gap-6 lg:h-[82vh] md:h-[82vh] lg:overflow-y-scroll ">
-            {displayProducts && displayProducts.length > 0 ? (
-              displayProducts.map((product, index) => (
-                <ProductCard key={`${product.id}-${index}`} product={product} />
-              ))
-            ) : searchQuery.trim() ? (
-              <div className="col-span-full text-center text-muted-foreground py-8">
-                No products found for &quot;{searchQuery}&quot;
-              </div>
-            ) : (
-              <div className="col-span-full text-center text-muted-foreground py-8">
-                No products available
-              </div>
-            )}
-          </div>
 
+          </div>
         </div>
-      </div>
       </main>
     </div>
   );
