@@ -132,8 +132,13 @@ export default function CartComponent() {
       return;
     }
   
+    if (!apiEndpoint) {
+      toast.error('API endpoint not configured');
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:5000/cart/update_quantity', {
+      const response = await fetch(`${apiEndpoint}/cart/update_quantity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -34,8 +34,12 @@ export function useWebSocket(): WebSocketHook {
     }
 
     const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT || 
-      process.env.NEXT_PUBLIC_API_ENDPOINT?.replace('/camposocial/api', '') || 
-      'http://localhost:5000';
+      process.env.NEXT_PUBLIC_API_ENDPOINT?.replace('/camposocial/api', '');
+    
+    if (!wsEndpoint) {
+      console.error('WebSocket endpoint not configured. Set NEXT_PUBLIC_WS_ENDPOINT or NEXT_PUBLIC_API_ENDPOINT');
+      return;
+    }
 
     // Disconnect previous socket if exists
     if (socketRef.current) {

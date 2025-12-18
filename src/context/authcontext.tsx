@@ -160,9 +160,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('API endpoint not configured');
       }
       
-      const oauthEndpoint = apiEndpoint.replace('127.0.0.1', 'localhost');
-
-      const response = await fetch(`${oauthEndpoint}/oauth/${provider}/callback`, {
+      const response = await fetch(`${apiEndpoint}/oauth/${provider}/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
