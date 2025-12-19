@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect, useContext} from "react"
+import { useState, useRef, useCallback, useEffect, useContext } from "react"
 import Image from "next/image"
 import { AuthContext } from "@/context/authcontext"
 import { FixedCropper, ImageRestriction } from 'react-advanced-cropper'
@@ -36,7 +36,7 @@ import toast from "react-hot-toast"
 
 export default function ProfileEditor() {
   const { currentUser, updateUserContext } = useContext(AuthContext) // Get current user from auth context
-  
+
   // State management
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -51,7 +51,7 @@ export default function ProfileEditor() {
     category: "",
     yap_header_img: "",
   })
-  
+
   // Image cropping state
   const [cropModal, setCropModal] = useState({
     isOpen: false,
@@ -69,8 +69,8 @@ export default function ProfileEditor() {
   useEffect(() => {
     if (currentUser) {
       setProfileData({
-        first_name: currentUser.firstName || "",
-        last_name: currentUser.lastName || "",
+        first_name: currentUser.first_name || "",
+        last_name: currentUser.last_name || "",
         username: currentUser.username || "",
         display_name: currentUser.display_name || "",
         email: currentUser.email || "",
@@ -79,7 +79,7 @@ export default function ProfileEditor() {
         category: currentUser.category || "",
         yap_header_img: (currentUser as any).yap_header_img || "",
       })
-      
+
       if (currentUser.avatar) {
         setAvatarSrc(currentUser.avatar)
       }
@@ -102,7 +102,7 @@ export default function ProfileEditor() {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
       setImageFile(file)
-      
+
       const reader = new FileReader()
       reader.addEventListener('load', () => {
         setCropModal({
@@ -121,13 +121,13 @@ export default function ProfileEditor() {
       const canvas = cropperRef.current.getCanvas()
       if (canvas) {
         const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9)
-        
+
         if (cropModal.type === 'avatar') {
           setAvatarSrc(croppedImageUrl)
         } else if (cropModal.type === 'header') {
           setHeaderSrc(croppedImageUrl)
         }
-        
+
         setCropModal({ isOpen: false, type: null, imageSrc: null })
       }
     }
@@ -173,32 +173,32 @@ export default function ProfileEditor() {
     try {
       // Create FormData for the multipart/form-data request
       const formData = new FormData()
-      
+
       // Add all profile fields to FormData
       Object.entries(profileData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           formData.append(key, value)
         }
       })
-      
+
       // Add profile avatar if changed
       if (avatarSrc && avatarSrc !== currentUser?.avatar && !avatarSrc.startsWith('http')) {
         const originalFileName = imageFile?.name || "profile-avatar.jpg"
         const imageBlob = dataURLtoFile(avatarSrc, originalFileName)
         formData.append('profile_image', imageBlob)
       }
-      
+
       // Add header image if changed
       if (headerSrc && headerSrc !== (currentUser as any)?.yap_header_img && !headerSrc.startsWith('http')) {
         const headerBlob = dataURLtoFile(headerSrc, "header-image.jpg")
         formData.append('header_image', headerBlob)
       }
-      
+
       // Handle header image removal
       if (!headerSrc && (currentUser as any)?.yap_header_img) {
         formData.append('remove_header', 'true')
       }
-      
+
       // Send request to your API
       const response = await fetch('/api/update-profile', {
         method: 'PUT',
@@ -206,18 +206,18 @@ export default function ProfileEditor() {
         // Don't set Content-Type header - browser will set it with boundary for FormData
         credentials: 'include' // Include cookies for authentication
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.message || 'Failed to update profile')
       }
-      
+
       const result = await response.json()
       toast.success("Your profile has been updated successfully")
-      
+
       // Update the AuthContext with new user data
       updateUserContext()
-      
+
       setIsEditing(false)
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -231,8 +231,8 @@ export default function ProfileEditor() {
   const handleCancel = () => {
     if (currentUser) {
       setProfileData({
-        first_name: currentUser.firstName || "",
-        last_name: currentUser.lastName || "",
+        first_name: currentUser.first_name || "",
+        last_name: currentUser.last_name || "",
         username: currentUser.username || "",
         display_name: currentUser.display_name || "",
         email: currentUser.email || "",
@@ -241,7 +241,7 @@ export default function ProfileEditor() {
         category: currentUser.category || "",
         yap_header_img: (currentUser as any).yap_header_img || "",
       })
-      
+
       // Reset avatar to original
       if (currentUser.avatar) {
         setAvatarSrc(currentUser.avatar)
@@ -250,7 +250,7 @@ export default function ProfileEditor() {
         setHeaderSrc((currentUser as any).yap_header_img)
       }
     }
-    
+
     setIsEditing(false)
   }
 
@@ -294,15 +294,15 @@ export default function ProfileEditor() {
           {/* Header Image Section */}
           <div className="relative h-32 rounded-t-lg overflow-hidden" style={{ backgroundColor: 'rgba(181,168,209,0.04)' }}>
             {headerSrc && (
-              <Image 
-                src={headerSrc} 
-                alt="Header" 
+              <Image
+                src={headerSrc}
+                alt="Header"
                 width={400}
                 height={128}
                 className="w-full h-full object-cover"
               />
             )}
-            
+
             {/* Header Image Controls */}
             {isEditing && (
               <div className="absolute top-2 right-2 flex gap-2">
@@ -327,7 +327,7 @@ export default function ProfileEditor() {
               </div>
             )}
           </div>
-          
+
           {/* Profile Section */}
           <div className="px-6 pb-6 flex flex-col items-center">
             <div className="relative -mt-12">
@@ -348,11 +348,11 @@ export default function ProfileEditor() {
                 </Button>
               )}
             </div>
-            
+
             <h2 className="text-2xl font-bold mt-4">{profileData.first_name} {profileData.last_name}</h2>
             <p className="text-muted-foreground">@{profileData.username}</p>
           </div>
-          
+
           {/* Hidden file inputs */}
           <input
             ref={avatarFileInputRef}
@@ -373,20 +373,20 @@ export default function ProfileEditor() {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="first_name">First Name</Label>
-              <Input 
-                id="first_name" 
+              <Input
+                id="first_name"
                 name="first_name"
-                value={profileData.first_name} 
+                value={profileData.first_name}
                 disabled={!isEditing}
                 onChange={handleChange}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="last_name">Last Name</Label>
-              <Input 
-                id="last_name" 
+              <Input
+                id="last_name"
                 name="last_name"
-                value={profileData.last_name} 
+                value={profileData.last_name}
                 disabled={!isEditing}
                 onChange={handleChange}
               />
@@ -394,36 +394,36 @@ export default function ProfileEditor() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="username">Username</Label>
-            <Input 
-              id="username" 
+            <Input
+              id="username"
               name="username"
-              value={profileData.username} 
+              value={profileData.username}
               disabled={!isEditing}
               onChange={handleChange}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="display_name">Display Name</Label>
-            <Input 
-              id="display_name" 
+            <Input
+              id="display_name"
               name="display_name"
-              value={profileData.display_name} 
+              value={profileData.display_name}
               disabled={!isEditing}
               onChange={handleChange}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
+            <Input
+              id="email"
               name="email"
-              type="email" 
-              value={profileData.email} 
+              type="email"
+              value={profileData.email}
               disabled={!isEditing}
               onChange={handleChange}
             />
           </div>
-         
+
           <div className="grid gap-2">
             <Label htmlFor="bio">Bio</Label>
             <Textarea
@@ -437,16 +437,16 @@ export default function ProfileEditor() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="phone_no">Phone</Label>
-            <Input 
-              id="phone_no" 
+            <Input
+              id="phone_no"
               name="phone_no"
-              value={profileData.phone_no} 
-              type="tel" 
+              value={profileData.phone_no}
+              type="tel"
               disabled={!isEditing}
               onChange={handleChange}
             />
           </div>
-        
+
           <div className="grid gap-2">
             <Label htmlFor="category">Course</Label>
             <DropdownMenu>
@@ -458,7 +458,7 @@ export default function ProfileEditor() {
               <DropdownMenuContent className="w-56">
                 <DropdownMenuLabel>Enrolled Course</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup value={profileData.category} onValueChange={(value) => setProfileData({...profileData, category: value})}>
+                <DropdownMenuRadioGroup value={profileData.category} onValueChange={(value) => setProfileData({ ...profileData, category: value })}>
                   <DropdownMenuRadioItem value="sw">Software Development</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="ui/ux">UI/UX Design</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="ds">Data Science</DropdownMenuRadioItem>
@@ -473,7 +473,7 @@ export default function ProfileEditor() {
                 Cancel
               </Button>
             )}
-            <Button 
+            <Button
               onClick={isEditing ? handleSave : () => setIsEditing(true)}
               disabled={isLoading}
             >
@@ -491,7 +491,7 @@ export default function ProfileEditor() {
               Crop {cropModal.type === 'avatar' ? 'Profile Picture' : 'Header Image'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="flex-1 flex items-center justify-center p-4 min-h-0">
             {cropModal.imageSrc && (
               <div className="w-full h-full max-w-full max-h-[60vh] flex items-center justify-center">
@@ -527,11 +527,11 @@ export default function ProfileEditor() {
               </div>
             )}
           </div>
-          
+
           <DialogFooter className="mt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setCropModal({ isOpen: false, type: null, imageSrc: null })}
             >
               Cancel

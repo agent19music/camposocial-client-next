@@ -64,7 +64,7 @@ export default function ReviewForm({ product_id }: { product_id: string }) {
   return (
     <Card className="mt-8">
       <CardContent className="p-6">
-        <h2 className="text-xl md:text-2xl font-bold mb-4">Leave a Review</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-4 font-helvetica">Leave a Review</h2>
         <div className="flex items-center space-x-2 mb-4">
           {[1, 2, 3, 4, 5].map((star) => (
             <button

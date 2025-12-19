@@ -13,12 +13,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { 
-  ImageIcon, 
-  VideoIcon, 
-  SmileIcon, 
-  MapPinIcon, 
-  CalendarIcon, 
+import {
+  ImageIcon,
+  VideoIcon,
+  SmileIcon,
+  MapPinIcon,
+  CalendarIcon,
   BarChartIcon,
   PlusIcon,
   MinusIcon,
@@ -52,18 +52,18 @@ export default function AddYap() {
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [location, setLocation] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   // Hashtag suggestions
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false)
   const [hashtagQuery, setHashtagQuery] = useState("")
   const [hashtagSuggestions, setHashtagSuggestions] = useState<any[]>([])
   const [cursorPosition, setCursorPosition] = useState(0)
-  
+
   // Location suggestions
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false)
   const [locationQuery, setLocationQuery] = useState("")
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([])
-  
+
   // Poll functionality
   const [isPollMode, setIsPollMode] = useState(false)
   const [pollOptions, setPollOptions] = useState(["", ""])
@@ -71,7 +71,7 @@ export default function AddYap() {
 
   const { postYap, getHashtagSuggestions, getLocationSuggestions } = useContext(YapContext)
   const { currentUser } = useContext(AuthContext)
-  
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -87,15 +87,15 @@ export default function AddYap() {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     const cursorPos = e.target.selectionStart
-    
+
     if (value.length <= MAX_CHARACTERS) {
       setYapContent(value)
       setCursorPosition(cursorPos)
-      
+
       // Check for hashtag typing
       const textBeforeCursor = value.substring(0, cursorPos)
       const hashtagMatch = textBeforeCursor.match(/#(\w*)$/)
-      
+
       if (hashtagMatch) {
         setHashtagQuery(hashtagMatch[1])
         setShowHashtagSuggestions(true)
@@ -130,14 +130,14 @@ export default function AddYap() {
   const handleHashtagSelect = (hashtag: string) => {
     const textBeforeCursor = yapContent.substring(0, cursorPosition)
     const textAfterCursor = yapContent.substring(cursorPosition)
-    
+
     // Replace the partial hashtag with the selected one
     const updatedTextBefore = textBeforeCursor.replace(/#\w*$/, `#${hashtag} `)
     const newContent = updatedTextBefore + textAfterCursor
-    
+
     setYapContent(newContent)
     setShowHashtagSuggestions(false)
-    
+
     // Focus back to textarea
     setTimeout(() => {
       if (textareaRef.current) {
@@ -151,7 +151,7 @@ export default function AddYap() {
   const handleLocationChange = (value: string) => {
     setLocationQuery(value)
     setLocation(value)
-    
+
     if (value.length > 1) {
       setShowLocationSuggestions(true)
       fetchLocationSuggestions(value)
@@ -175,7 +175,7 @@ export default function AddYap() {
       const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
       return isValidType && isValidSize
     })
-    
+
     setMediaFiles(prev => [...prev, ...validFiles].slice(0, 4)) // Max 4 files
   }
 
@@ -206,18 +206,18 @@ export default function AddYap() {
   // Submit yap
   const handleSubmit = async () => {
     if (!yapContent.trim() || isSubmitting) return
-    
+
     setIsSubmitting(true)
-    
+
     try {
       const payload: YapPayload = {
         content: yapContent.trim(),
         location: location.trim() || undefined,
         mediaFiles: mediaFiles.length > 0 ? mediaFiles : undefined
       }
-      
+
       await postYap(payload)
-      
+
       // Reset form
       setYapContent("")
       setMediaFiles([])
@@ -226,7 +226,7 @@ export default function AddYap() {
       setPollOptions(["", ""])
       setIsPollMode(false)
       setOpen(false)
-      
+
     } catch (error) {
       console.error('Failed to post yap:', error)
     } finally {
@@ -239,7 +239,7 @@ export default function AddYap() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-  <Button className="w-full text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200" variant="default">
+        <Button className="w-full text-white font-medium rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-200" variant="default">
           What&apos;s happening?
         </Button>
       </DialogTrigger>
@@ -247,14 +247,14 @@ export default function AddYap() {
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold">Compose Yap</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 px-1">
           {/* User info */}
           <div className="flex items-start space-x-4">
             <Avatar className="w-12 h-12 flex-shrink-0">
               <AvatarImage src={currentUser?.avatar} alt={currentUser?.username} />
               <AvatarFallback className="text-primary font-medium" style={{ backgroundColor: Palette.accentLight }}>
-                {currentUser?.firstName?.[0] || 'U'}
+                {currentUser?.first_name?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-4 min-w-0">
@@ -268,7 +268,7 @@ export default function AddYap() {
                   className="min-h-[120px] text-lg"
                   maxLength={MAX_CHARACTERS}
                 />
-                
+
                 {/* Hashtag suggestions */}
                 {showHashtagSuggestions && hashtagSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 z-50 mt-2">
@@ -347,7 +347,7 @@ export default function AddYap() {
                     className="border-none p-0 h-8 focus-visible:ring-0"
                   />
                 </div>
-                
+
                 {/* Location suggestions */}
                 {showLocationSuggestions && locationSuggestions.length > 0 && (
                   <div className="absolute top-full left-6 right-0 z-50 mt-1">
@@ -435,7 +435,7 @@ export default function AddYap() {
               >
                 <ImageIcon className="w-5 h-5" />
               </Button>
-              
+
               {/* Poll toggle */}
               <Button
                 variant="ghost"
