@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { AuthContext } from '@/context/authcontext';
 import { MarketplaceContext } from '@/context/marketplacecontext';
-import {toast} from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 interface CartItem {
@@ -33,33 +33,43 @@ export default function CartComponent() {
 
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
-  function takeMeToCheckout (){
+  function takeMeToCheckout() {
     return router.push('/marketplace/checkout')
   }
 
 
-  const {currentUser} = useContext(AuthContext);
-  const {updateCart, setUpdateCart} = useContext(MarketplaceContext);
-  
+  const { currentUser } = useContext(AuthContext);
+  const { updateCart, setUpdateCart } = useContext(MarketplaceContext);
+
 
   useEffect(() => {
     const getCartItems = async (userId: string): Promise<CartItem[]> => {
+      // Guard against missing apiEndpoint
+      if (!apiEndpoint) {
+        console.warn('API endpoint not configured');
+        return [];
+      }
+
       try {
         const response = await fetch(`${apiEndpoint}/cart/${userId}`);
         if (!response.ok) {
-          // Handle 404 gracefully - empty cart is normal
-          if (response.status === 404) {
+          // Handle 404 and other errors gracefully - empty cart is normal
+          if (response.status === 404 || response.status === 500) {
             return [];
           }
-          throw new Error('Failed to fetch cart data');
+          // Log but don't throw for other status codes
+          console.warn(`Cart fetch returned status ${response.status}`);
+          return [];
         }
         const data: CartResponse = await response.json();
         return data.cart_items || [];
       } catch (error) {
+        // Network errors, CORS issues, etc - log but return empty
         console.error('Cart fetch error:', error);
         return [];
       }
     };
+
 
     const fetchCartItems = async () => {
       if (!currentUser?.id) {
@@ -68,7 +78,7 @@ export default function CartComponent() {
         setLoading(false);
         return;
       }
-      
+
       setLoading(true);
       const items = await getCartItems(currentUser.id);
       setCartItems(items);
@@ -90,7 +100,7 @@ export default function CartComponent() {
         },
         body: JSON.stringify({ itemId: id }),
       });
-  
+
       if (response.ok) {
         setCartItems(items => items.filter(item => item.id !== id));
       } else {
@@ -104,15 +114,15 @@ export default function CartComponent() {
   const incrementQuantity = async (id: string, currentQuantity: number) => { // Add currentQuantity as a parameter
     try {
       console.log(JSON.stringify({ itemId: id, quantity: currentQuantity + 1 }));
-      
+
       const response = await fetch(`${apiEndpoint}/cart/update_quantity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ itemId: id, quantity: currentQuantity + 1 }), 
+        body: JSON.stringify({ itemId: id, quantity: currentQuantity + 1 }),
       });
-  
+
       if (response.ok) {
         const updatedItem = await response.json();
         setCartItems(items =>
@@ -125,13 +135,13 @@ export default function CartComponent() {
       toast.error('Error incrementing quantity');
     }
   };
-  
+
   const decrementQuantity = async (id: string, currentQuantity: number) => { // Add currentQuantity as a parameter
     if (currentQuantity === 1) {
       removeItem(id);
       return;
     }
-  
+
     if (!apiEndpoint) {
       toast.error('API endpoint not configured');
       return;
@@ -145,7 +155,7 @@ export default function CartComponent() {
         },
         body: JSON.stringify({ itemId: id, quantity: currentQuantity - 1 }),
       });
-  
+
       if (response.ok) {
         const updatedItem = await response.json();
         setCartItems(items =>
@@ -197,7 +207,7 @@ export default function CartComponent() {
         )}
       </Button>
 
-      <div 
+      <div
         ref={cartRef}
         className={`
           fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-background shadow-lg transform transition-transform duration-300 ease-in-out
@@ -224,49 +234,49 @@ export default function CartComponent() {
               </div>
             ) : (
               cartItems.map(item => (
-              <div key={item.id} className="flex items-center justify-between mb-4 pb-4 border-b">
-                <div className="flex items-center">
-                  <Image
-                    src={item.images[0]} // Displaying the first image
-                    alt={item.product_title}
-                    width={80}
-                    height={80}
-                    className="rounded-md mr-4"
-                  />
-                  <div>
-                    <h3 className="font-medium">{item.product_title}</h3>
-                    <p className="text-sm text-muted-foreground">${item.price_per_item.toFixed(2)}</p>
+                <div key={item.id} className="flex items-center justify-between mb-4 pb-4 border-b">
+                  <div className="flex items-center">
+                    <Image
+                      src={item.images[0]} // Displaying the first image
+                      alt={item.product_title}
+                      width={80}
+                      height={80}
+                      className="rounded-md mr-4"
+                    />
+                    <div>
+                      <h3 className="font-medium">{item.product_title}</h3>
+                      <p className="text-sm text-muted-foreground">${item.price_per_item.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => decrementQuantity(item.id, item.quantity)}
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="mx-2">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => incrementQuantity(item.id, item.quantity)}
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(item.id)}
+                      className="ml-2"
+                      aria-label="Remove item"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => decrementQuantity(item.id, item.quantity)} 
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="mx-2">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => incrementQuantity(item.id, item.quantity)}
-                    aria-label="Increase quantity"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(item.id)}
-                    className="ml-2"
-                    aria-label="Remove item"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
               ))
             )}
           </div>

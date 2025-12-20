@@ -16,10 +16,8 @@ import {
   Star,
   ShoppingCart,
   Package,
-  CreditCard,
   Users,
   MapPin,
-  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,33 +39,28 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
   const getPageSpecificItems = () => {
     if (pathname?.includes('/yaps')) {
       return [
-        { icon: Bookmark, label: "Bookmarked Yaps", href: "/yaps/bookmarks", badgeCount: 5 },
-        { icon: TrendingUp, label: "Trending", href: "/yaps/trending" },
-        { icon: Users, label: "Following", href: "/yaps/following" },
+        { icon: Bookmark, label: "Bookmarked Yaps", href: "/yaps/bookmarks" },
+        { icon: TrendingUp, label: "Trending", href: "/yaps?type=trending" },
+        { icon: Users, label: "Following", href: "/yaps?type=following" },
         { icon: History, label: "Your Yaps", href: "/yaps/history" },
       ];
     } else if (pathname?.includes('/marketplace')) {
       return [
-        { icon: ShoppingCart, label: "Cart", href: "/marketplace/cart", badgeCount: 3 },
+        { icon: ShoppingCart, label: "Cart", href: "/marketplace/cart" },
         { icon: Package, label: "Orders", href: "/marketplace/orders" },
-        { icon: CreditCard, label: "Payment Methods", href: "/marketplace/payments" },
-        { icon: Star, label: "Wishlist", href: "/marketplace/wishlist", badgeCount: 12 },
-        { icon: History, label: "Order History", href: "/marketplace/history" },
+        { icon: Star, label: "Wishlist", href: "/marketplace/wishlist" },
       ];
     } else if (pathname?.includes('/events')) {
       return [
         { icon: Calendar, label: "My Events", href: "/events/my-events" },
-        { icon: Bookmark, label: "Saved Events", href: "/events/saved", badgeCount: 2 },
-        { icon: History, label: "Event History", href: "/events/history" },
+        { icon: Bookmark, label: "Saved Events", href: "/events/saved" },
         { icon: MapPin, label: "Nearby Events", href: "/events/nearby" },
-        { icon: Bell, label: "Event Reminders", href: "/events/reminders" },
       ];
     } else if (pathname?.includes('/friends')) {
       return [
-        { icon: MessageSquare, label: "Messages", href: "/friends/messages", badgeCount: 7 },
-        { icon: Users, label: "Friend Requests", href: "/friends/requests", badgeCount: 3 },
-        { icon: UserPlus, label: "Discover People", href: "/friends/discover" },
-        { icon: History, label: "Friend Activity", href: "/friends/activity" },
+        { icon: MessageSquare, label: "Messages", href: "/chat" },
+        { icon: Users, label: "Friend Requests", href: "/friends?tab=requests" },
+        { icon: UserPlus, label: "Discover People", href: "/friends?tab=discover" },
       ];
     }
     return [];
@@ -110,8 +103,8 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
               href={item.href}
               className={cn(
                 "flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-muted/50",
-                pathname === item.href 
-                  ? "bg-muted text-foreground" 
+                pathname === item.href
+                  ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -119,11 +112,6 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
                 <item.icon className="h-4 w-4" />
                 {item.label}
               </div>
-              {item.badgeCount && item.badgeCount > 0 && (
-                <Badge className="h-5 px-1.5 text-xs">
-                  {item.badgeCount}
-                </Badge>
-              )}
             </Link>
           ))}
         </div>
@@ -141,8 +129,8 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
             href={item.href}
             className={cn(
               "flex items-center gap-4 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-muted/50",
-              pathname === item.href 
-                ? "bg-muted text-foreground" 
+              pathname === item.href
+                ? "bg-muted text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -160,10 +148,10 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
               <p className="text-sm font-medium text-foreground">{currentUser.username}</p>
               <p className="text-xs text-muted-foreground">@{currentUser.username}</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={logout} 
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
               className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               Logout

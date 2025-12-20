@@ -2,15 +2,12 @@
 import React, { useState, useCallback } from 'react'
 import ProductCard from '@/components/productcard'
 import Header from '@/components/header'
-import SideNav from '@/components/sidenav'
-import { Paintbrush, Cookie, Book, Shirt, Monitor, Search } from "lucide-react";
+import FilterPills, { FilterPill } from '@/components/filter-pills'
+import { Search } from "lucide-react";
 import { Input } from '@/components/ui/input'
-import { Warehouse } from 'lucide-react';
 import { useContext } from 'react';
 import { MarketplaceContext } from '@/context/marketplacecontext';
 import { AuthContext } from '@/context/authcontext'
-import CartComponent from '@/components/cart'
-import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce'
 export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -18,47 +15,10 @@ export default function Marketplace() {
   const [isSearching, setIsSearching] = useState(false)
   const [activeFilter, setActiveFilter] = useState("all")
 
-  const router = useRouter();
   const { currentUser, authToken } = useContext(AuthContext);
   const { products } = useContext(MarketplaceContext)
 
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL || 'http://localhost:3001';
-
-  // Handle seller dashboard redirect with auth cookie handoff
-  const handleSellerDashboardClick = async () => {
-    try {
-      // Set auth cookie for cross-app auth before redirect
-      await fetch(`${apiEndpoint}/auth/set-cookie`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        credentials: 'include',
-      });
-
-      // For local dev, pass token via URL since cookies don't share across ports
-      const tokenParam = authToken ? `?token=${encodeURIComponent(authToken)}` : '';
-      window.location.href = `${sellerDashboardUrl}/dashboard${tokenParam}`;
-    } catch (error) {
-      console.error('Error setting auth cookie:', error);
-      // Still try to redirect with token in URL
-      const tokenParam = authToken ? `?token=${encodeURIComponent(authToken)}` : '';
-      window.location.href = `${sellerDashboardUrl}/dashboard${tokenParam}`;
-    }
-  };
-
-  const marketplaceLinks = [
-    { label: "Art", icon: <Paintbrush className="h-4 w-4" />, onClick: () => router.push("/art") },
-    { label: "Food", icon: <Cookie className="h-4 w-4" />, onClick: () => router.push("/food") },
-    { label: "Books", icon: <Book className="h-4 w-4" />, onClick: () => router.push("/books") },
-    { label: "Clothing", icon: <Shirt className="h-4 w-4" />, onClick: () => router.push("/clothing") },
-    { label: "Tech", icon: <Monitor className="h-4 w-4" />, onClick: () => router.push("/tech") },
-    currentUser?.is_seller
-      ? { label: "Seller Dashboard", icon: <Warehouse className="h-4 w-4" />, onClick: handleSellerDashboardClick }
-      : { label: "Become a seller", icon: <Warehouse className="h-4 w-4" />, onClick: () => router.push("/marketplace/sellersignup") },
-  ];
 
   // Debounced search function
   const performSearch = useCallback(async (query: string) => {
@@ -109,67 +69,49 @@ export default function Marketplace() {
 
   const displayProducts = getFilteredProducts();
 
-  // Get filters for mobile header
-  const getFilters = () => [
+  // Filter pills for marketplace categories
+  const filterPills: FilterPill[] = [
     { id: 'all', label: 'All', active: activeFilter === 'all' },
     { id: 'art', label: 'Art', active: activeFilter === 'art' },
     { id: 'food', label: 'Food', active: activeFilter === 'food' },
     { id: 'books', label: 'Books', active: activeFilter === 'books' },
     { id: 'clothing', label: 'Clothing', active: activeFilter === 'clothing' },
     { id: 'tech', label: 'Tech', active: activeFilter === 'tech' },
+    { id: 'search', label: 'Search', isSearch: true },
   ];
 
-  const handleMobileSearch = (query: string) => {
-    setSearchQuery(query);
-    debouncedSearch(query);
-  };
-
-  const handleMobileFilter = (filterId: string) => {
+  const handleFilterSelect = (filterId: string) => {
     setActiveFilter(filterId);
   };
 
-
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">
-      <Header
-        onSearch={handleMobileSearch}
-        onFilterSelect={handleMobileFilter}
-        searchQuery={searchQuery}
-        activeFilter={activeFilter}
-      />
+      <Header />
       <main className="mobile-content-padding lg:pb-4">
-        <div className="flex flex-col md:flex-row">
-          {/* Left SideNav - Desktop Only */}
+        {/* Filter Pills - Mobile */}
+        <FilterPills
+          filters={filterPills}
+          onFilterSelect={handleFilterSelect}
+          onSearchChange={(q) => handleSearch(q)}
+          searchQuery={searchQuery}
+          className="lg:hidden"
+        />
 
-          <div className="hidden md:block md:w-64 flex-shrink-0">
-            <SideNav links={marketplaceLinks} />
-          </div>
-
-
-          {/* Right Content */}
+        <div className="flex flex-col">
+          {/* Main Content */}
           <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2">
-
-            {/* Desktop Search bar - Hidden on Mobile */}
-            <div className="hidden lg:flex w-full justify-center items-center">
-              <div className="relative mx-auto">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products ..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-full"
-                />
-                {isSearching && (
-                  <div className="absolute right-2.5 top-2.5">
-                    <div className="animate-spin h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full"></div>
-                  </div>
-                )}
-              </div>
+            {/* Desktop Filter Pills */}
+            <div className="hidden lg:block">
+              <FilterPills
+                filters={filterPills}
+                onFilterSelect={handleFilterSelect}
+                onSearchChange={(q) => handleSearch(q)}
+                searchQuery={searchQuery}
+              />
             </div>
 
             {/* Grid of products */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 place-items-center justify-center  md:grid-cols-3 gap-6 lg:h-[82vh] md:h-[82vh] lg:overflow-y-scroll ">
+            <div className="grid grid-cols-1 sm:grid-cols-2 place-items-center justify-center md:grid-cols-3 gap-6 lg:h-[82vh] md:h-[82vh] lg:overflow-y-scroll">
               {displayProducts && displayProducts.length > 0 ? (
                 displayProducts.map((product, index) => (
                   <ProductCard key={`${product.id}-${index}`} product={product} />

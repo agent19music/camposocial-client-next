@@ -45,6 +45,12 @@ export interface AuthContextType {
   showSocialModal: boolean;
   setShowSocialModal: (show: boolean) => void;
   sellerlogin: (email: string, password: string) => Promise<void>;
+  // New auth methods
+  register: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean }>;
+  sendOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
+  verifyOTP: (email: string, code: string, password?: string) => Promise<{ success: boolean; message?: string }>;
+  oauthLogin: (provider: string, data: any) => Promise<void>;  // OAuth for existing users only
+  oauthSignup: (provider: string, data: any) => Promise<void>; // OAuth for new users
 }
 
 export interface AuthProviderProps { children: ReactNode }
@@ -316,6 +322,10 @@ export interface MarketplaceContextProps {
   setSellerStausChange: (value: boolean) => void;
   addToCart: (productId: string, quantity?: number, variationId?: string) => Promise<any | void>;
   deslugify: (slug: string) => string;
+  // Wishlist
+  wishlistIds: string[];
+  toggleWishlist: (productId: string) => Promise<void>;
+  isInWishlist: (productId: string) => boolean;
 }
 
 export interface MarketplaceProviderProps { children: ReactNode }

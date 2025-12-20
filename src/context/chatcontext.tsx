@@ -67,13 +67,27 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     }, [rawCurrentUser]);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [friendId, setFriendId] = useState<string | null>(null);
+    const [friendId, setFriendIdInternal] = useState<string | null>(null);
     const [friendDetails, setFriendDetails] = useState<ChatFriend | null>(null);
 
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
+    // CRITICAL FIX: Wrap setFriendId to clear messages when switching conversations
+    // This prevents old conversation messages from persisting in the UI
+    const setFriendId = useCallback((newFriendId: string | null) => {
+        setFriendIdInternal(prev => {
+            // Only clear if actually switching to a different conversation
+            if (prev !== newFriendId) {
+                setMessages([]);  // Clear old messages immediately
+                setIsTyping(false);  // Reset typing indicator
+                setCurrentConversationId(null);  // Reset conversation ID
+            }
+            return newFriendId;
+        });
+    }, []);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     // WebSocket integration
@@ -405,10 +419,26 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             const nonce = messageData.nonce;
             const senderPublicKey = messageData.sender_public_key;
 
+            // Debug incoming message data
+            console.log('[E2EE] Incoming message:', {
+                id: messageData.id,
+                encrypted: messageData.encrypted,
+                hasCiphertext: !!ciphertext,
+                hasNonce: !!nonce,
+                hasSenderPublicKey: !!senderPublicKey,
+                hasSecretKey: !!secretKey,
+                contentPreview: ciphertext?.slice(0, 30) + '...'
+            });
+
             // Decrypt if encrypted and we have the necessary data
-            const decrypted = messageData.encrypted && ciphertext && nonce && senderPublicKey
-                ? await decryptMessage(ciphertext, nonce, senderPublicKey)
-                : messageData.content || ciphertext;
+            let decrypted: string;
+            if (messageData.encrypted && ciphertext && nonce && senderPublicKey) {
+                decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
+                console.log('[E2EE] Decryption result:', decrypted?.slice(0, 50));
+            } else {
+                decrypted = messageData.content || ciphertext || '';
+                console.log('[E2EE] Using plaintext content:', decrypted?.slice(0, 50));
+            }
 
             return {
                 id: messageData.id,
@@ -919,7 +949,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 encrypted: isEncrypted
             };
 
-            setMessages(prev => [optimisticMessage, ...prev]);
+            setMessages(prev => [...prev, optimisticMessage]);
 
             const response = await fetch(`${apiEndpoint}/messages`, {
                 method: 'POST',

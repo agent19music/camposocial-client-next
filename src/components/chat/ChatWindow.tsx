@@ -3,39 +3,40 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isYesterday } from 'date-fns';
-import { Colors as Palette } from '@/constants/Colors';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
-const C = Palette;
 import Image from 'next/image';
 import {
-  Send,
+  PaperPlaneTilt,
   Paperclip,
-  Smile,
-  Mic,
-  ChevronDown,
+  Smiley,
+  Microphone,
+  CaretDown,
   Phone,
-  Video,
+  VideoCamera,
   Info,
-  Search,
-  ArrowLeft
-} from 'lucide-react';
+  MagnifyingGlass,
+  ArrowLeft,
+  X,
+  DotsThreeVertical
+} from '@phosphor-icons/react';
 import { useChat } from '@/context/chatcontext';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { secureDB } from '@/utils/secureStorage';
 import { toast } from 'react-hot-toast';
 import { ChatMessage, ChatMedia } from '@/utils/types';
+
 interface ChatWindowProps {
   friendId: string;
   onBack?: () => void;
+  onToggleProfile?: () => void;
+  showSidebar?: boolean;
 }
 
-export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
+export default function ChatWindow({ friendId, onBack, onToggleProfile, showSidebar }: ChatWindowProps) {
   const {
     messages,
     sendMessage,
@@ -62,7 +63,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,20 +97,20 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
     let active = true;
     const initialiseConversation = async () => {
       if (!friendId) return;
-      
+
       setIsInitializing(true);
-      
+
       try {
         // Get or create the real conversation ID from server
         const realConvId = await ensureConversation(friendId);
         if (!active) return;
-        
+
         if (realConvId) {
           setConversationId(realConvId);
-          
+
           // Try to load from cache first
           await loadCachedMessages(realConvId);
-          
+
           // Then fetch fresh messages from server
           await getMessages(friendId, 50);
         }
@@ -258,21 +259,8 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
     setInput('');
     setReplyingTo(null);
 
-    // Optimistic update
-    const tempMessage: ChatMessage = {
-      id: Date.now(), // Temporary ID
-      senderId: currentUser?.id || '',
-      content: messageContent,
-      timestamp: new Date(),
-      isSent: false,
-      isRead: false,
-      replyTo: replyingTo?.id,
-      media: [] as ChatMedia[],
-      reactions: [] as { userId: string; reactionType: string }[],
-      encrypted: true
-    };
-
-    setMessages(prev => [...prev, tempMessage]);
+    // Note: Optimistic update is handled by ChatContext.sendMessage()
+    // Don't add duplicate message here
 
     try {
       if (editingMessage) {
@@ -285,19 +273,6 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
           replyingTo?.id
         );
       }
-
-      // Cache the message
-      await secureDB.cacheMessage({
-        id: String(tempMessage.id),
-        conversationId: conversationId || '',
-        content: messageContent,
-        senderId: currentUser?.id || '',
-        timestamp: new Date(),
-        encrypted: true,
-        isSent: true,
-        isRead: false,
-        reactions: []
-      });
 
       // Play send sound
       playSendSound();
@@ -373,16 +348,24 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
   }, [friendDetails, chatList, friendId]);
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: C.background }}>
+    <div className="flex flex-col h-full bg-background-hex">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3">
+      <div
+        className="flex items-center justify-between p-4 border-b border-border bg-surface"
+      >
+        <div className="flex items-center gap-3">
           {onBack && (
-            <button onClick={onBack} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-              <ArrowLeft className="w-5 h-5" />
+            <button
+              className="lg:hidden p-2 -ml-2 text-muted-foreground"
+              onClick={onBack}
+            >
+              <ArrowLeft size={24} />
             </button>
           )}
-          <div className="relative">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-xl cursor-pointer relative"
+            onClick={onToggleProfile}
+          >
             <Image
               src={displayFriend?.avatar || '/default-avatar.png'}
               alt={displayFriend?.username || 'User avatar'}
@@ -391,43 +374,55 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
               height={40}
             />
             {displayFriend?.isOnline && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+              <div
+                className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-surface bg-success"
+              />
             )}
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900 dark:text-white">
+            <h2 className="font-semibold text-foreground">
               {displayFriend?.username || 'Loading...'}
             </h2>
-            {friendTyping ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400">typing...</p>
-            ) : displayFriend?.isOnline ? (
-              <p className="text-xs text-green-500">Active now</p>
-            ) : null}
+            <p className="text-xs text-success">
+              {friendTyping ? 'typing...' : (displayFriend?.isOnline ? 'Online' : 'Last seen recently')}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-            <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button
+            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
+          >
+            <Phone size={20} />
           </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-            <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button
+            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
+          >
+            <VideoCamera size={20} />
           </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-            <Info className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button
+            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
+          >
+            <MagnifyingGlass size={20} />
+          </button>
+          <button
+            className="lg:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
+            onClick={onToggleProfile}
+          >
+            <DotsThreeVertical size={20} />
           </button>
         </div>
       </div>
 
       {/* Connection Status */}
       {isInitializing && (
-        <div className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm text-center flex items-center justify-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+        <div className="px-4 py-2 bg-info/20 text-info text-sm text-center flex items-center justify-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-info border-t-transparent" />
           Loading conversation...
         </div>
       )}
       {!isConnected && !isInitializing && (
-        <div className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-sm text-center">
+        <div className="px-4 py-2 bg-warning/20 text-warning text-sm text-center">
           Reconnecting...
         </div>
       )}
@@ -440,7 +435,7 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
       >
         {isLoadingMore && (
           <div className="flex justify-center py-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         )}
 
@@ -453,8 +448,10 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
             return (
               <React.Fragment key={message.id}>
                 {showDate && (
-                  <div className="flex justify-center my-4">
-                    <span className="px-3 py-1 text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 rounded-full">
+                  <div className="flex items-center justify-center mb-6">
+                    <span
+                      className="px-3 py-1 rounded-full text-xs bg-card text-muted-foreground"
+                    >
                       {formatMessageDate(new Date(message.timestamp))}
                     </span>
                   </div>
@@ -491,34 +488,31 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
 
       {/* Reply Preview */}
       {replyingTo && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="px-4 py-2 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
+        <div
+          className="px-4 py-3 border-t border-b flex items-center justify-between bg-card border-border"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : displayFriend?.username}
-              </span>
+          <div className="flex-1 border-l-2 pl-3 border-accent">
+            <div className="text-xs font-semibold mb-1 text-accent">
+              Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : displayFriend?.username}
             </div>
-            <button
-              onClick={() => setReplyingTo(null)}
-              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              ×
-            </button>
+            <div className="text-sm truncate text-muted-foreground">
+              {replyingTo.content}
+            </div>
           </div>
-          <p className="text-sm text-gray-700 dark:text-gray-400 truncate mt-1">
-            {replyingTo.content}
-          </p>
-        </motion.div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="p-2 text-muted-foreground"
+          >
+            <X size={18} />
+          </button>
+        </div>
       )}
 
       {/* Input Area */}
-      <div className="px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-end space-x-2">
+      <div
+        className="p-4 border-t border-border bg-surface"
+      >
+        <div className="flex items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -528,14 +522,18 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
           >
-            <Paperclip className="w-5 h-5" />
+            <Paperclip size={22} />
           </button>
 
-          <div className="flex-1 relative">
-            <textarea
+          <div
+            className="flex-1 flex items-center gap-2 rounded-xl px-4 py-2 bg-card border border-border"
+          >
+            <input
               ref={inputRef}
+              type="text"
+              placeholder={editingMessage ? "Edit message..." : "Enter your message here"}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
@@ -547,30 +545,28 @@ export default function ChatWindow({ friendId, onBack }: ChatWindowProps) {
                   handleSend();
                 }
               }}
-              placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32"
-              rows={1}
+              className="flex-1 bg-transparent outline-none text-foreground"
             />
+            <button
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="text-muted-foreground"
+            >
+              <Smiley size={20} />
+            </button>
           </div>
 
-          <button
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-          >
-            <Smile className="w-5 h-5" />
-          </button>
-
           {input.trim() || editingMessage ? (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={handleSend}
-              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+              className="p-3 rounded-lg bg-accent text-background-hex transition-colors"
             >
-              <Send className="w-5 h-5" />
-            </motion.button>
+              <PaperPlaneTilt size={20} weight="fill" />
+            </button>
           ) : (
-            <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-              <Mic className="w-5 h-5" />
+            <button
+              className="p-3 rounded-lg text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              <Microphone size={20} />
             </button>
           )}
         </div>

@@ -75,7 +75,7 @@ const ProductVariations = ({
                 .filter((v) => v.name === name)
                 .map((variation) => (
                   <SelectItem key={variation.id} value={variation.value}>
-                    {variation.value} - ${(variation.price ?? 0).toFixed(2)} ({variation.stock ?? 0} in stock)
+                    {variation.value} - KES {(variation.price ?? 0).toFixed(2)} ({variation.stock ?? 0} in stock)
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -85,7 +85,7 @@ const ProductVariations = ({
       {selectedVariation && (
         <div>
           <p className="font-semibold">Selected: {selectedVariation.value}</p>
-          <p className="font-semibold">Price: ${(selectedVariation.price ?? 0).toFixed(2)}</p>
+          <p className="font-semibold">Price: KES {(selectedVariation.price ?? 0).toFixed(2)}</p>
           <p className="text-sm text-muted-foreground">Stock: {selectedVariation.stock}</p>
         </div>
       )}
@@ -232,8 +232,8 @@ export default function SingleProductPage() {
                     </span>
                   </div>
                   <p className="text-gray-600">{selectedProduct?.description}</p>
-                  {!selectedVariation && <p className="text-xl font-bold">${selectedProduct?.variations?.[0]?.price ?? selectedProduct?.price ?? 0}</p>}
-                  {selectedVariation && <p className="text-xl font-bold">${selectedVariation?.price ?? 0}</p>}
+                  {!selectedVariation && <p className="text-xl font-bold">KES {selectedProduct?.variations?.[0]?.price ?? selectedProduct?.price ?? 0}</p>}
+                  {selectedVariation && <p className="text-xl font-bold">KES {selectedVariation?.price ?? 0}</p>}
                   <p className="text-sm text-gray-500">Category: {selectedProduct?.category}</p>
                   <p className="text-sm text-gray-500">Brand: {selectedProduct?.brand}</p>
                 </>

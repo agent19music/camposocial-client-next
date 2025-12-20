@@ -47,7 +47,7 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
 import { useWebSocket } from "@/context/websocket-context";
 import { NotificationDot, NotificationCounter, YapNotificationBanner } from "@/components/notification-indicators";
-import {toast} from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import MobileHeader from "@/components/mobile-header";
@@ -55,7 +55,7 @@ import SmartFAB from "@/components/smart-fab";
 import EnhancedMobileSideNav from "@/components/enhanced-mobile-sidenav";
 import { AvatarImage } from "@/components/ui/avatar";
 import { AvatarFallback } from "@/components/ui/avatar";
-import { Avatar } from "@/components/ui/avatar";  
+import { Avatar } from "@/components/ui/avatar";
 interface HeaderProps {
   onSearch?: (query: string) => void;
   onFilterSelect?: (filterId: string) => void;
@@ -63,27 +63,27 @@ interface HeaderProps {
   activeFilter?: string;
 }
 
-const Header: FC<HeaderProps> = ({ 
-  onSearch, 
-  onFilterSelect, 
-  searchQuery = "", 
-  activeFilter = "all" 
+const Header: FC<HeaderProps> = ({
+  onSearch,
+  onFilterSelect,
+  searchQuery = "",
+  activeFilter = "all"
 }) => {
   const pathname = usePathname();
   const [activePage, setActivePage] = useState<string>("");
   const router = useRouter();
 
   const { currentUser, logout } = useContext(AuthContext);
-  const { 
-    notificationCounts, 
-    yapCounts, 
-    hasNewNotifications, 
-    hasNewYaps, 
-    markYapsAsSeen, 
+  const {
+    notificationCounts,
+    yapCounts,
+    hasNewNotifications,
+    hasNewYaps,
+    markYapsAsSeen,
     markFriendRequestsAsSeen,
-    isConnected 
+    isConnected
   } = useWebSocket();
-  
+
   useEffect(() => {
     if (pathname) {
       setActivePage(pathname);
@@ -194,7 +194,7 @@ const Header: FC<HeaderProps> = ({
       {/* Mobile Header with Search and Filters */}
       <MobileHeader
         searchPlaceholder={getSearchPlaceholder()}
-        filters={[]}    
+        filters={[]}
         onSearch={handleSearch}
         onFilterSelect={handleFilterSelect}
         showSearch={true}
@@ -211,9 +211,8 @@ const Header: FC<HeaderProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
-                activePage.includes("/events") ? "text-[#ff9013]" : ""
-              }`}
+              className={`text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${activePage.includes("/events") ? "text-[#ff9013]" : ""
+                }`}
             >
               <Calendar className="h-5 w-5 mr-2" />
               Events
@@ -224,16 +223,15 @@ const Header: FC<HeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleYapsNavigation}
-            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
-              activePage.includes("/yaps") ? "text-[#ff9013]" : ""
-            }`}
+            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${activePage.includes("/yaps") ? "text-[#ff9013]" : ""
+              }`}
           >
             <MessageSquare className="h-5 w-5 mr-2" />
             Yaps
             {/* Purple notification dot for new yaps */}
-            <NotificationDot 
-              show={hasNewYaps} 
-              size="sm" 
+            <NotificationDot
+              show={hasNewYaps}
+              size="sm"
               position="top-right"
               className="ml-2"
             />
@@ -264,9 +262,8 @@ const Header: FC<HeaderProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
-                activePage.includes("/marketplace") ? "text-[#ff9013]" : ""
-              }`}
+              className={`text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${activePage.includes("/marketplace") ? "text-[#ff9013]" : ""
+                }`}
             >
               <ShoppingBag className="h-5 w-5 mr-2" />
               Marketplace
@@ -277,16 +274,15 @@ const Header: FC<HeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleFriendsNavigation}
-            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${
-              activePage.includes("/friends") ? "text-[#ff9013]" : ""
-            }`}
+            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${activePage.includes("/friends") ? "text-[#ff9013]" : ""
+              }`}
           >
             <UserPlus className="h-5 w-5 mr-2" />
             Friends
             {/* Purple notification dot for friend requests */}
-            <NotificationDot 
-              show={notificationCounts.friend_requests > 0} 
-              size="sm" 
+            <NotificationDot
+              show={notificationCounts.friend_requests > 0}
+              size="sm"
               position="top-right"
               className="ml-2"
             />
@@ -297,26 +293,26 @@ const Header: FC<HeaderProps> = ({
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="secondary" 
-                size="icon" 
+              <Button
+                variant="secondary"
+                size="icon"
                 className="rounded-full hover:opacity-80 transition-opacity"
                 onClick={() => currentUser && router.push(`/yaps/profile/${currentUser.username}`)}
               >
-                {currentUser ? 
-                <Avatar className="w-10 h-10 mb-2 flex-shrink-0">
-                  <AvatarImage src={currentUser?.avatar} />
-                  <AvatarFallback>{currentUser?.display_name?.[0] || 'U'}</AvatarFallback>
-                </Avatar>
-                :
-                <CircleUser className="h-5 w-5" />
+                {currentUser ?
+                  <Avatar className="w-10 h-10 mb-2 flex-shrink-0">
+                    <AvatarImage src={currentUser?.avatar} />
+                    <AvatarFallback>{currentUser?.display_name?.[0] || 'U'}</AvatarFallback>
+                  </Avatar>
+                  :
+                  <CircleUser className="h-5 w-5" />
                 }
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {currentUser ? (
-                <DropdownMenuLabel 
+                <DropdownMenuLabel
                   className="hover:cursor-pointer"
                   onClick={() => router.push(`/yaps/profile/${currentUser.username}`)}
                 >
@@ -330,6 +326,22 @@ const Header: FC<HeaderProps> = ({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={takeMeToProfile}>Profile Info</DropdownMenuItem>
               <DropdownMenuItem onClick={takeMeToSettings}>Settings</DropdownMenuItem>
+              {currentUser?.is_seller && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL || 'http://localhost:3001';
+                    window.location.href = sellerDashboardUrl + '/dashboard';
+                  }}
+                  className="text-[#ff9013] font-medium"
+                >
+                  Seller Dashboard
+                </DropdownMenuItem>
+              )}
+              {currentUser && !currentUser?.is_seller && (
+                <DropdownMenuItem onClick={() => router.push('/marketplace/sellersignup')}>
+                  Become a Seller
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
@@ -339,7 +351,7 @@ const Header: FC<HeaderProps> = ({
       </header>
 
       {/* Mobile Bottom Navigation - Simplified */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t flex justify-around items-center h-16 z-40 pb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background/95 backdrop-blur-sm border-t flex justify-around items-center h-16 z-40 pb-safe">
         {/* Mobile Side Nav Trigger */}
         <Sheet>
           <SheetTrigger asChild>
@@ -361,9 +373,8 @@ const Header: FC<HeaderProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:bg-[#ff9013]/20 transition-colors ${
-              activePage.includes("/events") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
-            }`}
+            className={`flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:bg-[#ff9013]/20 transition-colors ${activePage.includes("/events") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
+              }`}
           >
             <Calendar className="h-5 w-5 mb-1" />
             <span className="text-xs">Events</span>
@@ -374,16 +385,15 @@ const Header: FC<HeaderProps> = ({
           variant="ghost"
           size="sm"
           onClick={handleYapsNavigation}
-          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${
-            activePage.includes("/yaps") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
-          }`}
+          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${activePage.includes("/yaps") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
+            }`}
         >
           <div className="relative">
             <MessageSquare className="h-5 w-5 mb-1" />
             {/* Purple notification dot for mobile */}
-            <NotificationDot 
-              show={hasNewYaps} 
-              size="sm" 
+            <NotificationDot
+              show={hasNewYaps}
+              size="sm"
               position="top-right"
             />
           </div>
@@ -394,9 +404,8 @@ const Header: FC<HeaderProps> = ({
           <Button
             variant="ghost"
             size="sm"
-              className={`flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${
-              activePage.includes("/marketplace") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
-            }`}
+            className={`flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${activePage.includes("/marketplace") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
+              }`}
           >
             <ShoppingBag className="h-5 w-5 mb-1" />
             <span className="text-xs">Shop</span>
@@ -407,16 +416,15 @@ const Header: FC<HeaderProps> = ({
           variant="ghost"
           size="sm"
           onClick={handleFriendsNavigation}
-          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${
-            activePage.includes("/friends") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
-          }`}
+          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${activePage.includes("/friends") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
+            }`}
         >
           <div className="relative">
             <UserPlus className="h-5 w-5 mb-1" />
             {/* Purple notification dot for mobile */}
-            <NotificationDot 
-              show={notificationCounts.friend_requests > 0} 
-              size="sm" 
+            <NotificationDot
+              show={notificationCounts.friend_requests > 0}
+              size="sm"
               position="top-right"
             />
           </div>

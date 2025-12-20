@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import FilterPills, { FilterPill } from "@/components/filter-pills";
 import Header from "@/components/header";
-import SideNav from "@/components/sidenav";
 
 // Friend Components
 import { FriendCard } from "@/components/friends/FriendCard";
@@ -27,30 +26,30 @@ import { Colors as Palette } from '@/constants/Colors';
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // State for managing request status updates
   const [requestStates, setRequestStates] = useState<Record<string, 'accepting' | 'declining' | 'accepted' | 'declined'>>({});
-  
+
   const { currentUser } = useContext(AuthContext);
-  const { 
-    friends, 
-    users, 
-    receivedRequests, 
-    sendFriendRequest, 
-    addFriend, 
-    rejectFriendRequest, 
+  const {
+    friends,
+    users,
+    receivedRequests,
+    sendFriendRequest,
+    addFriend,
+    rejectFriendRequest,
     removeFriend,
     blockUser,
     isLoadingUsers,
     isLoadingSearch
   } = useContext(UserContext);
 
-  
+
   // Get WebSocket context for notification counts
   const { notificationCounts, markFriendRequestsAsSeen } = useWebSocket();
 
   console.log('received requests:', receivedRequests);
-  
+
   const router = useRouter();
 
   // Fetch friends and users on mount
@@ -58,22 +57,16 @@ export default function FriendsPage() {
     if (users.length) {
       return;
     }
-    setRequestStates({});
   }, [users.length]);
-
-  // Quick access for desktop sidebar
-  const quickAccessLinks = [
-    { label: "Home", icon: <MessageSquare className="h-4 w-4" />, onClick: () => router.push("/") },
-  ];
 
   // Filter pills with notification counts
   const filterPills: FilterPill[] = [
     { id: "friends", label: "Friends", active: activeTab === "friends" },
     { id: "messages", label: "Messages", active: activeTab === "messages" },
     { id: "discover", label: "Discover", active: activeTab === "discover" },
-    { 
-      id: "requests", 
-      label: "Requests", 
+    {
+      id: "requests",
+      label: "Requests",
       active: activeTab === "requests",
       badge: notificationCounts.friend_requests > 0 ? notificationCounts.friend_requests : undefined
     },
@@ -100,12 +93,12 @@ export default function FriendsPage() {
   const handleAcceptRequest = async (requestId: string | number) => {
     const reqId = requestId.toString();
     setRequestStates(prev => ({ ...prev, [reqId]: 'accepting' }));
-    
+
     try {
       await addFriend(reqId);
-      
+
       setRequestStates(prev => ({ ...prev, [reqId]: 'accepted' }));
-      
+
       setTimeout(() => {
         setRequestStates(prev => {
           const newState = { ...prev };
@@ -125,13 +118,13 @@ export default function FriendsPage() {
   const handleDeclineRequest = async (requestId: string | number) => {
     const reqId = requestId.toString();
     setRequestStates(prev => ({ ...prev, [reqId]: 'declining' }));
-    
+
     try {
       await rejectFriendRequest(reqId);
-      
+
       // Show declined state briefly
       setRequestStates(prev => ({ ...prev, [reqId]: 'declined' }));
-      
+
       // Remove the request after showing decline message
       setTimeout(() => {
         setRequestStates(prev => {
@@ -159,8 +152,8 @@ export default function FriendsPage() {
   };
 
   // Filter friends based on search query
-  const filteredFriends = friends.filter(friend => 
-    !searchQuery || 
+  const filteredFriends = friends.filter(friend =>
+    !searchQuery ||
     friend.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     friend.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     `${friend.firstName || ''} ${friend.lastName || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
@@ -171,29 +164,23 @@ export default function FriendsPage() {
       <Header />
       <main className="mobile-content-padding lg:pb-4">
         {/* Filter Pills - Mobile */}
-        <FilterPills 
+        <FilterPills
           filters={filterPills}
           onFilterSelect={handleFilterSelect}
           className="lg:hidden"
         />
 
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Left SideNav - Desktop Only */}
-          <div className="hidden md:block md:w-64 flex-shrink-0">
-            <SideNav links={quickAccessLinks} />
-          </div>
-          
-          {/* Center content */}
+        <div className="flex flex-col gap-6">
           <div className="flex-1 flex flex-col gap-6 p-4 lg:gap-6 lg:p-6">
-            
+
             {/* Desktop Filter Pills */}
             <div className="hidden lg:block">
-              <FilterPills 
+              <FilterPills
                 filters={filterPills}
                 onFilterSelect={handleFilterSelect}
               />
             </div>
-            
+
             {/* Desktop Search */}
             {(activeTab === 'friends' || activeTab === 'messages') && (
               <div className="hidden lg:flex w-full justify-center items-center">
@@ -209,7 +196,7 @@ export default function FriendsPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Content based on active tab */}
             <AnimatePresence mode="wait">
               {activeTab === "friends" && (
@@ -221,7 +208,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                  
+
                     <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                       {friends.length} friends
                     </span>
@@ -246,8 +233,8 @@ export default function FriendsPage() {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState 
-                      type="friends" 
+                    <EmptyState
+                      type="friends"
                       onAction={() => setActiveTab('discover')}
                     />
                   )}
@@ -263,7 +250,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-              
+
                   </div>
 
                   <SearchableDiscover
@@ -281,7 +268,7 @@ export default function FriendsPage() {
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-6"
                 >
-     
+
 
                   {receivedRequests.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -299,8 +286,8 @@ export default function FriendsPage() {
                       </AnimatePresence>
                     </div>
                   ) : (
-                    <EmptyState 
-                      type="requests" 
+                    <EmptyState
+                      type="requests"
                       onAction={() => setActiveTab('discover')}
                     />
                   )}
@@ -316,7 +303,7 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-               
+
                   </div>
 
                   {friends.length > 0 ? (
@@ -331,13 +318,13 @@ export default function FriendsPage() {
                             onMessage={handleMessageFriend}
                             onRemoveFriend={handleRemoveFriend}
                             onViewProfile={handleViewProfile}
-                            
+
                           />
                         ))}
                     </div>
                   ) : (
-                    <EmptyState 
-                      type="messages" 
+                    <EmptyState
+                      type="messages"
                       onAction={() => setActiveTab('friends')}
                     />
                   )}
@@ -353,11 +340,11 @@ export default function FriendsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between">
-                
+
                   </div>
 
-                  <EmptyState 
-                    type="activity" 
+                  <EmptyState
+                    type="activity"
                     onAction={() => router.push('/')}
                   />
                 </motion.div>

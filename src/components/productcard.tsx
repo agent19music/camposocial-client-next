@@ -10,8 +10,10 @@ import { Product } from '@/utils/types';
 
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { navigateToSingleProductView } = useContext(MarketplaceContext)
+  const { navigateToSingleProductView, isInWishlist, toggleWishlist } = useContext(MarketplaceContext)
   console.log(product.reviews?.length);
+
+  const inWishlist = isInWishlist(product.id);
 
   // Get display price - use base price or first variant price
   const getDisplayPrice = () => {
@@ -31,8 +33,13 @@ export default function ProductCard({ product }: { product: Product }) {
   const displayPrice = getDisplayPrice()
   const hasVariants = product.variations && product.variations.length > 0
   const priceRange = hasVariants && product.price == null ?
-    `From $${displayPrice.toFixed(2)}` :
-    `$${displayPrice.toFixed(2)}`
+    `From KES ${displayPrice.toFixed(2)}` :
+    `KES ${displayPrice.toFixed(2)}`
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleWishlist(product.id);
+  };
 
   return (
     <Card className="w-[250px] border-none shadow-none hover:cursor-pointer"
@@ -52,9 +59,10 @@ export default function ProductCard({ product }: { product: Product }) {
           <Button
             variant="ghost"
             size="icon"
+            onClick={handleHeartClick}
             className="absolute top-2 right-2 text-gray-600 dark:text-gray-300 hover:text-[#92736C] dark:hover:text-[#92736C] transition-colors duration-200"
           >
-            <Heart className="h-5 w-5" />
+            <Heart className={`h-5 w-5 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
           </Button>
 
           {product.isBestseller && (

@@ -22,9 +22,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Heart, MessageCircle, MoreHorizontal, Repeat, Share2, Users, Calendar, ShoppingBag, Search, Sparkles, UserPlus, Plus, TrendingUp, Clock, UsersIcon } from "lucide-react"
-import { Home, PartyPopper } from "lucide-react";
+import { PartyPopper } from "lucide-react";
 import Header from '@/components/header'
-import SideNav from '@/components/sidenav'
 import FilterPills, { FilterPill } from '@/components/filter-pills'
 import { Input } from '@/components/ui/input'
 import { Repeat2 } from 'lucide-react'
@@ -42,6 +41,7 @@ import Link from 'next/link'
 import AddYap from '@/components/addyap'
 import { useTheme } from '@/context/themecontext'
 import WhoToFollow from '@/components/whotofollow'
+import TrendingHashtags from '@/components/trending-hashtags'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
@@ -179,11 +179,6 @@ export default function Component() {
   const { markYapsAsSeen, hasNewYaps } = useWebSocket()
   const router = useRouter();
 
-  // Only keep quick access links for desktop sidebar
-  const quickAccessLinks = [
-    { label: "Home", icon: <Home className="h-4 w-4" />, onClick: () => router.push("/") },
-  ];
-
   // Check if user is new (no yaps, no friends, etc.)
   const isNewUser = !authLoading && currentUser && (
     (yaps.length === 0) &&
@@ -237,10 +232,6 @@ export default function Component() {
         />
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-          {/* Left SideNav - Desktop Only - Only Quick Access */}
-          <div className="hidden lg:block lg:w-64 flex-shrink-0">
-            <SideNav links={quickAccessLinks} />
-          </div>
 
           {/* Center content */}
           <div className="flex-1 flex flex-col gap-4 lg:gap-6">
@@ -258,20 +249,13 @@ export default function Component() {
             </div>
 
             {/* Feed Container */}
-            <div className="w-full max-w-2xl mx-auto rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px]">
+            <div className="w-full max-w-2xl mx-auto">
               {isNewUser ? (
                 <NewUserWelcome />
               ) : (
-                <div className="w-full">
-                  {/* Feed Header */}
-                  <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-10">
-                    <div className="flex items-center justify-center p-4">
-
-                    </div>
-                  </div>
-
+                <div className="w-full space-y-4">
                   {/* Feed Content */}
-                  <div className="min-h-[400px]">
+                  <div>
                     {isLoading ? (
                       // Display Skeletons while loading
                       <>
@@ -281,7 +265,7 @@ export default function Component() {
                       </>
                     ) : yaps.length > 0 ? (
                       // Display yaps
-                      <div className="divide-y">
+                      <div className="space-y-4">
                         {yaps.map((yap) => (
                           <YapCard
                             key={yap.id}
@@ -326,7 +310,7 @@ export default function Component() {
 
                   {/* Load more button */}
                   {yaps.length > 0 && (
-                    <div className="p-4 border-t">
+                    <div className="py-4">
                       <Button
                         variant="ghost"
                         className="w-full"
@@ -346,31 +330,7 @@ export default function Component() {
           <div className="hidden lg:block lg:w-80 flex-shrink-0">
             <div className="sticky top-4 space-y-4">
               {/* Trending hashtags */}
-              <Card>
-                <CardHeader>
-                  <h3 className="font-semibold">Trending on Campus</h3>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium">#StudyGroup</p>
-                      <p className="text-sm text-muted-foreground">142 yaps</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium">#CampusLife</p>
-                      <p className="text-sm text-muted-foreground">89 yaps</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium">#Finals</p>
-                      <p className="text-sm text-muted-foreground">67 yaps</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <TrendingHashtags />
 
               {/* Who to follow */}
               <WhoToFollow />

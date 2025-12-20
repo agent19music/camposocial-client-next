@@ -35,6 +35,10 @@ const defaultValue: MarketplaceContextProps = {
   setSellerStausChange: () => { },
   addToCart: async () => { },
   deslugify: () => "",
+  // Wishlist
+  wishlistIds: [],
+  toggleWishlist: async () => { },
+  isInWishlist: () => false,
 };
 
 // Create the MarketplaceContext with default values
@@ -62,6 +66,7 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
   const [updateCart, setUpdateCart] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [sellerStatusChange, setSellerStausChange] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
 
 
 
@@ -84,6 +89,29 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
         setIsLoading(false);
       });
   }, [onchange, apiEndpoint]);
+
+  // Fetch wishlist on mount when authenticated
+  useEffect(() => {
+    if (!authToken || !apiEndpoint) return;
+
+    const fetchWishlist = async () => {
+      try {
+        const response = await fetch(`${apiEndpoint}/wishlist`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setWishlistIds(data.product_ids || []);
+        }
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+      }
+    };
+
+    fetchWishlist();
+  }, [authToken, apiEndpoint]);
 
   // Function to create a slug from yap id
   function slugify(int: string): string {
@@ -164,6 +192,68 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     }
   }
 
+  async function toggleWishlist(productId: string) {
+    if (!authToken) {
+      console.warn('Wishlist: Not authenticated');
+      return;
+    }
+
+    if (!apiEndpoint) {
+      console.warn('Wishlist: API endpoint not configured');
+      return;
+    }
+
+    // Optimistic update - toggle immediately for better UX
+    const wasInWishlist = wishlistIds.includes(productId);
+    if (wasInWishlist) {
+      setWishlistIds(prev => prev.filter(id => id !== productId));
+    } else {
+      setWishlistIds(prev => [...prev, productId]);
+    }
+
+    try {
+      const response = await fetch(`${apiEndpoint}/wishlist/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ product_id: productId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Sync with server state
+        if (data.in_wishlist) {
+          setWishlistIds(prev => prev.includes(productId) ? prev : [...prev, productId]);
+        } else {
+          setWishlistIds(prev => prev.filter(id => id !== productId));
+        }
+      } else {
+        // Revert optimistic update on failure
+        if (wasInWishlist) {
+          setWishlistIds(prev => [...prev, productId]);
+        } else {
+          setWishlistIds(prev => prev.filter(id => id !== productId));
+        }
+        console.warn('Wishlist toggle failed:', response.status);
+      }
+    } catch (error) {
+      // Revert optimistic update on network error
+      if (wasInWishlist) {
+        setWishlistIds(prev => prev.includes(productId) ? prev : [...prev, productId]);
+      } else {
+        setWishlistIds(prev => prev.filter(id => id !== productId));
+      }
+      console.warn('Error toggling wishlist:', error);
+
+    }
+  }
+
+  function isInWishlist(productId: string): boolean {
+    return wishlistIds.includes(productId);
+  }
+
   // The context data that will be passed down to components
   const contextData = {
     products: filteredProducts,
@@ -186,9 +276,11 @@ export default function MarketplaceProvider({ children }: MarketplaceProviderPro
     sellerStatusChange,
     setSellerStausChange,
     addToCart,
-    deslugify
-
-    // Include this in the context data
+    deslugify,
+    // Wishlist
+    wishlistIds,
+    toggleWishlist,
+    isInWishlist,
   };
 
   // Render the provider and pass the context data

@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 async function generateCodeChallenge() {
   // Generate code verifier
   const codeVerifier = generateCodeVerifier();
-  
+
   // Create code challenge
   const encoder = new TextEncoder();
   const data = encoder.encode(codeVerifier);
@@ -42,14 +42,14 @@ export function SocialLoginModal() {
     onSuccess: async (credentialResponse) => {
       try {
         console.log('Google OAuth Response:', credentialResponse);
-        
+
         // Check if we have the expected response structure
         if (!credentialResponse.access_token) {
           console.error('Invalid Google OAuth response:', credentialResponse);
           toast.error('Invalid Google OAuth response');
           return;
         }
-        
+
         // Transform the response to match backend expectations
         const transformedData = {
           access_token: credentialResponse.access_token,
@@ -58,7 +58,7 @@ export function SocialLoginModal() {
           expires_in: credentialResponse.expires_in,
           scope: credentialResponse.scope
         };
-        
+
         console.log('Sending to backend:', transformedData);
         await socialLogin('google', transformedData);
       } catch (error) {
@@ -75,23 +75,23 @@ export function SocialLoginModal() {
   });
 
   const handleGithubLogin = async () => {
-    const githubClientId = process.env.GITHUB_CLIENT_ID;
-    
-    if (!githubClientId || githubClientId === 'your_github_client_id_here') {
+    const githubClientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+
+    if (!githubClientId) {
       toast.error('GitHub OAuth not configured. Please check environment variables.');
       return;
     }
-    
+
     const redirectUri = encodeURIComponent(`${window.location.origin}/api/oauth/github/callback`);
     const state = Math.random().toString(36).substring(7);
-    
+
     // Store state in sessionStorage for CSRF protection (this is client-side only)
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('oauth_state', state);
     }
-    
+
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${redirectUri}&state=${state}&scope=user:email`;
-    
+
     // Redirect to GitHub OAuth
     window.location.href = authUrl;
   };
@@ -102,20 +102,20 @@ export function SocialLoginModal() {
       const redirectUri = encodeURIComponent(`${window.location.origin}/api/oauth/twitter/callback`);
       const state = Math.random().toString(36).substring(7);
       const codeChallenge = await generateCodeChallenge();
-      
+
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('oauth_state', state);
         sessionStorage.setItem('code_verifier', codeChallenge.verifier);
       }
-      
+
       const authUrl = `https://twitter.com/i/oauth2/authorize?` +
-          `client_id=${twitterClientId}` +
-          `&redirect_uri=${redirectUri}` +
-          `&state=${state}` +
-          `&code_challenge=${codeChallenge.challenge}` +
-          `&code_challenge_method=S256` +
-          `&response_type=code` +
-          `&scope=users.read%20tweet.read`;
+        `client_id=${twitterClientId}` +
+        `&redirect_uri=${redirectUri}` +
+        `&state=${state}` +
+        `&code_challenge=${codeChallenge.challenge}` +
+        `&code_challenge_method=S256` +
+        `&response_type=code` +
+        `&scope=users.read%20tweet.read`;
 
       // Redirect to Twitter OAuth
       window.location.href = authUrl;
@@ -125,37 +125,31 @@ export function SocialLoginModal() {
     }
   };
 
+  // Only show Google and GitHub (hide Twitter per design)
   const socialProviders = [
-    {
-      name: 'GitHub',
-      icon: Icons.github,
-      onClick: handleGithubLogin,
-      color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
-      description: 'Continue with your GitHub account'
-    },
     {
       name: 'Google',
       icon: Icons.google,
       onClick: () => googleLogin(),
       color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
-      description: 'Continue with your Google account'
+      description: 'Create account with your Google'
     },
     {
-      name: 'Twitter',
-      icon: Icons.x,
-      onClick: handleTwitterLogin,
+      name: 'GitHub',
+      icon: Icons.github,
+      onClick: handleGithubLogin,
       color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
-      description: 'Continue with your Twitter account'
+      description: 'Create account with your GitHub'
     }
   ];
 
-    if (!showSocialModal) {
+  if (!showSocialModal) {
     return (
       <div className="text-center">
-        <Button 
+        <Button
           onClick={() => setShowSocialModal(true)}
-            className="w-full h-14 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
-            style={{ backgroundColor: 'var(--color-fun)' }}
+          className="w-full h-14 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+          style={{ backgroundColor: 'var(--color-fun)' }}
         >
           <div className="flex items-center justify-center space-x-3">
             <span>Get Started</span>
@@ -169,8 +163,8 @@ export function SocialLoginModal() {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Choose your login method</h3>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="sm"
           onClick={() => setShowSocialModal(false)}
           className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -186,8 +180,8 @@ export function SocialLoginModal() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1, duration: 0.3 }}
         >
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className={`w-full h-14 ${provider.color} transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg group border-0`}
             onClick={provider.onClick}
           >
@@ -201,15 +195,15 @@ export function SocialLoginModal() {
           </Button>
         </motion.div>
       ))}
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.3 }}
         className="text-center pt-4"
       >
         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-          By continuing, you agree to our Terms of Service and Privacy Policy. 
+          By continuing, you agree to our Terms of Service and Privacy Policy.
           Your account will be created automatically.
         </p>
       </motion.div>
