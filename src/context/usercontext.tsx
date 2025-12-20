@@ -45,7 +45,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   const [friendsState, setFriendsState] = useState<ChatFriend[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [filteredFriends, setFilteredFriends] = useState<ChatFriend[]>([]);
-  const [receivedRequests, setReceivedRequests] = useState<MinimalFriend[]>([]);
+  const [receivedRequests, setReceivedRequests] = useState<any[]>([]);
   const [sentRequestIds, setSentRequestIds] = useState<Set<string>>(new Set());
 
   const swrKey = useMemo(() => ({
@@ -111,6 +111,12 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       isCloseFriend: Boolean(friend.is_close_friend),
       friendshipId: friend.friendship_id,
       conversationId: friend.conversation_id ? String(friend.conversation_id) : null,
+      unreadCount: friend.unread_count ?? 0,
+      mutualFriends: friend.mutual_friends ?? 0,
+      category: friend.category ?? "",
+      bio: friend.bio ?? "",
+      messagePreview: friend.message_preview ?? null,
+      messageTime: friend.message_time ? new Date(friend.message_time) : new Date(),
     })) as ChatFriend[];
   }, [friendsData]);
 
@@ -132,7 +138,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   // user should be a single user object, not an array
   const user = usersState.length > 0 ? usersState[0] : [];
 
-  const normalizePendingRequests = useCallback((requests: any[] = []): MinimalFriend[] => {
+  const normalizePendingRequests = useCallback((requests: any[] = []): any[] => {
     return requests
       .map((request: any) => {
         const user = request.user || request.requester || {};
@@ -148,7 +154,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
         const displayNameCandidate = (user.display_name ?? request.displayName ?? request.display_name ?? `${firstName} ${lastName}`).toString().trim();
         const lastSeenRaw = user.last_seen ?? request.last_seen ?? request.lastSeen;
 
-        // Only return MinimalFriend fields
+        // Return extended fields including bio for RequestCard display
         return {
           id: String(rawRequestId),
           username: (user.username ?? request.username ?? "").toString(),
@@ -158,9 +164,16 @@ export default function UserProvider({ children }: { children: ReactNode }) {
           avatar: (user.avatar ?? request.avatar ?? "").toString(),
           isOnline: Boolean(user.is_online ?? request.is_online ?? request.isOnline ?? false),
           lastSeen: lastSeenRaw ? new Date(lastSeenRaw) : null,
+          isCloseFriend: Boolean(user.is_close_friend ?? request.is_close_friend ?? false),
+          friendshipId: null,
+          // Extended fields for RequestCard
+          bio: (user.bio ?? request.bio ?? "").toString(),
+          mutualFriends: user.mutual_friends ?? request.mutual_friends ?? request.mutualFriends ?? 0,
+          created_at: request.created_at ?? request.createdAt ?? null,
+          requesterId: String(rawUserId),
         };
       })
-      .filter((item): item is MinimalFriend => item !== null);
+      .filter((item): item is any => item !== null);
   }, []);
 
   // Search users function

@@ -42,7 +42,7 @@ export default function SmartFAB() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Show FAB if scrolling up or at top
       if (currentScrollY < lastScrollY || currentScrollY < 10) {
         setIsVisible(true);
@@ -50,7 +50,7 @@ export default function SmartFAB() {
         // Hide FAB if scrolling down and past threshold
         setIsVisible(false);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
@@ -67,12 +67,8 @@ export default function SmartFAB() {
         label: 'Cart'
       };
     } else if (pathname?.includes('/friends')) {
-      return {
-        icon: MessageSquare,
-        action: 'message',
-        badgeCount: 0, // You can add unread messages count here
-        label: 'Messages'
-      };
+      // No FAB on friends page
+      return null;
     } else {
       return {
         icon: Plus,
@@ -84,6 +80,10 @@ export default function SmartFAB() {
   };
 
   const fabConfig = getFABConfig();
+
+  // No FAB to show (e.g., on friends page)
+  if (!fabConfig) return null;
+
   const IconComponent = fabConfig.icon;
 
   const handleFABClick = () => {
@@ -100,7 +100,7 @@ export default function SmartFAB() {
 
   if (fabConfig.action === 'cart') {
     return (
-      <div 
+      <div
         className={cn(
           "lg:hidden fixed bottom-20 right-4 z-40 transition-all duration-300 ease-in-out",
           isVisible ? "translate-y-0 scale-100" : "translate-y-2 scale-95 opacity-0"
@@ -126,7 +126,7 @@ export default function SmartFAB() {
 
   if (fabConfig.action === 'add') {
     return (
-      <div 
+      <div
         className={cn(
           "lg:hidden fixed bottom-20 right-4 z-40 transition-all duration-300 ease-in-out",
           isVisible ? "translate-y-0 scale-100" : "translate-y-2 scale-95 opacity-0"
@@ -153,7 +153,7 @@ export default function SmartFAB() {
   }
 
   return (
-    <div 
+    <div
       className={cn(
         "lg:hidden fixed bottom-20 right-4 z-40 transition-all duration-300 ease-in-out",
         isVisible ? "translate-y-0 scale-100" : "translate-y-2 scale-95 opacity-0"

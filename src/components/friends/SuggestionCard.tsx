@@ -4,18 +4,15 @@ import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUserContext } from '@/context/usercontext';
 import { useWebSocket } from '@/context/websocket-context';
-import { Colors as Palette } from '@/constants/Colors';
-import { 
-  UserPlus, 
-  Shield, 
-  Heart,
-  GraduationCap,
-  MapPin
-} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  UserPlus,
+  User,
+  Users
+} from '@phosphor-icons/react';
 
 interface Suggestion {
   id: number | string;
@@ -39,12 +36,13 @@ interface SuggestionCardProps {
   isLoading?: boolean;
 }
 
-export const SuggestionCard: React.FC<SuggestionCardProps> = ({ 
-  suggestion, 
+export const SuggestionCard: React.FC<SuggestionCardProps> = ({
+  suggestion,
   onAddFriend,
   onViewProfile,
   isLoading = false
 }) => {
+  const router = useRouter();
   const [justSent, setJustSent] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -86,12 +84,9 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     }) || null;
   }, [receivedRequests, suggestionId]);
 
-  // Check if we've sent a request (either tracked in context or locally)
   const isSentOrPending = useMemo(() => {
     if (!suggestionId) return false;
-    // Check context-tracked sent requests first
     if (sentRequestIds?.has(suggestionId)) return true;
-    // Then check pending requests from WebSocket
     if (!Array.isArray(pendingRequests)) return false;
     return pendingRequests.some((req: any) => {
       const user = req.user || req.requester || {};
@@ -107,15 +102,13 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 
   const handleAddFriend = async (userId: string) => {
     if (!userId || isExistingFriend || isSentOrPending || justSent) return;
-    
-    // Optimistic update - instant feedback
+
     setJustSent(true);
-    
+
     try {
       await sendFriendRequest(userId);
       onAddFriend?.(userId);
     } catch {
-      // Revert optimistic state on error
       setJustSent(false);
     }
   };
@@ -131,9 +124,12 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     }
   };
 
-  const cardVariants = {
-    idle: { scale: 1, y: 0 },
-    hover: { scale: 1.01, y: -2 }
+  const handleViewProfile = () => {
+    if (suggestion.username) {
+      router.push(`/yaps/profile/${suggestion.username}`);
+    } else if (onViewProfile) {
+      onViewProfile(suggestion);
+    }
   };
 
   const reasonColors = {
@@ -150,150 +146,108 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 
   return (
     <motion.div
-      variants={cardVariants}
-      initial="idle"
-      whileHover="hover"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.01 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group cursor-pointer"
+      className="rounded-xl p-4 transition-all duration-200 bg-card border border-border"
     >
-      <Card className="transition-all duration-200 overflow-hidden bg-background border rounded-lg">
-        <div style={{ backgroundColor: 'rgba(255,255,255,0.8)' }} />
-        <CardContent className="p-3">
-          <div className="flex items-center gap-3">
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              <motion.div
-                animate={{ scale: isHovered ? 1.03 : 1 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Avatar className="w-10 h-10 border-2 border-white dark:border-gray-800 shadow">
-                  <AvatarImage src={suggestion.avatar} alt={getDisplayName()} />
-                  <AvatarFallback className="text-white font-semibold text-base" style={{ backgroundColor: Palette.accent }}>
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-              </motion.div>
-              
-              {/* New Member Indicator */}
-              {suggestion.reason === 'New member' && (
-                <motion.div 
-                  initial={{ scale: 0, rotate: -90 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  className="absolute -top-1 -right-1 rounded-full p-1"
-                  style={{ backgroundColor: '#fb7185' }}
-                >
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </motion.div>
-              )}
-            </div>
-            
-            {/* Suggestion Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate text-sm mb-0.5">
-                    {getDisplayName()}
-                  </h3>
-                  
-                  <p className="text-xs text-muted-foreground mb-1">@{suggestion.username}</p>
-                  
-                  {/* Suggestion Reason */}
-                  <div className="flex items-center gap-1 mb-1">
-                    {suggestion.reason && (
-                      <Badge 
-                        variant="outline" 
-                        className={`text-[10px] px-1.5 py-0.5 border-0 ${getReasonColor(suggestion.reason)}`}
-                      >
-                        {suggestion.reason}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Details */}
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-1">
-                {suggestion.category && (
-                  <div className="flex items-center gap-1">
-                    <GraduationCap className="h-3 w-3" />
-                    <span>{suggestion.category}</span>
-                  </div>
-                )}
-                {suggestion.year && (
-                  <div className="flex items-center gap-1">
-                    <span>•</span>
-                    <span>{suggestion.year}</span>
-                  </div>
-                )}
-                {suggestion.mutualFriends !== undefined && suggestion.mutualFriends > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-3 w-3" />
-                    <span>{suggestion.mutualFriends} mutual</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Bio */}
-              {suggestion.bio && (
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-2 leading-snug">
-                  {suggestion.bio}
-                </p>
-              )}
-              
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 mt-1">
-                <Button 
-                  size="sm" 
-                  className="flex-1 text-white border-0 shadow hover:shadow-md transition-all duration-200 h-7 text-xs px-2"
-                  onClick={() => {
-                    if (incomingRequest) {
-                      handleAcceptRequest();
-                    } else if (suggestionId) {
-                      handleAddFriend(suggestionId);
-                    }
-                  }}
-                  disabled={
-                    isLoading ||
-                    isExistingFriend ||
-                    isSentOrPending ||
-                    justSent ||
-                    isAccepting
-                  }
-                >
-                  {isAccepting ? (
-                    <motion.div
-                      animate={{ scale: [1, 1.15, 1] }}
-                      transition={{ duration: 0.4 }}
-                    >
-                      <UserPlus className="h-3 w-3 mr-1" />
-                    </motion.div>
-                  ) : (
-                    <UserPlus className="h-3 w-3 mr-1" />
-                  )}
-                  {isExistingFriend
-                    ? 'Friends'
-                    : incomingRequest
-                      ? (isAccepting ? 'Accepting...' : 'Accept Request')
-                      : (justSent || isSentOrPending)
-                        ? 'Sent'
-                        : 'Add Friend'}
-                </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-muted hover:bg-muted/50 hover:scale-105 transition-all duration-200 h-7 text-xs px-2"
-                  onClick={() => onViewProfile?.(suggestion)}
-                >
-                  <Shield className="h-3 w-3 mr-1" />
-                  Profile
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Header: Avatar + View Profile Button */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="relative cursor-pointer" onClick={handleViewProfile}>
+          <Avatar className="w-12 h-12">
+            <AvatarImage src={suggestion.avatar} alt={getDisplayName()} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+              {getInitials()}
+            </AvatarFallback>
+          </Avatar>
+          {/* New Member Indicator */}
+          {suggestion.reason === 'New member' && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card bg-pink-500" />
+          )}
+        </div>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="p-1.5 h-auto rounded-lg hover:bg-muted text-muted-foreground"
+          onClick={handleViewProfile}
+        >
+          <User className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Name & Handle */}
+      <div className="mb-2">
+        <h3
+          className="font-semibold text-foreground text-sm truncate cursor-pointer hover:underline"
+          onClick={handleViewProfile}
+        >
+          {getDisplayName()}
+        </h3>
+        <p className="text-xs text-muted-foreground truncate">
+          @{suggestion.username}
+        </p>
+      </div>
+
+      {/* Bio */}
+      {suggestion.bio && (
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
+          {suggestion.bio}
+        </p>
+      )}
+
+      {/* Reason Badge */}
+      {suggestion.reason && (
+        <Badge
+          variant="outline"
+          className={`text-[10px] px-1.5 py-0.5 border-0 mb-3 ${getReasonColor(suggestion.reason)}`}
+        >
+          {suggestion.reason}
+        </Badge>
+      )}
+
+      {/* Mutual Friends */}
+      {suggestion.mutualFriends !== undefined && suggestion.mutualFriends > 0 && (
+        <div className="flex items-center gap-1.5 mb-3">
+          <Users className="h-3 w-3 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">
+            {suggestion.mutualFriends} mutual
+          </span>
+        </div>
+      )}
+
+      {/* Add Friend Button - Always Blue */}
+      <Button
+        size="sm"
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm bg-[#4A90E2] shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-[#4A90E2]/90 text-white"
+        onClick={() => {
+          if (incomingRequest) {
+            handleAcceptRequest();
+          } else if (suggestionId) {
+            handleAddFriend(suggestionId);
+          }
+        }}
+        disabled={
+          isLoading ||
+          isExistingFriend ||
+          isSentOrPending ||
+          justSent ||
+          isAccepting
+        }
+      >
+        <UserPlus className="h-4 w-4" weight="bold" />
+        <span>
+          {isExistingFriend
+            ? 'Friends'
+            : incomingRequest
+              ? (isAccepting ? 'Accepting...' : 'Accept')
+              : (justSent || isSentOrPending)
+                ? 'Sent'
+                : 'Add Friend'}
+        </span>
+      </Button>
     </motion.div>
   );
 };

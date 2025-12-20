@@ -146,7 +146,7 @@ export default function SignUpPage() {
               className="font-medium transition-colors underline decoration-2 underline-offset-2"
               style={{ color: 'var(--color-fun)' }}
             >
-              Sign in
+              Log in here
             </a>
           </p>
         </motion.div>

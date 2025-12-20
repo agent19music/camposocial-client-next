@@ -432,9 +432,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             // Decrypt if encrypted and we have the necessary data
             let decrypted: string;
-            if (messageData.encrypted && ciphertext && nonce && senderPublicKey) {
+            if (messageData.encrypted && ciphertext && nonce && senderPublicKey && secretKey) {
                 decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
                 console.log('[E2EE] Decryption result:', decrypted?.slice(0, 50));
+            } else if (messageData.encrypted && (!senderPublicKey || !nonce || !secretKey)) {
+                // Encrypted but missing key data - show graceful fallback
+                console.warn('[E2EE] Cannot decrypt: missing', {
+                    senderPublicKey: !senderPublicKey,
+                    nonce: !nonce,
+                    secretKey: !secretKey
+                });
+                decrypted = '🔒 Encrypted message';
             } else {
                 decrypted = messageData.content || ciphertext || '';
                 console.log('[E2EE] Using plaintext content:', decrypted?.slice(0, 50));
@@ -1070,8 +1078,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                 // Decrypt if encrypted and we have necessary data
                 let decryptedContent = ciphertext;
-                if (msg.encrypted && ciphertext && nonce && senderPublicKey) {
+                if (msg.encrypted && ciphertext && nonce && senderPublicKey && secretKey) {
                     decryptedContent = await decryptMessage(ciphertext, nonce, senderPublicKey);
+                } else if (msg.encrypted && (!senderPublicKey || !nonce || !secretKey)) {
+                    // Encrypted but missing keys - show graceful fallback
+                    decryptedContent = '🔒 Encrypted message';
                 }
 
                 return {

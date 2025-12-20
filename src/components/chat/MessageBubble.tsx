@@ -181,8 +181,8 @@ export default function MessageBubble({
             className={cn(
               "px-4 py-2 rounded-2xl relative inline-block",
               isOwn
-                ? "bg-accent text-background-hex"
-                : "bg-card text-foreground",
+                ? "bg-[var(--color-primary-dark)] text-white dark:bg-accent dark:text-black"
+                : "bg-surface text-foreground",
               isFirstInGroup && isOwn && "rounded-tr-sm",
               isFirstInGroup && !isOwn && "rounded-tl-sm",
               !isFirstInGroup && !isLastInGroup && isOwn && "rounded-r-sm",

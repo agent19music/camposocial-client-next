@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useContext, useEffect } from 'react';
+import React, { Suspense, useState, useContext, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Search } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // UI Components
 import { Input } from "@/components/ui/input";
@@ -12,20 +12,22 @@ import Header from "@/components/header";
 
 // Friend Components
 import { FriendCard } from "@/components/friends/FriendCard";
-import { RequestCard } from "@/components/friends/RequestCard";
 import { EnhancedRequestCard } from "@/components/friends/EnhancedRequestCard";
 import { SearchableDiscover } from "@/components/friends/SearchableDiscover";
 import { EmptyState } from "@/components/friends/EmptyState";
 import { FriendCardSkeleton } from "@/components/friends/LoadingSkeletons";
+import ChatInterface from '@/components/chat/ChatInterface';
+
 // Contexts
 import { AuthContext } from "@/context/authcontext";
 import { UserContext } from "@/context/usercontext";
 import { useWebSocket } from "@/context/websocket-context";
-import { Colors as Palette } from '@/constants/Colors';
 
-export default function FriendsPage() {
+function FriendsPageInner() {
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const searchParams = useSearchParams();
 
   // State for managing request status updates
   const [requestStates, setRequestStates] = useState<Record<string, 'accepting' | 'declining' | 'accepted' | 'declined'>>({});
@@ -59,6 +61,14 @@ export default function FriendsPage() {
     }
   }, [users.length]);
 
+  // Check for user param to switch to messages tab
+  useEffect(() => {
+    const userParam = searchParams.get('user');
+    if (userParam) {
+      setActiveTab('messages');
+    }
+  }, [searchParams]);
+
   // Filter pills with notification counts
   const filterPills: FilterPill[] = [
     { id: "friends", label: "Friends", active: activeTab === "friends" },
@@ -83,7 +93,10 @@ export default function FriendsPage() {
 
   // Friend actions
   const handleMessageFriend = (friend: any) => {
-    router.push(`/chat?user=${friend.id || friend.username}`);
+    // Switch to messages tab and select user
+    // We can push to URL to let the effect handle it, or just set state
+    router.push(`/friends?user=${friend.id || friend.username}`);
+    setActiveTab('messages');
   };
 
   const handleAddFriend = async (userId: string | number) => {
@@ -160,18 +173,21 @@ export default function FriendsPage() {
   );
 
   return (
-    <div className="w-screen h-screen lg:container mx-auto p-4">
+    <div className={`w-screen h-screen lg:container mx-auto flex flex-col ${isChatOpen ? 'p-0' : 'p-4'}`}>
       <Header />
-      <main className="mobile-content-padding lg:pb-4">
+      <main className={`lg:pb-4 flex-1 flex flex-col overflow-hidden ${isChatOpen ? 'pb-20' : 'mobile-content-padding'}`}>
         {/* Filter Pills - Mobile */}
-        <FilterPills
-          filters={filterPills}
-          onFilterSelect={handleFilterSelect}
-          className="lg:hidden"
-        />
+        {!isChatOpen && (
+          <div className="lg:hidden mb-4">
+            <FilterPills
+              filters={filterPills}
+              onFilterSelect={handleFilterSelect}
+            />
+          </div>
+        )}
 
-        <div className="flex flex-col gap-6">
-          <div className="flex-1 flex flex-col gap-6 p-4 lg:gap-6 lg:p-6">
+        <div className="flex flex-col gap-6 h-full">
+          <div className="flex-1 flex flex-col gap-6 p-0 lg:gap-6 h-full">
 
             {/* Desktop Filter Pills */}
             <div className="hidden lg:block">
@@ -181,8 +197,8 @@ export default function FriendsPage() {
               />
             </div>
 
-            {/* Desktop Search */}
-            {(activeTab === 'friends' || activeTab === 'messages') && (
+            {/* Desktop Search - Hide for messages tab as it has its own search */}
+            {(activeTab === 'friends') && (
               <div className="hidden lg:flex w-full justify-center items-center">
                 <div className="relative max-w-md w-full">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -198,161 +214,146 @@ export default function FriendsPage() {
             )}
 
             {/* Content based on active tab */}
-            <AnimatePresence mode="wait">
-              {activeTab === "friends" && (
-                <motion.div
-                  key="friends"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between">
+            <div className="flex-1 overflow-hidden relative">
+              <AnimatePresence mode="wait">
+                {activeTab === "friends" && (
+                  <motion.div
+                    key="friends"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6 h-full overflow-y-auto p-1"
+                  >
+                    <div className="flex items-center justify-between">
 
-                    <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                      {friends.length} friends
-                    </span>
-                  </div>
-
-                  {isLoadingUsers ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      {[...Array(4)].map((_, index) => (
-                        <FriendCardSkeleton key={index} />
-                      ))}
+                      <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                        {friends.length} friends
+                      </span>
                     </div>
-                  ) : friends.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      {filteredFriends.map((friend) => (
-                        <FriendCard
-                          key={friend.id || friend.username}
-                          friend={friend}
-                          onMessage={handleMessageFriend}
-                          onRemoveFriend={handleRemoveFriend}
-                          onViewProfile={handleViewProfile}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      type="friends"
-                      onAction={() => setActiveTab('discover')}
-                    />
-                  )}
-                </motion.div>
-              )}
 
-              {activeTab === "discover" && (
-                <motion.div
-                  key="discover"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between">
-
-                  </div>
-
-                  <SearchableDiscover
-                    onAddFriend={handleAddFriend}
-                    onViewProfile={handleViewProfile}
-                  />
-                </motion.div>
-              )}
-
-              {activeTab === "requests" && (
-                <motion.div
-                  key="requests"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-6"
-                >
-
-
-                  {receivedRequests.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      <AnimatePresence mode="popLayout">
-                        {receivedRequests.map((request) => (
-                          <EnhancedRequestCard
-                            key={request.id}
-                            request={request}
-                            onAccept={handleAcceptRequest}
-                            onDecline={handleDeclineRequest}
-                            onViewProfile={handleViewProfile}
-                            requestState={requestStates[request.id?.toString()]}
-                          />
+                    {isLoadingUsers ? (
+                      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+                        {[...Array(6)].map((_, index) => (
+                          <FriendCardSkeleton key={index} />
                         ))}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <EmptyState
-                      type="requests"
-                      onAction={() => setActiveTab('discover')}
-                    />
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === "messages" && (
-                <motion.div
-                  key="messages"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between">
-
-                  </div>
-
-                  {friends.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      {filteredFriends
-                        .slice(0, 8)
-                        .map((friend) => (
+                      </div>
+                    ) : friends.length > 0 ? (
+                      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+                        {filteredFriends.map((friend) => (
                           <FriendCard
                             key={friend.id || friend.username}
                             friend={friend}
-                            showMessage={true}
                             onMessage={handleMessageFriend}
                             onRemoveFriend={handleRemoveFriend}
                             onViewProfile={handleViewProfile}
-
                           />
                         ))}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        type="friends"
+                        onAction={() => setActiveTab('discover')}
+                      />
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === "discover" && (
+                  <motion.div
+                    key="discover"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6 h-full overflow-y-auto p-1"
+                  >
+                    <div className="flex items-center justify-between">
+
                     </div>
-                  ) : (
-                    <EmptyState
-                      type="messages"
-                      onAction={() => setActiveTab('friends')}
+
+                    <SearchableDiscover
+                      onAddFriend={handleAddFriend}
+                      onViewProfile={handleViewProfile}
                     />
-                  )}
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
 
-              {activeTab === "activity" && (
-                <motion.div
-                  key="activity"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between">
+                {activeTab === "requests" && (
+                  <motion.div
+                    key="requests"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6 h-full overflow-y-auto p-1"
+                  >
 
-                  </div>
 
-                  <EmptyState
-                    type="activity"
-                    onAction={() => router.push('/')}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    {receivedRequests.length > 0 ? (
+                      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+                        <AnimatePresence mode="popLayout">
+                          {receivedRequests.map((request) => (
+                            <EnhancedRequestCard
+                              key={request.id}
+                              request={request}
+                              onAccept={handleAcceptRequest}
+                              onDecline={handleDeclineRequest}
+                              onViewProfile={handleViewProfile}
+                              requestState={requestStates[request.id?.toString()]}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      <EmptyState
+                        type="requests"
+                        onAction={() => setActiveTab('discover')}
+                      />
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === "messages" && (
+                  <motion.div
+                    key="messages"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className="h-full"
+                  >
+                    <ChatInterface onChatOpen={setIsChatOpen} />
+                  </motion.div>
+                )}
+
+                {activeTab === "activity" && (
+                  <motion.div
+                    key="activity"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6 h-full overflow-y-auto p-1"
+                  >
+                    <div className="flex items-center justify-between">
+
+                    </div>
+
+                    <EmptyState
+                      type="activity"
+                      onAction={() => router.push('/')}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function FriendsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <FriendsPageInner />
+    </Suspense>
   );
 }

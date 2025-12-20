@@ -96,7 +96,7 @@ function ChatPageInner() {
   return (
     <div className="flex flex-col h-screen bg-background-hex font-sans">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pb-20 lg:pb-0">
         {/* Left Sidebar - Chat List */}
         <div
           className={`${showChats ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-80 border-r border-border bg-surface`}

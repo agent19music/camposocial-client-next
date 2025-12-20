@@ -18,7 +18,10 @@ import {
   MagnifyingGlass,
   ArrowLeft,
   X,
-  DotsThreeVertical
+  DotsThreeVertical,
+  File,
+  Image as ImageIcon,
+  PlayCircle
 } from '@phosphor-icons/react';
 import { useChat } from '@/context/chatcontext';
 import { cn } from '@/lib/utils';
@@ -60,6 +63,9 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -251,13 +257,55 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     }
   }, [messages, isLoadingMore, hasMoreMessages, friendId, conversationId, getMessages, setMessages]);
 
+
+
+  // File handling
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const validFiles: File[] = [];
+
+      if (selectedFiles.length + files.length > 10) {
+        toast.error('You can only select up to 10 files');
+        return;
+      }
+
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          if (file.size > 10 * 1024 * 1024) {
+            toast.error(`Image ${file.name} exceeds 10MB limit`);
+            continue;
+          }
+        } else if (file.type.startsWith('video/')) {
+          if (file.size > 20 * 1024 * 1024) {
+            toast.error(`Video ${file.name} exceeds 20MB limit`);
+            continue;
+          }
+        }
+        validFiles.push(file);
+      }
+
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+    }
+    // Reset input so same files can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Send message handler
   const handleSend = async () => {
-    if (!input.trim() && !fileInputRef.current?.files?.length) return;
+    if (!input.trim() && selectedFiles.length === 0) return;
 
     const messageContent = input.trim();
     setInput('');
     setReplyingTo(null);
+    const filesToSend = selectedFiles;
+    setSelectedFiles([]); // Clear immediately
 
     // Note: Optimistic update is handled by ChatContext.sendMessage()
     // Don't add duplicate message here
@@ -267,9 +315,16 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         await editMessage(editingMessage.id, messageContent);
         setEditingMessage(null);
       } else {
+        // We need to convert File[] to FileList-like object or modify sendMessage to accept File[]
+        // Since sendMessage accepts FileList | null, and FileList is iterable, we can try to mock it or update context
+        // But standard FileList is read-only.
+        // Let's assume sendMessage can handle File[] or we create a DataTransfer
+        const dataTransfer = new DataTransfer();
+        filesToSend.forEach(file => dataTransfer.items.add(file));
+
         await sendMessage(
           messageContent,
-          fileInputRef.current?.files || null,
+          dataTransfer.files,
           replyingTo?.id
         );
       }
@@ -280,7 +335,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
 
-      // Add to pending messages for retry
+      // Add to pending messages for retry (files might be lost in pending logic if not handled)
       await secureDB.addPendingMessage({
         conversationId: conversationId || '',
         content: messageContent,
@@ -317,9 +372,16 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
   };
 
   // Group messages by sender and time
-  const groupedMessages = messages.reduce((groups: any[], message, index) => {
-    const prevMessage = messages[index - 1];
-    const nextMessage = messages[index + 1];
+  const filteredMessages = useMemo(() => {
+    if (!searchQuery) return messages;
+    return messages.filter(msg =>
+      msg.content?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [messages, searchQuery]);
+
+  const groupedMessages = filteredMessages.reduce((groups: any[], message, index) => {
+    const prevMessage = filteredMessages[index - 1];
+    const nextMessage = filteredMessages[index + 1];
 
     const isFirstInGroup = !prevMessage ||
       prevMessage.senderId !== message.senderId ||
@@ -348,7 +410,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
   }, [friendDetails, chatList, friendId]);
 
   return (
-    <div className="flex flex-col h-full bg-background-hex">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div
         className="flex items-center justify-between p-4 border-b border-border bg-surface"
@@ -390,21 +452,28 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
-          >
-            <Phone size={20} />
-          </button>
-          <button
-            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
-          >
-            <VideoCamera size={20} />
-          </button>
-          <button
-            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
-          >
-            <MagnifyingGlass size={20} />
-          </button>
+          {isSearching ? (
+            <div className="flex items-center bg-muted/50 rounded-lg px-2 py-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages..."
+                className="bg-transparent border-none outline-none text-sm w-32 md:w-48"
+                autoFocus
+              />
+              <button onClick={() => { setIsSearching(false); setSearchQuery(''); }} className="p-1 text-muted-foreground hover:text-foreground">
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsSearching(true)}
+              className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
+            >
+              <MagnifyingGlass size={20} />
+            </button>
+          )}
           <button
             className="lg:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground"
             onClick={onToggleProfile}
@@ -431,7 +500,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
       <ScrollArea
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 px-4 py-4"
+        className="flex-1 px-6 lg:px-4 py-4"
       >
         {isLoadingMore && (
           <div className="flex justify-center py-2">
@@ -486,6 +555,38 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         <div ref={messagesEndRef} />
       </ScrollArea>
 
+      {/* Media Preview */}
+      {selectedFiles.length > 0 && (
+        <div className="px-4 py-3 border-t flex gap-2 overflow-x-auto bg-card border-border">
+          {selectedFiles.map((file, index) => (
+            <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-border group">
+              {file.type.startsWith('image/') ? (
+                <Image
+                  src={URL.createObjectURL(file)}
+                  alt="Preview"
+                  fill
+                  className="object-cover"
+                />
+              ) : file.type.startsWith('video/') ? (
+                <div className="w-full h-full bg-black flex items-center justify-center">
+                  <PlayCircle size={24} className="text-white" />
+                </div>
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <File size={24} className="text-muted-foreground" />
+                </div>
+              )}
+              <button
+                onClick={() => removeFile(index)}
+                className="absolute top-1 right-1 p-0.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Reply Preview */}
       {replyingTo && (
         <div
@@ -519,6 +620,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
             multiple
             className="hidden"
             accept="image/*,video/*,.pdf,.doc,.docx"
+            onChange={handleFileSelect}
           />
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -555,7 +657,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
             </button>
           </div>
 
-          {input.trim() || editingMessage ? (
+          {input.trim() || selectedFiles.length > 0 || editingMessage ? (
             <button
               onClick={handleSend}
               className="p-3 rounded-lg bg-accent text-background-hex transition-colors"
