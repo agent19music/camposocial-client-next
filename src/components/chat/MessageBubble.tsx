@@ -6,20 +6,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import {
   Check,
-  CheckCheck,
+  Checks,
   Clock,
-  MoreVertical,
-  Reply,
-  Edit2,
-  Trash2,
-  Forward,
+  DotsThreeVertical,
+  ArrowBendUpLeft,
+  PencilSimple,
+  Trash,
+  ShareFat,
   Copy,
   Heart,
   ThumbsUp,
-  Laugh,
-  Frown,
-  Angry
-} from 'lucide-react';
+  Smiley,
+  SmileySad,
+  SmileyAngry
+} from '@phosphor-icons/react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,26 +95,26 @@ export default function MessageBubble({
 
   const getStatusIcon = () => {
     if (!isOwn) return null;
-    
+
     if (message.isRead) {
-      return <CheckCheck className="w-3 h-3 text-blue-500" />;
+      return <Checks className="w-3 h-3 text-primary" />;
     } else if (message.isDelivered) {
-      return <CheckCheck className="w-3 h-3 text-gray-400" />;
+      return <Checks className="w-3 h-3 text-muted-foreground" />;
     } else if (message.isSent) {
-      return <Check className="w-3 h-3 text-gray-400" />;
+      return <Check className="w-3 h-3 text-muted-foreground" />;
     } else {
-      return <Clock className="w-3 h-3 text-gray-400" />;
+      return <Clock className="w-3 h-3 text-muted-foreground" />;
     }
   };
 
   const bubbleVariants = {
-    initial: { 
-      opacity: 0, 
+    initial: {
+      opacity: 0,
       scale: 0.8,
-      y: 20 
+      y: 20
     },
-    animate: { 
-      opacity: 1, 
+    animate: {
+      opacity: 1,
       scale: 1,
       y: 0,
       transition: {
@@ -123,8 +123,8 @@ export default function MessageBubble({
         damping: 30
       }
     },
-    exit: { 
-      opacity: 0, 
+    exit: {
+      opacity: 0,
       scale: 0.8,
       transition: { duration: 0.2 }
     }
@@ -148,28 +148,11 @@ export default function MessageBubble({
       exit="exit"
       className={cn(
         "flex items-end gap-2 mb-1",
-        isOwn ? "flex-row-reverse" : "flex-row"
+        isOwn ? "justify-end" : "justify-start"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Avatar */}
-      {showAvatar && !isOwn && (
-        <div className="w-8 h-8 flex-shrink-0">
-          {isLastInGroup && (
-            <div className="w-8 h-8 relative">
-              <Image
-                src={userAvatar || '/default-avatar.png'}
-                alt={userName || 'avatar'}
-                fill
-                className="rounded-full object-cover"
-                sizes="32px"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       <div className={cn(
         "flex flex-col max-w-[70%]",
         isOwn ? "items-end" : "items-start"
@@ -177,11 +160,18 @@ export default function MessageBubble({
         {/* Reply Preview */}
         {message.replyTo && (
           <div className={cn(
-            "mb-1 px-3 py-1 rounded-lg text-xs opacity-70",
-            isOwn ? "bg-blue-100 dark:bg-blue-900" : "bg-gray-100 dark:bg-gray-700"
+            "mb-2 pb-2 border-l-2 pl-2 rounded text-sm opacity-70",
+            isOwn
+              ? "border-background-hex bg-black/10 dark:bg-white/10"
+              : "border-accent bg-accent/10"
           )}>
-            <p className="font-semibold">{message.replyTo.senderName}</p>
-            <p className="truncate">{message.replyTo.content}</p>
+            <div className={cn(
+              "font-semibold text-xs mb-1",
+              isOwn ? "text-background-hex" : "text-accent"
+            )}>
+              {message.replyTo.senderName}
+            </div>
+            <div className="truncate">{message.replyTo.content}</div>
           </div>
         )}
 
@@ -189,10 +179,10 @@ export default function MessageBubble({
         <div className="relative group">
           <div
             className={cn(
-              "px-4 py-2 rounded-2xl relative",
-              isOwn 
-                ? "bg-blue-500 text-white" 
-                : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100",
+              "px-4 py-2 rounded-2xl relative inline-block",
+              isOwn
+                ? "bg-[var(--color-primary-dark)] text-white dark:bg-accent dark:text-black"
+                : "bg-surface text-foreground",
               isFirstInGroup && isOwn && "rounded-tr-sm",
               isFirstInGroup && !isOwn && "rounded-tl-sm",
               !isFirstInGroup && !isLastInGroup && isOwn && "rounded-r-sm",
@@ -218,27 +208,35 @@ export default function MessageBubble({
                           className="rounded-lg object-contain"
                           sizes="(max-width: 768px) 90vw, 600px"
                           onError={(e) => {
-                            // Hide broken images
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                       </div>
                     )}
                     {item.type === 'video' && item.url && (
-                      <video
-                        controls
-                        className="rounded-lg max-w-full"
-                        onError={(e) => {
-                          // Hide video element if source fails to load
-                          console.warn('Video failed to load:', item.url);
-                          (e.target as HTMLVideoElement).style.display = 'none';
-                        }}
-                      >
-                        <source src={item.url} type="video/mp4" />
-                        <source src={item.url} type="video/webm" />
-                        <source src={item.url} type="video/ogg" />
-                        Your browser does not support the video tag.
-                      </video>
+                      <div className="video-container">
+                        <video
+                          controls
+                          preload="metadata"
+                          className="rounded-lg max-w-full"
+                          onError={(e) => {
+                            console.warn('Video failed to load:', item.url);
+                            const container = (e.target as HTMLVideoElement).parentElement;
+                            if (container) container.style.display = 'none';
+                          }}
+                        >
+                          {item.url.endsWith('.webm') ? (
+                            <source src={item.url} type="video/webm" />
+                          ) : item.url.endsWith('.mp4') ? (
+                            <source src={item.url} type="video/mp4" />
+                          ) : (
+                            <>
+                              <source src={item.url} type="video/mp4" />
+                              <source src={item.url} type="video/webm" />
+                            </>
+                          )}
+                        </video>
+                      </div>
                     )}
                     {item.type === 'file' && item.url && (
                       <a
@@ -267,10 +265,10 @@ export default function MessageBubble({
                     key={type}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="bg-white dark:bg-gray-800 rounded-full px-1.5 py-0.5 shadow-sm border border-gray-200 dark:border-gray-600 flex items-center gap-1"
+                    className="bg-card rounded-full px-1.5 py-0.5 shadow-sm border border-border flex items-center gap-1"
                   >
                     <span className="text-xs">{reactionEmojis[type as keyof typeof reactionEmojis]}</span>
-                    {count > 1 && <span className="text-xs text-gray-500">{count}</span>}
+                    {count > 1 && <span className="text-xs text-muted-foreground">{count}</span>}
                   </motion.div>
                 ))}
               </div>
@@ -292,26 +290,26 @@ export default function MessageBubble({
                 {/* Quick Reactions */}
                 <button
                   onClick={() => setShowReactions(!showReactions)}
-                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 >
-                  <Heart className="w-4 h-4 text-gray-500" />
+                  <Heart className="w-4 h-4 text-muted-foreground" />
                 </button>
 
                 {/* More Options */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                      <MoreVertical className="w-4 h-4 text-gray-500" />
+                    <button className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                      <DotsThreeVertical className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align={isOwn ? "end" : "start"}>
                     <DropdownMenuItem onClick={onReply}>
-                      <Reply className="w-4 h-4 mr-2" />
+                      <ArrowBendUpLeft className="w-4 h-4 mr-2" />
                       Reply
                     </DropdownMenuItem>
                     {isOwn && (
                       <DropdownMenuItem onClick={onEdit}>
-                        <Edit2 className="w-4 h-4 mr-2" />
+                        <PencilSimple className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
                     )}
@@ -320,12 +318,12 @@ export default function MessageBubble({
                       Copy
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={onForward}>
-                      <Forward className="w-4 h-4 mr-2" />
+                      <ShareFat className="w-4 h-4 mr-2" />
                       Forward
                     </DropdownMenuItem>
                     {isOwn && (
-                      <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                        <Trash2 className="w-4 h-4 mr-2" />
+                      <DropdownMenuItem onClick={onDelete} className="text-error">
+                        <Trash className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
                     )}
@@ -343,7 +341,7 @@ export default function MessageBubble({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8, y: -10 }}
                 className={cn(
-                  "absolute bottom-full mb-2 bg-white dark:bg-gray-800 rounded-full shadow-lg p-2 flex gap-1",
+                  "absolute bottom-full mb-2 bg-card rounded-full shadow-lg p-2 flex gap-1 z-10",
                   isOwn ? "right-0" : "left-0"
                 )}
               >
@@ -351,7 +349,7 @@ export default function MessageBubble({
                   <button
                     key={key}
                     onClick={() => handleReaction(key)}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
                   >
                     <span className="text-lg">{emoji}</span>
                   </button>
@@ -363,7 +361,7 @@ export default function MessageBubble({
 
         {/* Timestamp and Status */}
         <div className={cn(
-          "flex items-center gap-1 mt-1 text-xs text-gray-500",
+          "flex items-center gap-1 mt-1 text-xs text-muted-foreground",
           isOwn ? "flex-row-reverse" : "flex-row"
         )}>
           <span>{format(new Date(message.timestamp), 'HH:mm')}</span>

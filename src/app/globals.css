@@ -247,6 +247,9 @@ body {
   .font-times-condensed {
     font-family: var(--font-times-condensed), "Times New Roman", serif;
   }
+  .font-helvetica {
+    font-family: var(--font-helvetica), "Helvetica", sans-serif;
+  }
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
     display: none;

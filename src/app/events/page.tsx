@@ -34,17 +34,16 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import EventCard from '@/components/event';
 import { MouseEvent } from "react";
-import SideNav from "@/components/sidenav"
 import Header from "@/components/header"
 import FilterPills, { FilterPill } from "@/components/filter-pills"
-import { Calendar, PartyPopper, Plus, List} from "lucide-react";
+import { Calendar, Plus, List } from "lucide-react";
 import { toast } from "react-hot-toast"
 import { useEventContext } from "@/context/eventcontext"
 import { AuthContext } from "@/context/authcontext"
 import AddEvent from "@/components/addevent"
 
 export default function Dashboard() {
-const { events, isLoading, setCategory, setOnchange, onchange } = useEventContext()
+  const { events, isLoading, setCategory, setOnchange, onchange } = useEventContext()
   const [activeFilter, setActiveFilter] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const { authToken } = useContext(AuthContext)
@@ -71,7 +70,7 @@ const { events, isLoading, setCategory, setOnchange, onchange } = useEventContex
     setActiveFilter(filterId)
     setCategory(filterId === 'all' ? '' : filterId)
   }
-  
+
   const displayEvents = useMemo(() => {
     if (!searchQuery.trim()) return events
     const q = searchQuery.toLowerCase()
@@ -80,35 +79,29 @@ const { events, isLoading, setCategory, setOnchange, onchange } = useEventContex
       return fields.some((f) => typeof f === 'string' && f.toLowerCase().includes(q))
     })
   }, [events, searchQuery])
-  
-  const eventLinks = [
-    { label: "Calendar", icon: <Calendar className="h-4 w-4" />, onClick: () => toast.success("calendar") },
-    { label: "Create Event", icon: <Plus className="h-4 w-4" />, onClick: () => toast.success("create") },
-    { label: "My Events", icon: <List className="h-4 w-4" />, onClick: () => toast.success("myEvents") },
-  ]
-      
+
   const handleSubmit = async (
-    e: MouseEvent<HTMLButtonElement>, 
-    eventId: string, 
+    e: MouseEvent<HTMLButtonElement>,
+    eventId: string,
     localCommentText: string
   ): Promise<void> => {
     e.preventDefault();
-  
+
     if (!localCommentText) {
       toast.error('Comment cannot be empty')
       return;
     }
-  
+
     if (localCommentText.length > 300) {
       toast.error('Comment is too long (max 300 characters)')
       return;
     }
-  
+
     if (localCommentText !== '') {
       sendComment(localCommentText, eventId);
     }
   };
- 
+
   const sendComment = async (commentText: string, eventId: string): Promise<void> => {
     if (!apiEndpoint || !authToken) {
       toast.error('Please login to comment')
@@ -124,7 +117,7 @@ const { events, isLoading, setCategory, setOnchange, onchange } = useEventContex
         },
         body: JSON.stringify({ text: commentText, event_id: eventId }),
       });
-  
+
       if (response.ok) {
         toast.success('Comment added successfully')
         setOnchange(!onchange)
@@ -141,16 +134,12 @@ const { events, isLoading, setCategory, setOnchange, onchange } = useEventContex
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <main className="mobile-content-padding lg:pb-4">
-        <div className="flex flex-col md:flex-row ">
-          <div className="hidden md:block md:w-64 flex-shrink-0">
-            <SideNav links={eventLinks} />
-          </div>
-
-          <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center ">
+        <div className="flex flex-col">
+          <div className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-2 justify-center items-center">
             {/* Event Filters with Search pill (mobile) */}
             <div className="w-full lg:hidden">
-              <FilterPills 
-                filters={filterPills} 
+              <FilterPills
+                filters={filterPills}
                 onFilterSelect={handleFilterSelect}
                 onSearchChange={setSearchQuery}
                 searchQuery={searchQuery}
@@ -159,15 +148,15 @@ const { events, isLoading, setCategory, setOnchange, onchange } = useEventContex
 
             {/* Event Filters with Search pill (desktop) */}
             <div className="w-full hidden lg:block">
-              <FilterPills 
-                filters={filterPills} 
+              <FilterPills
+                filters={filterPills}
                 onFilterSelect={handleFilterSelect}
                 onSearchChange={setSearchQuery}
                 searchQuery={searchQuery}
               />
             </div>
-            
-            <div className="flex flex-col w-full max-w-6/12 rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px] ">
+
+            <div className="w-full max-w-4xl space-y-4">
               {isLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <p className="text-muted-foreground">Loading events...</p>

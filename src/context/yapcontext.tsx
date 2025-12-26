@@ -4,7 +4,7 @@ import { createContext, ReactNode, useState, useEffect, useContext, useRef, useC
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
-import {toast} from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { Yap, MediaItem, Reply, HashtagSuggestion, LocationSuggestion, YapContextProps, YapPayload, WhoToFollowSuggestion } from "../utils/types";
 
 
@@ -16,33 +16,33 @@ const defaultValue: YapContextProps = {
   isLoading: false,
   onchange: false,
   selectedYap: null, // No yap selected by default
-  setSelectedYap: () => {}, // No-op function for default
-  setOnchange: () => {},
-  navigateToSingleYapView: () => {}, // No-op function for default
-  postYap: async () => {},
-  
+  setSelectedYap: () => { }, // No-op function for default
+  setOnchange: () => { },
+  navigateToSingleYapView: () => { }, // No-op function for default
+  postYap: async () => { },
+
   // Social interactions
-  toggleLike: async () => {},
-  addReply: async () => {},
-  retweet: async () => {},
-  quoteRetweet: async () => {},
-  
+  toggleLike: async () => { },
+  addReply: async () => { },
+  retweet: async () => { },
+  quoteRetweet: async () => { },
+
   // Feed management
   feedType: 'chronological',
-  setFeedType: () => {},
-  refreshFeed: async () => {},
-  
+  setFeedType: () => { },
+  refreshFeed: async () => { },
+
   // Single yap fetching
   fetchYapById: async () => null,
-  
+
   // Suggestions
   getHashtagSuggestions: async () => [],
   getLocationSuggestions: async () => [],
-  
+
   // Reply management
   yapReplies: [],
-  setYapReplies: () => {},
-  
+  setYapReplies: () => { },
+
   // Who to follow
   whotofollow: async () => [],
   whotofollowSuggestions: []
@@ -89,33 +89,33 @@ export default function YapProvider({ children }: YapProviderProps) {
   // Rate limiting function
   const canMakeRequest = useCallback((requestType: string): boolean => {
     const now = Date.now();
-    
+
     // Check if we're within the rate limit window
     if (now - rateLimitWindowRef.current > RATE_LIMIT_WINDOW) {
       // Reset rate limit window
       rateLimitWindowRef.current = now;
       requestCountRef.current = 0;
     }
-    
+
     // Check request count
     if (requestCountRef.current >= MAX_REQUESTS_PER_WINDOW) {
       console.warn(`Rate limit exceeded for ${requestType}. Please try again later.`);
       toast.error('Too many requests. Please wait before trying again.');
       return false;
     }
-    
+
     // Check minimum interval between requests
     if (now - lastFetchTimeRef.current < MIN_REQUEST_INTERVAL) {
       console.warn(`Request too frequent for ${requestType}. Debouncing...`);
       return false;
     }
-    
+
     // Check if this request type is already active
     if (activeRequestsRef.current.has(requestType)) {
       console.warn(`Request ${requestType} already in progress. Skipping duplicate.`);
       return false;
     }
-    
+
     return true;
   }, []);
 
@@ -156,7 +156,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     try {
       const currentFeedType = feedTypeOverride || feedType;
       let endpoint = `${apiEndpoint}/yaps`;
-      
+
       // Use different endpoints based on feed type
       if (currentFeedType === 'trending') {
         endpoint = `${apiEndpoint}/yaps/trending`;
@@ -196,7 +196,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       const data = await response.json();
       setYaps(data.yaps || []);
       setFilteredYaps(data.yaps || []);
-      
+
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error("Error fetching yaps:", error);
@@ -235,7 +235,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       return [];
     }
   }, [isAuthenticated, authToken, apiEndpoint]);
-  
+
 
   useEffect(() => {
     if (isAuthenticated && authToken) {
@@ -284,7 +284,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     };
   }, []);
 
-  
+
 
   // Function to create a slug from yap id
   function slugify(int: string) {
@@ -293,19 +293,19 @@ export default function YapProvider({ children }: YapProviderProps) {
   }
 
   // Function to navigate to a single Yap view
-  function navigateToSingleYapView(yap: Yap, flag: string) {    
+  function navigateToSingleYapView(yap: Yap, flag: string) {
     const slug = slugify(yap.id);
-    
-    setSelectedYap(yap);    
-  
+
+    setSelectedYap(yap);
+
     router.push(`/yaps/${slug}`); // Navigate to the single product page
-    
+
     if (flag === 'spc') {
       router.refresh(); // Use router.refresh to reload the current page
     }
   }
 
-  
+
   // Optimistic toggle like function
   const toggleLike = useCallback(async (yapId: string) => {
     if (!isAuthenticated || !authToken) {
@@ -314,14 +314,14 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
 
     // Optimistic update
-    setYaps(prevYaps => 
+    setYaps(prevYaps =>
       prevYaps.map(yap => {
         if (yap.id === yapId) {
           const isCurrentlyLiked = yap.optimisticLiked ?? false;
           return {
             ...yap,
             optimisticLiked: !isCurrentlyLiked,
-            optimisticLikesCount: isCurrentlyLiked 
+            optimisticLikesCount: isCurrentlyLiked
               ? (yap.optimisticLikesCount ?? yap.likes_count) - 1
               : (yap.optimisticLikesCount ?? yap.likes_count) + 1
           };
@@ -329,15 +329,15 @@ export default function YapProvider({ children }: YapProviderProps) {
         return yap;
       })
     );
-    
-    setFilteredYaps(prevYaps => 
+
+    setFilteredYaps(prevYaps =>
       prevYaps.map(yap => {
         if (yap.id === yapId) {
           const isCurrentlyLiked = yap.optimisticLiked ?? false;
           return {
             ...yap,
             optimisticLiked: !isCurrentlyLiked,
-            optimisticLikesCount: isCurrentlyLiked 
+            optimisticLikesCount: isCurrentlyLiked
               ? (yap.optimisticLikesCount ?? yap.likes_count) - 1
               : (yap.optimisticLikesCount ?? yap.likes_count) + 1
           };
@@ -360,9 +360,9 @@ export default function YapProvider({ children }: YapProviderProps) {
       }
 
       const data = await response.json();
-      
+
       // Update with actual server response
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -375,8 +375,8 @@ export default function YapProvider({ children }: YapProviderProps) {
           return yap;
         })
       );
-      
-      setFilteredYaps(prevYaps => 
+
+      setFilteredYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -392,7 +392,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
     } catch (error) {
       // Revert optimistic update on error
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -404,8 +404,8 @@ export default function YapProvider({ children }: YapProviderProps) {
           return yap;
         })
       );
-      
-      setFilteredYaps(prevYaps => 
+
+      setFilteredYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -417,7 +417,7 @@ export default function YapProvider({ children }: YapProviderProps) {
           return yap;
         })
       );
-      
+
       console.error('Error toggling like:', error);
       toast.error('Failed to update like. Please try again.');
     }
@@ -441,7 +441,7 @@ export default function YapProvider({ children }: YapProviderProps) {
         display_name: currentUser.display_name,
         avatar: currentUser.avatar
       },
-      parent_reply_id: parentReplyId, 
+      parent_reply_id: parentReplyId,
       isOptimistic: true
     };
 
@@ -449,7 +449,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     setYapReplies(prevReplies => [optimisticReply, ...prevReplies]);
 
     // Optimistic update for yap replies count
-    setYaps(prevYaps => 
+    setYaps(prevYaps =>
       prevYaps.map(yap => {
         if (yap.id === yapId) {
           return {
@@ -479,18 +479,18 @@ export default function YapProvider({ children }: YapProviderProps) {
       }
 
       const data = await response.json();
-      
+
       // Replace optimistic reply with real reply
-      setYapReplies(prevReplies => 
-        prevReplies.map(reply => 
-          reply.id === optimisticReply.id 
+      setYapReplies(prevReplies =>
+        prevReplies.map(reply =>
+          reply.id === optimisticReply.id
             ? { ...data.reply, isOptimistic: false }
             : reply
         )
       );
 
       // Update yap replies count with server response
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -507,12 +507,12 @@ export default function YapProvider({ children }: YapProviderProps) {
 
     } catch (error) {
       // Remove optimistic reply on error
-      setYapReplies(prevReplies => 
+      setYapReplies(prevReplies =>
         prevReplies.filter(reply => reply.id !== optimisticReply.id)
       );
-      
+
       // Revert optimistic update
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -523,7 +523,7 @@ export default function YapProvider({ children }: YapProviderProps) {
           return yap;
         })
       );
-      
+
       console.error('Error adding reply:', error);
       toast.error('Failed to add reply. Please try again.');
     }
@@ -537,7 +537,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
 
     // Optimistic update
-    setYaps(prevYaps => 
+    setYaps(prevYaps =>
       prevYaps.map(yap => {
         if (yap.id === yapId) {
           return {
@@ -564,9 +564,9 @@ export default function YapProvider({ children }: YapProviderProps) {
       }
 
       const data = await response.json();
-      
+
       // Update with server response
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -580,7 +580,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       );
 
       toast.success('Yap retweeted successfully!');
-      
+
       // Refresh feed to show new retweet
       setTimeout(() => {
         setOnchange(!onchange);
@@ -588,7 +588,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
     } catch (error: any) {
       // Revert optimistic update
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -599,7 +599,7 @@ export default function YapProvider({ children }: YapProviderProps) {
           return yap;
         })
       );
-      
+
       console.error('Error retweeting:', error);
       toast.error(error.message || 'Failed to retweet. Please try again.');
     }
@@ -618,7 +618,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
 
     // Optimistic update
-    setYaps(prevYaps => 
+    setYaps(prevYaps =>
       prevYaps.map(yap => {
         if (yap.id === yapId) {
           return {
@@ -648,9 +648,9 @@ export default function YapProvider({ children }: YapProviderProps) {
       }
 
       const data = await response.json();
-      
+
       // Update with server response
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -664,7 +664,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       );
 
       toast.success('Quote tweet posted successfully!');
-      
+
       // Refresh feed to show new quote tweet
       setTimeout(() => {
         setOnchange(!onchange);
@@ -672,7 +672,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
     } catch (error: any) {
       // Revert optimistic update
-      setYaps(prevYaps => 
+      setYaps(prevYaps =>
         prevYaps.map(yap => {
           if (yap.id === yapId) {
             return {
@@ -772,7 +772,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
       const data = await response.json();
       const yap = data.yap || data;
-      
+
       // Set the yap as selected and update replies
       if (yap) {
         setSelectedYap(yap);
@@ -780,9 +780,9 @@ export default function YapProvider({ children }: YapProviderProps) {
           setYapReplies(yap.replies);
         }
       }
-      
+
       return yap;
-      
+
     } catch (error: any) {
       console.error('Error fetching yap by ID:', error);
       toast.error('Failed to load yap. Please try again.');
@@ -817,7 +817,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       location: yapPayload.location,
       user_id: currentUser.id,
       username: currentUser.username,
-      display_name: `${currentUser.firstName} ${currentUser.lastName}`, 
+      display_name: `${currentUser.first_name} ${currentUser.last_name}`,
       avatar: currentUser.avatar,
       original_yap_id: yapPayload.originalYapId,
       replies_count: 0,
@@ -835,25 +835,25 @@ export default function YapProvider({ children }: YapProviderProps) {
     setFilteredYaps(prevYaps => [optimisticYap, ...prevYaps]);
 
     const { content, location, originalYapId, mediaFiles } = yapPayload;
-    
+
     // Create FormData for submission
     const formData = new FormData();
     formData.append('content', content);
-  
+
     if (location) {
       formData.append('location', location);
     }
-  
+
     if (originalYapId) {
       formData.append('original_yap_id', originalYapId);
     }
-  
+
     if (mediaFiles && mediaFiles.length > 0) {
       mediaFiles.forEach((file) => {
         formData.append('media', file);
       });
     }
-  
+
     try {
       const response = await fetch(`${apiEndpoint}/add_yap`, {
         method: 'POST',
@@ -862,7 +862,7 @@ export default function YapProvider({ children }: YapProviderProps) {
         },
         body: formData
       });
-  
+
       if (!response.ok) {
         if (response.status === 401) {
           toast.error('Session expired. Please log in again.');
@@ -877,25 +877,25 @@ export default function YapProvider({ children }: YapProviderProps) {
         toast.error('Failed to post yap. Please try again.');
         throw new Error(`Failed to post Yap: ${response.statusText}`);
       }
-  
+
       const data = await response.json();
-      
+
       // Remove optimistic yap and refresh feed to get the real one
       setYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
       setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
-      
+
       toast.success('Yap posted successfully!');
-      
+
       // Refresh feed after a short delay to get the new yap
       setTimeout(() => {
         setOnchange(!onchange);
       }, 500);
-  
+
     } catch (error: any) {
       // Remove optimistic yap on error
       setYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
       setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.id !== optimisticYap.id));
-      
+
       if (error.name !== 'AbortError') {
         console.error('Error posting Yap:', error);
         toast.error('Failed to post yap. Please try again.');
@@ -913,29 +913,29 @@ export default function YapProvider({ children }: YapProviderProps) {
     setSelectedYap,
     navigateToSingleYapView,
     postYap,
-    
+
     // Social interactions
     toggleLike,
     addReply,
     retweet,
     quoteRetweet,
-    
+
     // Feed management
     feedType,
     setFeedType,
     refreshFeed,
-    
+
     // Single yap fetching
     fetchYapById,
-    
+
     // Suggestions
     getHashtagSuggestions,
     getLocationSuggestions,
-    
+
     // Reply management
     yapReplies,
     setYapReplies,
-    
+
     // Who to follow
     whotofollow,
     whotofollowSuggestions

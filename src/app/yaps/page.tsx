@@ -22,9 +22,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Heart, MessageCircle, MoreHorizontal, Repeat, Share2, Users, Calendar, ShoppingBag, Search, Sparkles, UserPlus, Plus, TrendingUp, Clock, UsersIcon } from "lucide-react"
-import { Home, PartyPopper } from "lucide-react";
+import { PartyPopper } from "lucide-react";
 import Header from '@/components/header'
-import SideNav from '@/components/sidenav'
 import FilterPills, { FilterPill } from '@/components/filter-pills'
 import { Input } from '@/components/ui/input'
 import { Repeat2 } from 'lucide-react'
@@ -42,6 +41,7 @@ import Link from 'next/link'
 import AddYap from '@/components/addyap'
 import { useTheme } from '@/context/themecontext'
 import WhoToFollow from '@/components/whotofollow'
+import TrendingHashtags from '@/components/trending-hashtags'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
@@ -52,7 +52,7 @@ const NewUserWelcome = () => {
       icon: MessageCircle,
       title: "Share Your First Yap",
       description: "Tell your campus what's on your mind",
-      action: () => {}, // This would trigger the add yap modal
+      action: () => { }, // This would trigger the add yap modal
       color: "text-[#ff9013] dark:text-white"
     },
     {
@@ -78,7 +78,7 @@ const NewUserWelcome = () => {
     }
   ];
 
-  
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[600px] p-8 text-center">
@@ -89,14 +89,14 @@ const NewUserWelcome = () => {
         className="max-w-2xl mx-auto w-full"
       >
         <div className="mb-8">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 200 }}
             className="w-20 h-20 mx-auto mb-6"
           >
             <Image
-              src= {theme === 'dark'
+              src={theme === 'dark'
                 ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
                 : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
               }
@@ -108,7 +108,7 @@ const NewUserWelcome = () => {
             />
           </motion.div>
           <h1 className="text-3xl font-bold mb-3" style={{ color: 'var(--color-heading)', fontFamily: 'Helvetica' }}>
-            Welcome to CampoSocial, {currentUser?.firstName || 'friend'}!
+            Welcome to CampoSocial, {currentUser?.first_name || 'friend'}!
           </h1>
           <p className="text-lg text-muted-foreground">
             You&apos;re now part of your campus community. Here&apos;s how to get started:
@@ -124,7 +124,7 @@ const NewUserWelcome = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
             >
-              <Card 
+              <Card
                 className="group p-5 hover:shadow-lg transition-all duration-300 cursor-pointer bg-card/50 backdrop-blur-sm border-border/50 hover:border-[#ff9013] dark:hover:border-[#ff9013]"
                 onClick={action.action}
               >
@@ -156,7 +156,7 @@ const NewUserWelcome = () => {
             </p>
           </div>
           <div className="flex justify-center">
-            <Button 
+            <Button
               onClick={() => router.push('/friends')}
               size="lg"
               className="text-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -179,11 +179,6 @@ export default function Component() {
   const { markYapsAsSeen, hasNewYaps } = useWebSocket()
   const router = useRouter();
 
-  // Only keep quick access links for desktop sidebar
-  const quickAccessLinks = [
-    { label: "Home", icon: <Home className="h-4 w-4" />, onClick: () => router.push("/") },
-  ];
-
   // Check if user is new (no yaps, no friends, etc.)
   const isNewUser = !authLoading && currentUser && (
     (yaps.length === 0) &&
@@ -196,7 +191,7 @@ export default function Component() {
       const timer = setTimeout(() => {
         markYapsAsSeen();
       }, 3000); // Mark as seen after 3 seconds on the page
-      
+
       return () => clearTimeout(timer);
     }
   }, [hasNewYaps, currentUser, markYapsAsSeen]);
@@ -230,23 +225,19 @@ export default function Component() {
       <Header />
       <main className="mobile-content-padding lg:pb-4">
         {/* Filter Pills - Always visible on mobile and desktop, includes Search pill */}
-        <FilterPills 
+        <FilterPills
           filters={filterPills}
           onFilterSelect={handleFeedTypeChange}
           className="lg:hidden"
         />
 
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6"> 
-          {/* Left SideNav - Desktop Only - Only Quick Access */}
-          <div className="hidden lg:block lg:w-64 flex-shrink-0">
-            <SideNav links={quickAccessLinks} />
-          </div>
-          
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+
           {/* Center content */}
           <div className="flex-1 flex flex-col gap-4 lg:gap-6">
             {/* Desktop Filter Pills (with Search pill) */}
             <div className="hidden lg:block">
-              <FilterPills 
+              <FilterPills
                 filters={filterPills}
                 onFilterSelect={handleFeedTypeChange}
               />
@@ -258,119 +249,88 @@ export default function Component() {
             </div>
 
             {/* Feed Container */}
-            <div className="w-full max-w-2xl mx-auto rounded-lg border border-dashed shadow-sm overflow-y-auto lg:min-h-[780px] md:max-h-[537.6px]">
-            {isNewUser ? (
-              <NewUserWelcome />
-            ) : (
-              <div className="w-full">
-                {/* Feed Header */}
-                <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-10">
-                  <div className="flex items-center justify-center p-4">
-                
-                  </div>
-                </div>
-
-                {/* Feed Content */}
-                <div className="min-h-[400px]">
-                  {isLoading ? (
-                    // Display Skeletons while loading
-                    <>
-                      {Array.from({ length: 4 }).map((_, index) => (
-                        <YapCardSkeleton key={index} />
-                      ))}
-                    </>
-                  ) : yaps.length > 0 ? (
-                    // Display yaps
-                    <div className="divide-y">
-                      {yaps.map((yap) => (
-                        <YapCard
-                          key={yap.id}
-                          display_name={yap.display_name}
-                          username={yap.username}
-                          content={yap.content}
-                          avatar={yap.avatar}
-                          media={yap.media}
-                          yap={yap}
-                          likes_count={yap.likes_count}
-                          replies_count={yap.replies_count}
-                          retweets_count={yap.retweets_count}
-                          badges={yap.badges}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    // Empty state
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                        <MessageCircle className="h-8 w-8 text-muted-foreground" />
+            <div className="w-full max-w-2xl mx-auto">
+              {isNewUser ? (
+                <NewUserWelcome />
+              ) : (
+                <div className="w-full space-y-4">
+                  {/* Feed Content */}
+                  <div>
+                    {isLoading ? (
+                      // Display Skeletons while loading
+                      <>
+                        {Array.from({ length: 4 }).map((_, index) => (
+                          <YapCardSkeleton key={index} />
+                        ))}
+                      </>
+                    ) : yaps.length > 0 ? (
+                      // Display yaps
+                      <div className="space-y-4">
+                        {yaps.map((yap) => (
+                          <YapCard
+                            key={yap.id}
+                            display_name={yap.display_name}
+                            username={yap.username}
+                            content={yap.content}
+                            avatar={yap.avatar}
+                            media={yap.media}
+                            yap={yap}
+                            likes_count={yap.likes_count}
+                            replies_count={yap.replies_count}
+                            retweets_count={yap.retweets_count}
+                            badges={yap.badges}
+                          />
+                        ))}
                       </div>
-                      <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
-                      <p className="text-muted-foreground mb-4 max-w-sm">
-                        {feedType === 'following' 
-                          ? "Follow some people to see their yaps here, or switch to trending to discover new content."
-                          : "Be the first to share what's happening!"
-                        }
-                      </p>
-                      {feedType === 'following' && (
-                        <Button 
-                          variant="outline"
-                          onClick={() => handleFeedTypeChange('trending')}
-                        >
-                          <TrendingUp className="h-4 w-4 mr-2" />
-                          View Trending
-                        </Button>
-                      )}
+                    ) : (
+                      // Empty state
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                          <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
+                        <p className="text-muted-foreground mb-4 max-w-sm">
+                          {feedType === 'following'
+                            ? "Follow some people to see their yaps here, or switch to trending to discover new content."
+                            : "Be the first to share what's happening!"
+                          }
+                        </p>
+                        {feedType === 'following' && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleFeedTypeChange('trending')}
+                          >
+                            <TrendingUp className="h-4 w-4 mr-2" />
+                            View Trending
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Load more button */}
+                  {yaps.length > 0 && (
+                    <div className="py-4">
+                      <Button
+                        variant="ghost"
+                        className="w-full"
+                        onClick={refreshFeed}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Loading...' : 'Load more yaps'}
+                      </Button>
                     </div>
                   )}
                 </div>
-
-                {/* Load more button */}
-                {yaps.length > 0 && (
-                  <div className="p-4 border-t">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full" 
-                      onClick={refreshFeed}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Loading...' : 'Load more yaps'}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
             </div>
           </div>
-          
+
           {/* Right sidebar - Trending/Suggestions - Properly positioned */}
           <div className="hidden lg:block lg:w-80 flex-shrink-0">
             <div className="sticky top-4 space-y-4">
               {/* Trending hashtags */}
-              <Card>
-                <CardHeader>
-                  <h3 className="font-semibold">Trending on Campus</h3>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium">#StudyGroup</p>
-                      <p className="text-sm text-muted-foreground">142 yaps</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium">#CampusLife</p>
-                      <p className="text-sm text-muted-foreground">89 yaps</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium">#Finals</p>
-                      <p className="text-sm text-muted-foreground">67 yaps</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <TrendingHashtags />
 
               {/* Who to follow */}
               <WhoToFollow />

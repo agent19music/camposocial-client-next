@@ -8,14 +8,14 @@ import { AuthContext } from "./authcontext";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocket as useWebSocketContext } from "./websocket-context";
 import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
-import { 
-    encryptMessage as naclEncrypt, 
-    decryptMessage as naclDecrypt, 
+import {
+    encryptMessage as naclEncrypt,
+    decryptMessage as naclDecrypt,
     KeyPair,
-    isValidPublicKey 
+    isValidPublicKey
 } from "../lib/crypto";
-import { 
-    hasStoredKeys, 
+import {
+    hasStoredKeys,
     getPublicKey as getStoredPublicKey,
     retrieveKeyPair,
     generateAndStoreKeyPair,
@@ -62,18 +62,32 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
     const currentUser = useMemo(() => {
         if (!rawCurrentUser) return null;
-        const { id, firstName, lastName, email } = rawCurrentUser;
-        return { id, firstName, lastName, email };
+        const { id, first_name, last_name, email } = rawCurrentUser;
+        return { id, firstName: first_name, lastName: last_name, email };
     }, [rawCurrentUser]);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [friendId, setFriendId] = useState<string | null>(null);
+    const [friendId, setFriendIdInternal] = useState<string | null>(null);
     const [friendDetails, setFriendDetails] = useState<ChatFriend | null>(null);
 
     const [chatList, setChatList] = useState<ChatListUser[]>([]);
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
+    // CRITICAL FIX: Wrap setFriendId to clear messages when switching conversations
+    // This prevents old conversation messages from persisting in the UI
+    const setFriendId = useCallback((newFriendId: string | null) => {
+        setFriendIdInternal(prev => {
+            // Only clear if actually switching to a different conversation
+            if (prev !== newFriendId) {
+                setMessages([]);  // Clear old messages immediately
+                setIsTyping(false);  // Reset typing indicator
+                setCurrentConversationId(null);  // Reset conversation ID
+            }
+            return newFriendId;
+        });
+    }, []);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     // WebSocket integration
@@ -308,13 +322,13 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     useEffect(() => {
         if (currentUser?.id) {
             // Get the key password from session storage (set during login)
-            const storedKeyPassword = typeof window !== 'undefined' 
-                ? sessionStorage.getItem('e2ee_key_password') 
+            const storedKeyPassword = typeof window !== 'undefined'
+                ? sessionStorage.getItem('e2ee_key_password')
                 : null;
-            
+
             const initializeKeys = async () => {
                 await loadKeys(storedKeyPassword || undefined);
-                
+
                 // If no keys exist and we have a password, proactively generate keys
                 // This ensures BOTH sender and recipient have keys for E2EE
                 const hasKeys = await hasStoredKeys();
@@ -334,7 +348,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     }
                 }
             };
-            
+
             initializeKeys();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -374,8 +388,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     }, []);
 
     const decryptMessage = useCallback(async (
-        ciphertext: string, 
-        nonce: string | null, 
+        ciphertext: string,
+        nonce: string | null,
         senderPublicKey: string | null
     ): Promise<string> => {
         // If no encryption data or keys, return ciphertext as-is
@@ -404,11 +418,35 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             const ciphertext = messageData.ciphertext || messageData.content;
             const nonce = messageData.nonce;
             const senderPublicKey = messageData.sender_public_key;
-            
+
+            // Debug incoming message data
+            console.log('[E2EE] Incoming message:', {
+                id: messageData.id,
+                encrypted: messageData.encrypted,
+                hasCiphertext: !!ciphertext,
+                hasNonce: !!nonce,
+                hasSenderPublicKey: !!senderPublicKey,
+                hasSecretKey: !!secretKey,
+                contentPreview: ciphertext?.slice(0, 30) + '...'
+            });
+
             // Decrypt if encrypted and we have the necessary data
-            const decrypted = messageData.encrypted && ciphertext && nonce && senderPublicKey
-                ? await decryptMessage(ciphertext, nonce, senderPublicKey)
-                : messageData.content || ciphertext;
+            let decrypted: string;
+            if (messageData.encrypted && ciphertext && nonce && senderPublicKey && secretKey) {
+                decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
+                console.log('[E2EE] Decryption result:', decrypted?.slice(0, 50));
+            } else if (messageData.encrypted && (!senderPublicKey || !nonce || !secretKey)) {
+                // Encrypted but missing key data - show graceful fallback
+                console.warn('[E2EE] Cannot decrypt: missing', {
+                    senderPublicKey: !senderPublicKey,
+                    nonce: !nonce,
+                    secretKey: !secretKey
+                });
+                decrypted = '🔒 Encrypted message';
+            } else {
+                decrypted = messageData.content || ciphertext || '';
+                console.log('[E2EE] Using plaintext content:', decrypted?.slice(0, 50));
+            }
 
             return {
                 id: messageData.id,
@@ -701,17 +739,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     }, [friendPublicKeys, currentUser, authToken, apiEndpoint, markEndpointAvailability]);
 
     const encryptMessage = useCallback(async (
-        content: string, 
+        content: string,
         recipientId: string,
         overrideSecretKey?: string  // Allow passing freshly generated key directly
-    ): Promise<{ 
-        ciphertext: string, 
-        nonce: string | null, 
-        isEncrypted: boolean 
+    ): Promise<{
+        ciphertext: string,
+        nonce: string | null,
+        isEncrypted: boolean
     }> => {
         // Use override key if provided (for freshly generated keys before state updates)
         const effectiveSecretKey = overrideSecretKey || secretKey;
-        
+
         // Check if we have our own secret key
         if (!effectiveSecretKey) {
             // If no keys, send unencrypted as fallback (user hasn't set up encryption)
@@ -721,7 +759,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         // Get friend's public key - use cached or fetch
         let friendKey: string | null = friendPublicKeys[recipientId] || null;
-        
+
         if (!friendKey) {
             // Try to fetch the friend's key
             friendKey = await fetchFriendPublicKey(recipientId);
@@ -772,7 +810,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     const ciphertext = normalized.ciphertext || normalized.content;
                     const nonce = normalized.nonce;
                     const senderPublicKey = normalized.sender_public_key;
-                    
+
                     // Decrypt if encrypted and we have necessary data
                     const decrypted = normalized.encrypted && ciphertext && nonce && senderPublicKey
                         ? await decryptMessage(ciphertext, nonce, senderPublicKey)
@@ -846,11 +884,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         // Auto-generate encryption keys if we have a key password but no keys yet
         // Track freshly generated keypair for immediate use (avoids React state timing issues)
         let freshKeyPair: { publicKey: string; secretKey: string } | null = null;
-        
+
         // Generate keys if: unavailable (no keys) OR locked (keys exist but wrong password - regenerate)
         if ((keyStatus === 'unavailable' || keyStatus === 'locked') && !secretKey) {
-            const storedKeyPassword = typeof window !== 'undefined' 
-                ? sessionStorage.getItem('e2ee_key_password') 
+            const storedKeyPassword = typeof window !== 'undefined'
+                ? sessionStorage.getItem('e2ee_key_password')
                 : null;
             if (storedKeyPassword) {
                 try {
@@ -919,7 +957,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 encrypted: isEncrypted
             };
 
-            setMessages(prev => [optimisticMessage, ...prev]);
+            setMessages(prev => [...prev, optimisticMessage]);
 
             const response = await fetch(`${apiEndpoint}/messages`, {
                 method: 'POST',
@@ -1037,11 +1075,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 const ciphertext = msg.ciphertext || msg.content;
                 const nonce = msg.nonce;
                 const senderPublicKey = msg.sender_public_key;
-                
+
                 // Decrypt if encrypted and we have necessary data
                 let decryptedContent = ciphertext;
-                if (msg.encrypted && ciphertext && nonce && senderPublicKey) {
+                if (msg.encrypted && ciphertext && nonce && senderPublicKey && secretKey) {
                     decryptedContent = await decryptMessage(ciphertext, nonce, senderPublicKey);
+                } else if (msg.encrypted && (!senderPublicKey || !nonce || !secretKey)) {
+                    // Encrypted but missing keys - show graceful fallback
+                    decryptedContent = '🔒 Encrypted message';
                 }
 
                 return {
@@ -1334,11 +1375,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
 
         // Use stored key password from session (derived from login) or provided password
-        const storedKeyPassword = typeof window !== 'undefined' 
-            ? sessionStorage.getItem('e2ee_key_password') 
+        const storedKeyPassword = typeof window !== 'undefined'
+            ? sessionStorage.getItem('e2ee_key_password')
             : null;
         const keyPwd = password || keyPassword || storedKeyPassword;
-        
+
         if (!keyPwd) {
             // Don't show error - just log and let user re-login if needed
             console.warn("No key password available. User may need to re-login for E2EE.");
@@ -1370,7 +1411,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             toast.dismiss();
             toast.success("Encryption keys generated successfully");
-            
+
             // Return the keypair for immediate use (avoids React state timing issues)
             return keyPair;
         } catch (error) {
@@ -1404,7 +1445,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     localStorage.removeItem(`pgp-public-key-${currentUser.id}`);
                 }
             }
-            
+
             // Check if keys exist in IndexedDB (validates NaCl format)
             const hasKeys = await hasStoredKeys();
             if (!hasKeys) {

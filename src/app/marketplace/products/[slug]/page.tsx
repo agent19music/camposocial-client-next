@@ -75,7 +75,7 @@ const ProductVariations = ({
                 .filter((v) => v.name === name)
                 .map((variation) => (
                   <SelectItem key={variation.id} value={variation.value}>
-                    {variation.value} - ${variation.price.toFixed(2)} ({variation.stock} in stock)
+                    {variation.value} - KES {(variation.price ?? 0).toFixed(2)} ({variation.stock ?? 0} in stock)
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -85,7 +85,7 @@ const ProductVariations = ({
       {selectedVariation && (
         <div>
           <p className="font-semibold">Selected: {selectedVariation.value}</p>
-          <p className="font-semibold">Price: ${selectedVariation.price.toFixed(2)}</p>
+          <p className="font-semibold">Price: KES {(selectedVariation.price ?? 0).toFixed(2)}</p>
           <p className="text-sm text-muted-foreground">Stock: {selectedVariation.stock}</p>
         </div>
       )}
@@ -224,16 +224,16 @@ export default function SingleProductPage() {
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold">{selectedProduct?.title}</h1>
-                  <div className="flex items-center space-x-2">
+                  <h1 className="text-2xl font-bold font-helvetica">{selectedProduct?.title}</h1>
+                  <div className="flex items-center space-x-2 font-helvetica">
                     <StarRating rating={Math.round(averageRating)} />
                     <span className="text-sm text-gray-500">
                       ({selectedProduct?.reviews?.length || 0} reviews)
                     </span>
                   </div>
                   <p className="text-gray-600">{selectedProduct?.description}</p>
-                  {!selectedVariation && <p className="text-xl font-bold">${selectedProduct?.variations[0].price}</p>}
-                  {selectedVariation && <p className="text-xl font-bold">${selectedVariation?.price}</p>}
+                  {!selectedVariation && <p className="text-xl font-bold">KES {selectedProduct?.variations?.[0]?.price ?? selectedProduct?.price ?? 0}</p>}
+                  {selectedVariation && <p className="text-xl font-bold">KES {selectedVariation?.price ?? 0}</p>}
                   <p className="text-sm text-gray-500">Category: {selectedProduct?.category}</p>
                   <p className="text-sm text-gray-500">Brand: {selectedProduct?.brand}</p>
                 </>
@@ -277,7 +277,7 @@ export default function SingleProductPage() {
                     <AvatarFallback>{selectedProduct.seller.name ? selectedProduct.seller.name[0] : "?"}</AvatarFallback>
                   </Avatar>
                   <div className="flex items-center">
-                    <p className="font-semibold">{selectedProduct.seller.name}</p>
+                    <p className=" font-helvetica">{selectedProduct.seller.name}</p>
                     {selectedProduct.seller.is_verified && (
                       <CheckCircle className="w-4 h-4 text-green-500 ml-1" />
                     )}
@@ -309,35 +309,12 @@ export default function SingleProductPage() {
             <CartComponent />
           </div>
 
-          {/* Review System */}
-          {/* <Card className="mt-8 bg-gray-50">
-            <CardContent className="p-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4">Leave a Review</h2>
-              <div className="flex items-center space-x-2 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    className={`${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
-                  >
-                    <Star className="w-6 h-6 md:w-8 md:h-8 fill-current" />
-                  </button>
-                ))}
-              </div>
-              <Textarea
-                placeholder="Write your review here..."
-                value={review}
-                onChange={(e) => setReview(e.target.value)}
-                className="mb-4"
-              />
-              <Button>Submit Review</Button>
-            </CardContent>
-          </Card> */}
+
           <ReviewForm product_id={selectedProduct?.id || ''} />
 
           {/* Reviews */}
           <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
+            <h2 className="text-2xl font-bold mb-4 font-helvetica">Customer Reviews</h2>
             <div className="space-y-4">
               {isLoading ? (
                 Array(3).fill(0).map((_, index) => (

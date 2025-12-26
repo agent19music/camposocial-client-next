@@ -7,7 +7,7 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
+  ],
   prefix: "",
   theme: {
     container: {
@@ -64,6 +64,8 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "background-hex": "var(--color-background-hex)",
+        surface: "var(--color-surface)",
       },
       fontFamily: {
         inter: ["var(--font-inter)", "sans-serif"],
@@ -101,13 +103,13 @@ const config = {
           "50%": { transform: "translateY(-20px)" },
         },
         "fall": {
-          "0%": { 
+          "0%": {
             transform: "translateY(-100vh) rotate(0deg)",
             opacity: "0",
           },
           "10%": { opacity: "1" },
           "90%": { opacity: "1" },
-          "100%": { 
+          "100%": {
             transform: "translateY(100vh) rotate(360deg)",
             opacity: "0",
           },

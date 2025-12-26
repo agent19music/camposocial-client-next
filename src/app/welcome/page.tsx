@@ -7,7 +7,7 @@ import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
-import { motion } from 'framer-motion';``
+import { motion } from 'framer-motion'; ``
 import { Colors as Palette } from "@/constants/Colors";
 
 
@@ -103,11 +103,11 @@ export default function WelcomePage() {
               priority
             />
           </motion.div>
-          
+
           <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ color: C.primaryDark }}>
-            Welcome, {currentUser?.firstName}! 
+            Welcome, {currentUser?.first_name}!
           </h1>
-          
+
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             You&apos;re all set! Here&apos;s what you can do to get the most out of CampoSocial.
           </p>
@@ -129,16 +129,16 @@ export default function WelcomePage() {
               whileHover={{ scale: 1.02, y: -5 }}
               className="group"
             >
-                              <Card className="h-full bg-white/80 dark:bg-black/70 backdrop-blur-sm border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-lg hover:shadow-xl transition-all duration-300">
+              <Card className="h-full bg-white/80 dark:bg-black/70 backdrop-blur-sm border-[#D29DF6]/20 dark:border-[#B16FE8]/20 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="mb-4 group-hover:scale-105 transition-transform duration-300">
                     <feature.icon className={`w-7 h-7 ${feature.colorClass}`} />
                   </div>
-                  
+
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
                     {feature.title}
                   </h3>
-                  
+
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                     {feature.description}
                   </p>
@@ -155,15 +155,15 @@ export default function WelcomePage() {
           transition={{ duration: 0.6, delay: 1.0 }}
           className="flex flex-col sm:flex-row gap-4 mb-8"
         >
-            <Button 
+          <Button
             onClick={handleGetStarted}
             className="text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             style={{ backgroundColor: C.accent }}>
             <Icons.messageCircle className="w-5 h-5 mr-2" />
             Start Exploring
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleExploreMarketplace}
             variant="outline"
             className="border-2 text-[#B16FE8] font-semibold px-8 py-3 rounded-full transition-all duration-300"
@@ -171,8 +171,8 @@ export default function WelcomePage() {
             <Icons.shoppingBag className="w-5 h-5 mr-2" />
             Browse Marketplace
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleDiscoverEvents}
             variant="outline"
             className="border-2 text-[#C17FF2] font-semibold px-8 py-3 rounded-full transition-all duration-300"
@@ -188,7 +188,7 @@ export default function WelcomePage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1.2 }}
         >
-          <button 
+          <button
             onClick={handleGetStarted}
             className="text-gray-500 dark:text-gray-400 hover:text-[#B16FE8] dark:hover:text-[#D29DF6] text-sm underline transition-colors duration-200">
             Skip tour and continue

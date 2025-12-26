@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface TypingIndicatorProps {
   userName?: string;
@@ -40,8 +41,8 @@ export default function TypingIndicator({ userName, userAvatar }: TypingIndicato
           />
         </div>
       )}
-      
-      <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-2">
+
+      <div className="bg-card rounded-2xl rounded-tl-sm px-4 py-3 border border-border">
         <div className="flex items-center gap-1">
           {[0, 1, 2].map((index) => (
             <motion.div
@@ -50,14 +51,14 @@ export default function TypingIndicator({ userName, userAvatar }: TypingIndicato
               initial="initial"
               animate="animate"
               transition={{ delay: index * 0.1 }}
-              className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full"
+              className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
             />
           ))}
         </div>
       </div>
-      
+
       {userName && (
-        <span className="text-xs text-gray-500 ml-1">
+        <span className="text-xs text-muted-foreground ml-1">
           {userName} is typing...
         </span>
       )}

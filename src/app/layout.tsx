@@ -22,6 +22,13 @@ const playfair = Playfair_Display({
   variable: "--font-playfair"
 });
 
+const Helvetica = localFont({
+  src: "../../public/fonts/Helvetica.ttf",
+  variable: "--font-helvetica",
+  display: "swap",
+  weight: "100",
+});
+
 const timesCondensed = localFont({
   src: "../../public/Times New Roman MT Condensed Regular.otf",
   variable: "--font-times-condensed",
@@ -149,7 +156,7 @@ export default function RootLayout({
         <StructuredData type="organization" data={organizationSchema} />
         <Script id="theme-init" strategy="beforeInteractive">{`(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var v=t|| (m?'dark':'light');var e=document.documentElement;e.classList.remove('light','dark');e.classList.add(v);}catch(e){}})();`}</Script>
       </head>
-  <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${inter.className}`}>
+  <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${Helvetica.variable} ${inter.className}`}>
         <ThemeProvider>   
           <AuthProvider>
             <Toaster

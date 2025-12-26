@@ -13,9 +13,9 @@ import { YapContext } from '@/context/yapcontext'
 import Image from 'next/image'
 
 export const MainYap = () => {
-  const {selectedYap} = useContext(YapContext)
+  const { selectedYap } = useContext(YapContext)
   const router = useRouter()
-  
+
   if (!selectedYap) {
     return <div className="px-4 py-3 text-center text-muted-foreground">No yap selected</div>
   }
@@ -24,16 +24,16 @@ export const MainYap = () => {
     const date = new Date(timestamp)
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
+
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
       })
     } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric',
         year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
       })
@@ -47,7 +47,7 @@ export const MainYap = () => {
   return (
     <article className="px-4 pt-3 pb-3">
       <div className="flex gap-3">
-        <Avatar 
+        <Avatar
           className="w-10 h-10 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={handleUserClick}
         >
@@ -58,13 +58,13 @@ export const MainYap = () => {
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex flex-col">
-            <span 
+            <span
               className="font-bold text-[15px] leading-5 cursor-pointer hover:underline"
               onClick={handleUserClick}
             >
               {selectedYap?.display_name}
             </span>
-            <span 
+            <span
               className="text-muted-foreground text-[15px] leading-5 cursor-pointer hover:underline"
               onClick={handleUserClick}
             >
@@ -79,21 +79,52 @@ export const MainYap = () => {
                 />
               )}
             </span>
-          </div>  
+          </div>
         </div>
       </div>
-      
+
       <div className="mt-3 text-[17px] whitespace-pre-wrap break-words">
         {selectedYap?.content}
       </div>
 
       {selectedYap?.media && selectedYap?.media.length > 0 && (
         <div className="mt-3">
-          <MediaGrid 
-            media={selectedYap?.media} 
+          <MediaGrid
+            media={selectedYap?.media}
             showInOriginalAspect={false}
             enableFocusView={true}
           />
+        </div>
+      )}
+
+      {/* Render quoted/original yap if this is a quote tweet */}
+      {selectedYap?.is_quote && selectedYap?.original_yap && (
+        <div
+          className="mt-3 border border-border rounded-xl p-3 hover:bg-accent/50 transition-colors cursor-pointer"
+          onClick={() => router.push(`/yaps/profile/${selectedYap.original_yap?.username}`)}
+        >
+          <div className="flex items-center gap-2">
+            <Avatar className="w-5 h-5">
+              <AvatarImage src={selectedYap.original_yap.avatar} />
+              <AvatarFallback className="text-xs font-semibold">
+                {selectedYap.original_yap.display_name?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-bold text-sm">{selectedYap.original_yap.display_name}</span>
+            <span className="text-muted-foreground text-sm">@{selectedYap.original_yap.username}</span>
+          </div>
+          <p className="mt-2 text-sm whitespace-pre-wrap break-words">
+            {selectedYap.original_yap.content}
+          </p>
+          {selectedYap.original_yap.media && selectedYap.original_yap.media.length > 0 && (
+            <div className="mt-2">
+              <MediaGrid
+                media={selectedYap.original_yap.media}
+                showInOriginalAspect={false}
+                enableFocusView={true}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -102,7 +133,7 @@ export const MainYap = () => {
       </div>
 
       {!(selectedYap?.replies_count === 0 && selectedYap?.retweets_count === 0 && selectedYap?.likes_count === 0 && selectedYap?.bookmarks_count === 0) && (
-        <YapStats 
+        <YapStats
           replies={(selectedYap?.optimisticRepliesCount ?? selectedYap?.replies_count) || 0}
           retweets={(selectedYap?.optimisticRetweetsCount ?? selectedYap?.retweets_count) || 0}
           likes={(selectedYap?.optimisticLikesCount ?? selectedYap?.likes_count) || 0}

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FriendCardSkeleton } from './LoadingSkeletons';
 import { SuggestionCard } from './SuggestionCard';
 import { useUserContext } from '@/context/usercontext';
+import { EmptyState } from './EmptyState';
 
 // Custom debounced callback hook
 const useDebouncedCallback = (callback: (...args: any[]) => void, delay: number) => {
@@ -35,15 +36,15 @@ interface SearchableDiscoverProps {
   onViewProfile?: (user: any) => void;
 }
 
-export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({ 
-  onAddFriend, 
-  onViewProfile 
+export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
+  onAddFriend,
+  onViewProfile
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  
+
   const { searchUsers, users, isLoadingSearch } = useUserContext();
 
   const debouncedSearch = useDebouncedCallback(
@@ -73,7 +74,7 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    
+
     if (value.trim()) {
       setIsSearching(true);
       debouncedSearch(value);
@@ -118,7 +119,7 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
           )}
         </div>
       </div>
-      
+
 
       {/* Results Section */}
       <div className="space-y-4">
@@ -135,7 +136,7 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
 
         {/* Loading State */}
         {(isSearching || isLoadingSearch) && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
             {[...Array(4)].map((_, index) => (
               <FriendCardSkeleton key={index} />
             ))}
@@ -161,8 +162,8 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
 
         {/* Results Grid */}
         {displayUsers.length > 0 && !isSearching && !isLoadingSearch && (
-          <motion.div 
-            className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"
+          <motion.div
+            className="grid gap-3 grid-cols-2 lg:grid-cols-3"
             layout
           >
             <AnimatePresence>
@@ -187,6 +188,10 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
               ))}
             </AnimatePresence>
           </motion.div>
+        )}
+
+        {displayUsers.length === 0 && !isSearching && !isLoadingSearch && (
+          <EmptyState type="discover_no_suggestions" />
         )}
       </div>
     </div>

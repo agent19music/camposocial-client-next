@@ -4,41 +4,46 @@ import { createContext, ReactNode, useState, useEffect, useContext, useRef, useC
 import { AuthContextType, AuthProviderProps } from "../utils/types";
 import { useRouter } from "next/navigation";
 import { MarketplaceContext } from "./marketplacecontext";
-import {toast} from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { deriveKeyPassword } from "../lib/keyStorage";
 
- 
+
 
 // Create the AuthContext with a default value (null user initially)
 export const AuthContext = createContext<AuthContextType>({
-  login: () => {},
-  socialLogin: async () => {},
-  completeProfile: async () => {},
-  logout: () => {},
+  login: () => { },
+  socialLogin: async () => { },
+  completeProfile: async () => { },
+  logout: () => { },
   currentUser: null,
   authToken: null,
-  updateUserContext: () => {},
+  updateUserContext: () => { },
   onAuthChange: false,
   isProfileComplete: false,
   isAuthenticated: false,
   isLoading: true,
   showSocialModal: false,
-    setShowSocialModal: () => {},
-    sellerlogin: async () => {}
+  setShowSocialModal: () => { },
+  sellerlogin: async () => { },
+  register: async () => ({ success: false }),
+  sendOTP: async () => ({ success: false }),
+  verifyOTP: async () => ({ success: false }),
+  oauthLogin: async () => { },
+  oauthSignup: async () => { },
 });
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onAuthChange, setOnAuthChange] = useState(false);
-  const {sellerStatusChange} = useContext(MarketplaceContext)
+  const { sellerStatusChange } = useContext(MarketplaceContext)
   const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
-  
+
   // Add refs to prevent duplicate requests
   const fetchingUserRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
@@ -102,9 +107,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         },
         body: JSON.stringify({ username, password }),
       });
-  
+
       const data = await response.json();
-  
+
       if (data.access_token) {
         // Set token via API route to set HTTP-only cookie
         await fetch('/api/auth/set-token', {
@@ -117,7 +122,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
         setAuthToken(data.access_token);
         setIsAuthenticated(true);
-        
+
         // Derive and store key password for E2EE auto-unlock
         // This allows the chat encryption keys to be automatically unlocked
         try {
@@ -128,7 +133,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             const payload = JSON.parse(atob(data.access_token.split('.')[1]));
             userId = payload.sub;
           }
-          
+
           if (userId) {
             const keyPassword = await deriveKeyPassword(password, userId);
             sessionStorage.setItem('e2ee_key_password', keyPassword);
@@ -137,10 +142,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         } catch (e) {
           console.error('Failed to derive key password:', e);
         }
-        
+
         toast.success('Welcome back');
         setOnAuthChange(!onAuthChange)
-        
+
         // Check if user is new (no friends, yaps, etc.) and redirect accordingly
         setTimeout(() => router.push('/yaps'), 100);
       } else {
@@ -155,11 +160,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   async function socialLogin(provider: string, data: any) {
     try {
       console.log(`Attempting ${provider} OAuth with data:`, data);
-      
+
       if (!apiEndpoint) {
         throw new Error('API endpoint not configured');
       }
-      
+
       const response = await fetch(`${apiEndpoint}/oauth/${provider}/callback`, {
         method: 'POST',
         headers: {
@@ -188,7 +193,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         setIsProfileComplete(result.is_profile_complete);
         setOnAuthChange(!onAuthChange);
         setShowSocialModal(false); // Close the modal on successful login
-        
+
         // Derive and store key password for E2EE (OAuth flow)
         // For OAuth users, we use a deterministic derivation based ONLY on userId
         // This ensures the same password is derived across all login sessions
@@ -198,7 +203,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             const payload = JSON.parse(atob(result.access_token.split('.')[1]));
             userId = payload.sub;
           }
-          
+
           if (userId) {
             // For OAuth, use ONLY userId as the base - must be stable across sessions!
             // The access_token changes each login, so we can't use it
@@ -210,7 +215,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         } catch (e) {
           console.error('Failed to derive key password for OAuth:', e);
         }
-        
+
         if (!result.is_profile_complete) {
           toast.success('Welcome! Let\'s complete your profile');
           router.push('/complete-profile');
@@ -257,7 +262,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  
+
   // Logout user
   async function logout() {
     try {
@@ -268,17 +273,17 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Error clearing token:', error);
     }
-    
+
     // Clear E2EE key password from session
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('e2ee_key_password');
     }
-    
+
     // Abort any ongoing requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     setCurrentUser(null)
     setAuthToken(null)
     setIsAuthenticated(false)
@@ -333,7 +338,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const userData = await response.json();
-      
+
       if (userData && (userData.email || userData.username)) {
         setCurrentUser(userData);
       } else {
@@ -344,7 +349,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Error fetching authenticated user:', error.message);
-        
+
         if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           setCurrentUser(null);
           setAuthToken(null);
@@ -372,10 +377,180 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       fetchAuthenticatedUser();
     }
   }, [sellerStatusChange, currentUser, fetchAuthenticatedUser]);
-    
+
   const updateUserContext = useCallback(() => {
     fetchAuthenticatedUser();
   }, [fetchAuthenticatedUser]);
+
+  // ============ New Registration Methods ============
+
+  async function register(email: string, password: string) {
+    try {
+      const response = await fetch(`${apiEndpoint}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message || 'Verification code sent to your email');
+        return { success: true, requiresVerification: true, message: result.message };
+      } else {
+        toast.error(result.error || 'Registration failed');
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Registration failed. Please try again.');
+      return { success: false, message: 'Registration failed' };
+    }
+  }
+
+  async function sendOTP(email: string) {
+    try {
+      const response = await fetch(`${apiEndpoint}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('Verification code sent');
+        return { success: true, message: result.message };
+      } else {
+        toast.error(result.error || 'Failed to send code');
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      return { success: false, message: 'Failed to send code' };
+    }
+  }
+
+  async function verifyOTP(email: string, code: string, password?: string) {
+    try {
+      const response = await fetch(`${apiEndpoint}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result.access_token) {
+        // Set token via API route to set HTTP-only cookie
+        await fetch('/api/auth/set-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: result.access_token }),
+        });
+
+        setAuthToken(result.access_token);
+        setIsAuthenticated(true);
+        setIsProfileComplete(result.is_profile_complete);
+
+        // Derive E2EE key for email/password users
+        try {
+          const userId = result.user_id;
+          if (userId) {
+            // Use password if provided (new registration), otherwise use stable base like OAuth
+            let keyBase: string;
+            if (password) {
+              keyBase = password;
+            } else {
+              // Fallback for resend OTP flow - use email-based stable derivation
+              keyBase = `email-e2ee-stable-key-${email}`;
+            }
+            const keyPassword = await deriveKeyPassword(keyBase, userId);
+            sessionStorage.setItem('e2ee_key_password', keyPassword);
+            console.log('[E2EE] Stored key password for email user');
+          }
+        } catch (e) {
+          console.error('Failed to derive key password for email user:', e);
+        }
+
+        toast.success('Email verified successfully!');
+
+        if (!result.is_profile_complete) {
+          router.push('/complete-profile');
+        } else {
+          router.push('/yaps');
+        }
+        return { success: true };
+      } else {
+        toast.error(result.error || 'Invalid verification code');
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      return { success: false, message: 'Verification failed' };
+    }
+  }
+
+  async function oauthLogin(provider: string, data: any) {
+    try {
+      const response = await fetch(`${apiEndpoint}/oauth/${provider}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include',
+      });
+      const result = await response.json();
+
+      if (result.no_account) {
+        // User doesn't have an account - redirect to signup
+        toast.error('No account found. Please sign up first.');
+        router.push('/signup');
+        return;
+      }
+
+      if (result.access_token) {
+        await fetch('/api/auth/set-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: result.access_token }),
+        });
+
+        setAuthToken(result.access_token);
+        setIsAuthenticated(true);
+        setIsProfileComplete(result.is_profile_complete);
+        setOnAuthChange(!onAuthChange);
+        setShowSocialModal(false);
+
+        // Derive E2EE key for OAuth users
+        try {
+          const userId = result.user_id;
+          if (userId) {
+            const oauthKeyBase = `oauth-e2ee-stable-key-${userId}`;
+            const keyPassword = await deriveKeyPassword(oauthKeyBase, userId);
+            sessionStorage.setItem('e2ee_key_password', keyPassword);
+          }
+        } catch (e) {
+          console.error('Failed to derive key password for OAuth:', e);
+        }
+
+        if (!result.is_profile_complete) {
+          toast.success("Welcome! Let's complete your profile");
+          router.push('/complete-profile');
+        } else {
+          toast.success('Welcome back!');
+          router.push('/yaps');
+        }
+      } else {
+        const errorMessage = result.error || `${provider} login failed`;
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('OAuth login error:', error);
+      toast.error(`${provider} login failed`);
+    }
+  }
+
+  async function oauthSignup(provider: string, data: any) {
+    // oauthSignup uses the existing socialLogin logic which creates accounts
+    return socialLogin(provider, data);
+  }
 
   // The context data that will be passed down to components
   const contextData = {
@@ -392,7 +567,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     showSocialModal,
     setShowSocialModal,
-    sellerlogin
+    sellerlogin,
+    register,
+    sendOTP,
+    verifyOTP,
+    oauthLogin,
+    oauthSignup,
   };
 
   // Render the provider and pass the context data
