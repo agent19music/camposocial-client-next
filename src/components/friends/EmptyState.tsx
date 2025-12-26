@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, MessageSquare, Activity,  } from 'lucide-react';
+import { Users, UserPlus, MessageSquare, Activity, SearchXIcon,  } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Colors as Palette } from '@/constants/Colors';
 
 interface EmptyState {
-  type: 'friends' | 'discover' | 'requests' | 'messages' | 'activity';
+  type: 'friends' | 'discover' | 'requests' | 'messages' | 'activity' | 'discover_no_suggestions';
   onAction?: () => void;
 }
 
@@ -41,7 +41,14 @@ const emptyStates = {
     title: "No recent activity",
     description: "Friend activity like likes, comments, and interactions will appear here.",
     actionText: "View Feed",
-  }
+  },
+  discover_no_suggestions: {
+    icon: UserPlus,
+    title: "No suggestions found",
+    description: "Yikes! We couldn't find any suggestions for you.",
+    actionText: "Try again later",
+  },
+
 };
 
 export const EmptyState: React.FC<EmptyState> = ({ type, onAction }) => {

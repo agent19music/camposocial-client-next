@@ -9,11 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
-  Link as LinkIcon, 
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Link as LinkIcon,
   MoreHorizontal,
   Edit3,
   UserPlus,
@@ -26,13 +26,13 @@ import {
   Wifi,
   WifiOff,
   AlertCircle,
-  BadgeCheck    
+  BadgeCheck
 } from "lucide-react"
 import { AuthContext } from "@/context/authcontext"
 import { YapContext } from "@/context/yapcontext"
-import  YapCard from "@/components/yapcard"
-import  AddYap from "@/components/addyap"
-import { 
+import YapCard from "@/components/yapcard"
+import AddYap from "@/components/addyap"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/alert"
 import toast from "react-hot-toast"
 import Header from '@/components/header'
-import Image from 'next/image'  
+import Image from 'next/image'
 import BadgeDisplay from '@/components/badgedisplay'
 import BadgePurchaseModal from '@/components/badgepurchasemodal'
 import BadgeManagement from '@/components/badgemanagement'
@@ -88,52 +88,79 @@ interface BadgeItem {
 }
 
 interface Yap {
+  id: string;
+  content: string;
+  timestamp: string;
+  updated_at?: string;
+  location?: string;
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar: string;
+  original_yap_id?: string;
+  original_yap?: Yap; // The original yap data for retweets
+  is_retweet?: boolean;
+  is_quote?: boolean;
+  replies_count: number;
+  likes_count: number;
+  retweets_count: number;
+  bookmarks_count: number;
+  media: MediaItem[];
+  hashtags: string[];
+  replies: Reply[];
+  badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>;
+  // Client-side optimistic state
+  isOptimistic?: boolean;
+  optimisticLiked?: boolean;
+  optimisticLikesCount?: number;
+  optimisticRepliesCount?: number;
+  optimisticRetweetsCount?: number;
+}
+interface MediaItem {
+  id: number;
+  url: string;
+  type: 'image' | 'video';
+}
+interface Reply {
+  id: number;
+  content: string;
+  created_at: string;
+  user?: {
     id: string;
-    content: string;
-    timestamp: string;
-    updated_at?: string;
-    location?: string;
-    user_id: string;
     username: string;
     display_name: string;
     avatar: string;
-    original_yap_id?: string;
-    original_yap?: Yap; // The original yap data for retweets
-    is_retweet?: boolean;
-    is_quote?: boolean;
+  };
+  parent_reply_id?: number;
+  isOptimistic?: boolean;
+}
+
+interface UserReply {
+  id: number;
+  content: string;
+  created_at: string;
+  parent_reply_id?: number;
+  user: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar: string;
+  };
+  parent_yap: {
+    id: string;
+    content: string;
+    timestamp: string;
+    user_id: string;
+    display_name: string;
+    username: string;
+    avatar: string;
     replies_count: number;
     likes_count: number;
     retweets_count: number;
-    bookmarks_count: number;
-    media: MediaItem[];
-    hashtags: string[];
-    replies: Reply[];
-    badges?: Array<{id: number, name: string, image_url: string, is_animated: boolean}>;
-    // Client-side optimistic state
-    isOptimistic?: boolean;
-    optimisticLiked?: boolean;
-    optimisticLikesCount?: number;
-    optimisticRepliesCount?: number;
-    optimisticRetweetsCount?: number;
-  }
-  interface MediaItem {
-    id: number;
-    url: string;
-    type: 'image' | 'video';
-  }
-  interface Reply {
-    id: number;
-    content: string;
-    created_at: string;
-    user?: {
-      id: string;
-      username: string;
-      display_name: string;
-      avatar: string;
-    };
-    parent_reply_id?: number;
-    isOptimistic?: boolean;
-  }
+    badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>;
+    media?: Array<{ id: number, url: string, type: string }>;
+  };
+}
 
 export default function ProfilePage() {
   const params = useParams()
@@ -141,7 +168,7 @@ export default function ProfilePage() {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
   const { currentUser, authToken } = useContext(AuthContext)
   // const { fetchYaps } = useContext(YapContext)  // Commented out as not used
-  
+
   const [user, setUser] = useState<User | null>(null)
   const [yaps, setYaps] = useState<Yap[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -152,6 +179,8 @@ export default function ProfilePage() {
   const [isOnline, setIsOnline] = useState(true)
   const [networkError, setNetworkError] = useState(false)
   const [showBadgeModal, setShowBadgeModal] = useState(false)
+  const [userReplies, setUserReplies] = useState<UserReply[]>([])
+  const [repliesLoading, setRepliesLoading] = useState(false)
 
   const username = params.username as string
 
@@ -198,7 +227,7 @@ export default function ProfilePage() {
 
     setIsLoading(true)
     setNetworkError(false)
-    
+
     try {
       const response = await fetch(`${apiEndpoint}/yap/profile/${username}`, {
         headers: {
@@ -212,14 +241,14 @@ export default function ProfilePage() {
         setUser(userData)
         setIsOwnProfile(currentUser?.username === userData.username)
         setYaps(data.yaps?.items || [])
-        
+
         // Fetch follow status if not own profile
         if (currentUser?.username !== userData.username) {
           fetchFollowStatus(userData.id)
         }
       } else if (response.status === 404) {
         toast.error('User not found')
-        
+
       } else {
         throw new Error('Failed to fetch user data')
       }
@@ -256,6 +285,28 @@ export default function ProfilePage() {
     }
   }, [apiEndpoint, authToken, isOnline])
 
+  const fetchUserReplies = useCallback(async (username: string) => {
+    if (!isOnline) return
+
+    setRepliesLoading(true)
+    try {
+      const response = await fetch(`${apiEndpoint}/yap/profile/${username}/replies`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUserReplies(data.replies || [])
+      }
+    } catch (error) {
+      console.error('Error fetching user replies:', error)
+    } finally {
+      setRepliesLoading(false)
+    }
+  }, [apiEndpoint, authToken, isOnline])
+
   const handleFollow = async () => {
     if (!user || !isOnline) {
       if (!isOnline) {
@@ -263,7 +314,7 @@ export default function ProfilePage() {
       }
       return
     }
-    
+
     try {
       const endpoint = isFollowing ? 'unfollow' : 'follow'
       const response = await fetch(`${apiEndpoint}/users/${user.id}/${endpoint}`, {
@@ -304,9 +355,9 @@ export default function ProfilePage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric'
     })
   }
 
@@ -319,6 +370,13 @@ export default function ProfilePage() {
       fetchUserData(username)
     }
   }, [username, isOnline, fetchUserData])
+
+  // Fetch replies when the replies tab is selected
+  useEffect(() => {
+    if (activeTab === 'replies' && username && isOnline && userReplies.length === 0) {
+      fetchUserReplies(username)
+    }
+  }, [activeTab, username, isOnline, userReplies.length, fetchUserReplies])
 
   // Show offline alert
   if (!isOnline) {
@@ -342,15 +400,15 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-4">
             <Alert className="mb-4">
               <WifiOff className="h-4 w-4" />
               <AlertDescription>
-                 You&apos;re currently offline. Please reconnect to view the full profile and interact with content.      
+                You&apos;re currently offline. Please reconnect to view the full profile and interact with content.
               </AlertDescription>
             </Alert>
-            
+
             <div className="text-center py-8">
               <WifiOff className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">Offline Mode</h2>
@@ -382,7 +440,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-4">
             <Skeleton className="h-32 w-full rounded-lg mb-4" />
             <div className="flex items-end gap-4 mb-6">
@@ -423,7 +481,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-4">
             <Alert className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -431,7 +489,7 @@ export default function ProfilePage() {
                 Failed to load profile data. Please check your connection and try again.
               </AlertDescription>
             </Alert>
-            
+
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">Connection Error</h2>
@@ -470,7 +528,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-4">
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -546,18 +604,18 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="relative">
           {/* Cover Image */}
-    <div className="h-32" style={{ backgroundColor: 'rgba(181,168,209,0.04)' }}>
+          <div className="h-32" style={{ backgroundColor: 'rgba(181,168,209,0.04)' }}>
             {user.yap_header_img && (
-              <Image 
-                src={user.yap_header_img} 
-                alt="Cover" 
+              <Image
+                src={user.yap_header_img}
+                alt="Cover"
                 className="w-full h-full object-cover"
                 width={1500}
                 height={500}
               />
             )}
           </div>
-          
+
           {/* Profile Info */}
           <div className="px-4 pb-4">
             <div className="flex items-end gap-4 -mt-16 mb-4">
@@ -567,12 +625,12 @@ export default function ProfilePage() {
                   {getInitials(user.display_name || user.first_name + ' ' + user.last_name)}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div className="flex-1" />
-              
+
               {isOwnProfile ? (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleEditProfile}
                   className="rounded-full"
                 >
@@ -581,14 +639,14 @@ export default function ProfilePage() {
                 </Button>
               ) : (
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
                     className="rounded-full"
                   >
                     <MessageCircle className="h-4 w-4" />
                   </Button>
-                  <Button 
+                  <Button
                     variant={isFollowing ? "outline" : "default"}
                     onClick={handleFollow}
                     className="rounded-full"
@@ -681,7 +739,7 @@ export default function ProfilePage() {
         {/* Badge Management for Own Profile */}
         {isOwnProfile && (
           <div className="px-4 pb-4">
-            <BadgeManagement 
+            <BadgeManagement
               userId={user.id}
               onUpdate={() => {
                 // Refresh user data to show updated badges
@@ -696,20 +754,20 @@ export default function ProfilePage() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-transparent border-b rounded-none h-12">
-            <TabsTrigger 
-              value="yaps" 
+            <TabsTrigger
+              value="yaps"
               className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none"
             >
               Yaps
             </TabsTrigger>
-            <TabsTrigger 
-              value="replies" 
+            <TabsTrigger
+              value="replies"
               className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none"
             >
               Replies
             </TabsTrigger>
-            <TabsTrigger 
-              value="media" 
+            <TabsTrigger
+              value="media"
               className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none"
             >
               Media
@@ -722,7 +780,7 @@ export default function ProfilePage() {
                 <AddYap />
               </div>
             )}
-            
+
             {yapsLoading ? (
               <div className="space-y-4 p-4">
                 {[...Array(3)].map((_, i) => (
@@ -744,18 +802,18 @@ export default function ProfilePage() {
               <div className="divide-y">
                 {yaps.map((yap) => (
                   <YapCard
-                  key={yap.id}
-                  display_name={yap.display_name}
-                  username={yap.username}
-                  content={yap.content}
-                  avatar={yap.avatar}
-                  media={yap.media}
-                  yap={yap}
-                  likes_count={yap.likes_count}
-                  replies_count={yap.replies_count} 
-                  retweets_count={yap.retweets_count}
-                  badges={yap.badges}
-                />
+                    key={yap.id}
+                    display_name={yap.display_name}
+                    username={yap.username}
+                    content={yap.content}
+                    avatar={yap.avatar}
+                    media={yap.media}
+                    yap={yap}
+                    likes_count={yap.likes_count}
+                    replies_count={yap.replies_count}
+                    retweets_count={yap.retweets_count}
+                    badges={yap.badges}
+                  />
                 ))}
               </div>
             ) : (
@@ -773,9 +831,81 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="replies" className="mt-0">
-            <div className="p-8 text-center text-muted-foreground">
-              No replies yet
-            </div>
+            {repliesLoading ? (
+              <div className="space-y-4 p-4">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4">
+                      <div className="flex gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : userReplies.length > 0 ? (
+              <div className="divide-y">
+                {userReplies.map((reply) => (
+                  <div key={reply.id} className="p-4 hover:bg-accent/50 transition-colors">
+                    {/* Parent yap context */}
+                    <div
+                      className="text-xs text-muted-foreground mb-2 cursor-pointer hover:underline"
+                      onClick={() => router.push(`/yaps/${reply.parent_yap.id}-reply`)}
+                    >
+                      Replying to @{reply.parent_yap.username}
+                    </div>
+
+                    {/* Parent yap preview */}
+                    <div
+                      className="border border-border rounded-lg p-3 mb-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                      onClick={() => router.push(`/yaps/${reply.parent_yap.id}-reply`)}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="w-5 h-5">
+                          <AvatarImage src={reply.parent_yap.avatar} alt={reply.parent_yap.display_name} />
+                          <AvatarFallback className="text-xs">
+                            {reply.parent_yap.display_name?.[0]?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold text-sm">{reply.parent_yap.display_name}</span>
+                        <span className="text-muted-foreground text-sm">@{reply.parent_yap.username}</span>
+                      </div>
+                      <p className="text-sm line-clamp-2">{reply.parent_yap.content}</p>
+                    </div>
+
+                    {/* Reply content */}
+                    <div className="flex gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={reply.user.avatar} alt={reply.user.display_name} />
+                        <AvatarFallback>
+                          {reply.user.display_name?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold">{reply.user.display_name}</span>
+                          <span className="text-muted-foreground">@{reply.user.username}</span>
+                          <span className="text-muted-foreground">·</span>
+                          <span className="text-muted-foreground text-sm">
+                            {new Date(reply.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap break-words">{reply.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                {isOwnProfile ? "You haven't replied to any yaps yet" : `@${user?.username} hasn't replied to any yaps yet`}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="media" className="mt-0">

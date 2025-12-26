@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FriendCardSkeleton } from './LoadingSkeletons';
 import { SuggestionCard } from './SuggestionCard';
 import { useUserContext } from '@/context/usercontext';
+import { EmptyState } from './EmptyState';
 
 // Custom debounced callback hook
 const useDebouncedCallback = (callback: (...args: any[]) => void, delay: number) => {
@@ -187,6 +188,10 @@ export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
               ))}
             </AnimatePresence>
           </motion.div>
+        )}
+
+        {displayUsers.length === 0 && !isSearching && !isLoadingSearch && (
+          <EmptyState type="discover_no_suggestions" />
         )}
       </div>
     </div>

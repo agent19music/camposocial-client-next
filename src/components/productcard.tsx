@@ -15,16 +15,18 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const inWishlist = isInWishlist(product.id);
 
-  // Get display price - use base price or first variant price
+  // Get display price - use base price or cheapest variant price
   const getDisplayPrice = () => {
     if (product.price != null) {
       return product.price
     }
-    // Fallback to first variation price if base price is null
+    // Fallback to cheapest variation price if base price is null
     if (product.variations && product.variations.length > 0) {
-      const firstVariantPrice = product.variations[0]?.price
-      if (firstVariantPrice != null) {
-        return firstVariantPrice
+      const prices = product.variations
+        .map(v => v?.price)
+        .filter((p): p is number => p != null && p > 0)
+      if (prices.length > 0) {
+        return Math.min(...prices)
       }
     }
     return 0 // Default fallback

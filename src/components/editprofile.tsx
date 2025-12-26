@@ -37,8 +37,8 @@ import toast from "react-hot-toast"
 export default function ProfileEditor() {
   const { currentUser, updateUserContext } = useContext(AuthContext) // Get current user from auth context
 
-  // State management
-  const [isEditing, setIsEditing] = useState(false)
+  // State management - start in edit mode by default
+  const [isEditing, setIsEditing] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [profileData, setProfileData] = useState({
     first_name: "",
