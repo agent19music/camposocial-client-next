@@ -529,8 +529,8 @@ export default function Home() {
               />
               <ChatPreview
                 avatar="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/chunli.png"
-                avatarAlt="Profile photo: Chunli"
-                name="Chunli"
+                avatarAlt="Profile photo: Lee"
+                name="Lee"
                 message="Pizza night tonight?"
                 time="1h ago"
                 unread={12}
@@ -574,9 +574,9 @@ export default function Home() {
           <BentoCard className="md:col-span-2 overflow-hidden">
             <div className="relative rounded-xl h-full min-h-[200px] overflow-hidden">
               <Image
-                src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/unisocial.png"
+                src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/unisocial.png"
                 alt="Students collaborating in campus lounge"
-                fill
+                fill  
                 className="object-cover"
               />
             </div>
@@ -633,7 +633,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/signup"
+                href="/comingsoon"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white rounded-full transition-all duration-300 hover:-translate-y-1"
                 style={{ backgroundColor: '#ff9013' }}
               >
@@ -641,7 +641,7 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <Link
-                href="/login"
+                href="/comingsoon"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-stone-700 dark:text-stone-100 bg-stone-100 dark:bg-stone-800 rounded-full transition-all duration-300 hover:-translate-y-1"
               >
                 I Have an Account
