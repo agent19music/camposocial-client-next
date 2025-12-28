@@ -10,8 +10,9 @@ import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import StructuredData, { websiteSchema, organizationSchema } from "@/components/StructuredData";
 import Script from "next/script";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter"
 });
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
     "campus hangouts",
     "student marketplace"
   ],
-  authors: [{ 
+  authors: [{
     name: "CampoSocial Team",
     url: "https://camposocial.app"
   }],
@@ -152,12 +153,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <GoogleAnalytics />
         <StructuredData type="website" data={websiteSchema} />
         <StructuredData type="organization" data={organizationSchema} />
         <Script id="theme-init" strategy="beforeInteractive">{`(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var v=t|| (m?'dark':'light');var e=document.documentElement;e.classList.remove('light','dark');e.classList.add(v);}catch(e){}})();`}</Script>
       </head>
-  <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${Helvetica.variable} ${inter.className}`}>
-        <ThemeProvider>   
+      <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${Helvetica.variable} ${inter.className}`}>
+        <ThemeProvider>
           <AuthProvider>
             <Toaster
               position="top-center"
@@ -177,32 +179,16 @@ export default function RootLayout({
                 },
               }}
             />
-            {googleClientId && googleClientId !== 'your_google_client_id_here' ? (
-              <GoogleOAuthProvider clientId={googleClientId}>
-                <WebSocketProvider>
-                  <AuthenticatedWrapper>
-                    {children}
-                  </AuthenticatedWrapper>
-                </WebSocketProvider>
-              </GoogleOAuthProvider>
-            ) : (
-              <>
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 m-4">
-                    <p className="font-bold">Warning: Google OAuth not configured</p>
-                    <p>Please set GOOGLE_CLIENT_ID in your .env.local file</p>
-                  </div>
-                )}
-                <WebSocketProvider>
-                  <AuthenticatedWrapper>
-                    {children}
-                  </AuthenticatedWrapper>
-                </WebSocketProvider>
-              </>
-            )}
+            <GoogleOAuthProvider clientId={googleClientId || ''}>
+              <WebSocketProvider>
+                <AuthenticatedWrapper>
+                  {children}
+                </AuthenticatedWrapper>
+              </WebSocketProvider>
+            </GoogleOAuthProvider>
           </AuthProvider>
         </ThemeProvider>
-      </body>  
+      </body>
     </html>
   );
 }
