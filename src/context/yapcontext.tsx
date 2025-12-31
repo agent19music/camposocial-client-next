@@ -133,18 +133,23 @@ export default function YapProvider({ children }: YapProviderProps) {
   }, []);
 
   // Enhanced fetch yaps function with feed algorithm support
-  const fetchYaps = useCallback(async (feedTypeOverride?: string) => {
-    if (authLoading || !isAuthenticated || !authToken || !apiEndpoint || fetchingRef.current) {
+  const fetchYaps = useCallback(async (feedTypeOverride?: string, forceRefresh: boolean = false) => {
+    if (authLoading || !isAuthenticated || !authToken || !apiEndpoint) {
       setYaps([]);
       setFilteredYaps([]);
       setIsLoading(false);
       return;
     }
 
-    if (!canMakeRequest('fetch_yaps')) return;
+    // Skip rate limiting check if force refresh
+    if (!forceRefresh) {
+      if (fetchingRef.current) return;
+      if (!canMakeRequest('fetch_yaps')) return;
+    }
 
     markRequestStart('fetch_yaps');
     setIsLoading(true);
+    fetchingRef.current = true;
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -200,16 +205,17 @@ export default function YapProvider({ children }: YapProviderProps) {
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error("Error fetching yaps:", error);
-        setYaps([]);
-        setFilteredYaps([]);
-        toast.error('Failed to load yaps. Please try again later.');
+        // Don't clear yaps on error if we have cached data
+        if (yaps.length === 0) {
+          toast.error('Failed to load yaps. Please try again later.');
+        }
       }
     } finally {
       setIsLoading(false);
       fetchingRef.current = false;
       markRequestEnd('fetch_yaps');
     }
-  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType, canMakeRequest, markRequestStart, markRequestEnd]);
+  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType, canMakeRequest, markRequestStart, markRequestEnd, yaps.length]);
 
   const whotofollow = useCallback(async (): Promise<WhoToFollowSuggestion[]> => {
     if (!isAuthenticated || !authToken || !apiEndpoint) {
@@ -292,11 +298,24 @@ export default function YapProvider({ children }: YapProviderProps) {
     return `${baseSlug}-${nanoid(12)}`;
   }
 
+  // Clear selected yap and replies when navigating away
+  const clearSelectedYap = useCallback(() => {
+    setSelectedYap(null);
+    setYapReplies([]);
+  }, []);
+
   // Function to navigate to a single Yap view
   function navigateToSingleYapView(yap: Yap, flag: string) {
     const slug = slugify(yap.id);
 
+    // Clear existing replies before setting new yap
+    setYapReplies([]);
     setSelectedYap(yap);
+
+    // Set replies from the yap if available
+    if (yap.replies) {
+      setYapReplies(yap.replies);
+    }
 
     router.push(`/yaps/${slug}`); // Navigate to the single product page
 
@@ -746,8 +765,10 @@ export default function YapProvider({ children }: YapProviderProps) {
       return null;
     }
 
-    if (!canMakeRequest('fetch_yap_by_id')) return null;
+    // Always clear previous replies immediately when fetching a new yap
+    setYapReplies([]);
 
+    // Skip rate limiting for yap fetching - it's a critical user action
     markRequestStart('fetch_yap_by_id');
 
     try {
@@ -776,9 +797,8 @@ export default function YapProvider({ children }: YapProviderProps) {
       // Set the yap as selected and update replies
       if (yap) {
         setSelectedYap(yap);
-        if (yap.replies) {
-          setYapReplies(yap.replies);
-        }
+        // Always update replies from the fresh data
+        setYapReplies(yap.replies || []);
       }
 
       return yap;
@@ -790,11 +810,11 @@ export default function YapProvider({ children }: YapProviderProps) {
     } finally {
       markRequestEnd('fetch_yap_by_id');
     }
-  }, [authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, setSelectedYap, setYapReplies]);
+  }, [authToken, apiEndpoint, markRequestStart, markRequestEnd]);
 
-  // Refresh feed
+  // Refresh feed - force refresh to bypass rate limiting
   const refreshFeed = useCallback(async () => {
-    await fetchYaps();
+    await fetchYaps(undefined, true);
   }, [fetchYaps]);
 
   // Enhanced post yap with optimistic update

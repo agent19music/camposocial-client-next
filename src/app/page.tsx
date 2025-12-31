@@ -196,7 +196,7 @@ export default function Home() {
                   
                 </Link> */}
                 
-                <Link href="/comingsoon">
+                <Link href="/signup">
                   <Button
                     size="lg"
                     variant="default"
@@ -633,7 +633,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/comingsoon"
+                href="/signup"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white rounded-full transition-all duration-300 hover:-translate-y-1"
                 style={{ backgroundColor: '#ff9013' }}
               >
@@ -641,7 +641,8 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <Link
-                href="/comingsoon"
+                href="/signup
+                "
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-stone-700 dark:text-stone-100 bg-stone-100 dark:bg-stone-800 rounded-full transition-all duration-300 hover:-translate-y-1"
               >
                 I Have an Account

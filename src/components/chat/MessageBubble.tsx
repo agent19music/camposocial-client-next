@@ -37,6 +37,7 @@ interface Message {
   isDelivered?: boolean;
   isRead?: boolean;
   isEdited?: boolean;
+  encrypted?: boolean;
   reactions?: Array<{ userId: string; type: string }>;
   replyTo?: {
     id: string;
@@ -189,9 +190,9 @@ export default function MessageBubble({
               !isFirstInGroup && !isLastInGroup && !isOwn && "rounded-l-sm"
             )}
           >
-            {/* Message Content */}
+            {/* Message Content - show fallback for empty encrypted messages */}
             <p className="text-sm whitespace-pre-wrap break-words">
-              {message.content}
+              {message.content ? message.content : (message.encrypted ? '🔒 Encrypted message' : '')}
             </p>
 
             {/* Media Attachments */}

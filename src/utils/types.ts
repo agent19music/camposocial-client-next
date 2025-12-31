@@ -109,6 +109,7 @@ export interface ChatConversation {
   friendName: string;
   friendAvatar: string;
   lastMessage: string | null;
+  lastMessageEncrypted?: boolean;
   lastMessageTime: Date | null;
   unreadCount: number;
   isEmpty: boolean;
@@ -391,6 +392,9 @@ export interface Reply {
   };
   parent_reply_id?: number;
   isOptimistic?: boolean;
+  likes_count?: number;
+  child_replies_count?: number;
+  child_replies?: Reply[];
 }
 
 export interface Yap {

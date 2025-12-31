@@ -174,10 +174,17 @@ const NewUserWelcome = () => {
 
 export default function Component() {
   const { yaps, isLoading, feedType, setFeedType, refreshFeed } = useContext(YapContext)
-  const { currentUser, isLoading: authLoading } = useContext(AuthContext)
+  const { currentUser, isLoading: authLoading, isAuthenticated } = useContext(AuthContext)
   const { friends, users } = useContext(UserContext)
   const { markYapsAsSeen, hasNewYaps } = useWebSocket()
   const router = useRouter();
+
+  // Force refresh yaps when page mounts and yaps are empty (handles navigation back)
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && yaps.length === 0 && !isLoading) {
+      refreshFeed();
+    }
+  }, [isAuthenticated, authLoading, yaps.length, isLoading, refreshFeed]);
 
   // Check if user is new (no yaps, no friends, etc.)
   const isNewUser = !authLoading && currentUser && (

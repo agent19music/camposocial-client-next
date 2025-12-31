@@ -8,6 +8,7 @@ import { AuthContext } from "./authcontext";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocket as useWebSocketContext } from "./websocket-context";
 import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
+import { secureDB } from "../utils/secureStorage";
 import {
     encryptMessage as naclEncrypt,
     decryptMessage as naclDecrypt,
@@ -244,17 +245,47 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }
 
             const data = await response.json();
-            const conversationsData = data.conversations?.map((conv: any) => ({
-                id: String(conv.conversation_id || conv.id),
-                friendId: String(conv.friend?.id || conv.friend_id),
-                friendName: conv.friend?.display_name || conv.friend_name || `${conv.friend?.first_name || ''} ${conv.friend?.last_name || ''}`.trim(),
-                friendAvatar: conv.friend?.avatar || conv.friend_avatar || '/default-avatar.png',
-                lastMessage: conv.last_message?.content || conv.last_message,
-                lastMessageTime: conv.last_message?.timestamp ? new Date(conv.last_message.timestamp) : (conv.last_message_time ? new Date(conv.last_message_time) : null),
-                unreadCount: conv.unread_count || 0,
-                isEmpty: !conv.last_message,
-                isOnline: Boolean(conv.friend?.is_online || conv.is_online),
-            })) || [];
+            
+            // First, try to load cached decrypted previews for instant display
+            const cachedPreviews = await secureDB.getAllConversationPreviews();
+            const previewMap = new Map(cachedPreviews.map(p => [p.id, p]));
+            
+            const conversationsData = data.conversations?.map((conv: any) => {
+                const convId = String(conv.conversation_id || conv.id);
+                const lastMsg = conv.last_message;
+                const cachedPreview = previewMap.get(convId);
+                
+                // Use cached decrypted preview if available and matches the message ID
+                let displayContent = lastMsg?.content || null;
+                if (lastMsg?.is_encrypted && cachedPreview && 
+                    String(cachedPreview.lastMessageId) === String(lastMsg.id)) {
+                    displayContent = cachedPreview.visibleContent;
+                } else if (lastMsg?.is_encrypted) {
+                    // Mark for decryption - will be processed by decryptConversationPreviews
+                    displayContent = '🔒 Encrypted message';
+                }
+                
+                return {
+                    id: convId,
+                    friendId: String(conv.friend?.id || conv.friend_id),
+                    friendName: conv.friend?.display_name || conv.friend_name || `${conv.friend?.first_name || ''} ${conv.friend?.last_name || ''}`.trim(),
+                    friendAvatar: conv.friend?.avatar || conv.friend_avatar || '/default-avatar.png',
+                    lastMessage: displayContent,
+                    lastMessageEncrypted: lastMsg?.is_encrypted || false,
+                    lastMessageTime: lastMsg?.timestamp ? new Date(lastMsg.timestamp) : (conv.last_message_time ? new Date(conv.last_message_time) : null),
+                    unreadCount: conv.unread_count || 0,
+                    isEmpty: !lastMsg,
+                    isOnline: Boolean(conv.friend?.is_online || conv.is_online),
+                    // Store raw data for decryption
+                    _rawLastMessage: lastMsg ? {
+                        id: lastMsg.id,
+                        content: lastMsg.content,
+                        nonce: lastMsg.nonce,
+                        senderPublicKey: lastMsg.sender_public_key,
+                        isEncrypted: lastMsg.is_encrypted
+                    } : null
+                };
+            }) || [];
 
             setConversations(conversationsData);
             endpointAvailabilityRef.current.set('conversations', true);
@@ -410,6 +441,60 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [secretKey]);
 
+    // Decrypt conversation previews when secretKey becomes available
+    useEffect(() => {
+        if (!secretKey || conversations.length === 0) return;
+
+        const decryptPreviews = async () => {
+            let hasUpdates = false;
+            const updatedConversations = await Promise.all(
+                conversations.map(async (conv: any) => {
+                    const rawMsg = conv._rawLastMessage;
+                    
+                    // Skip if not encrypted or no raw data
+                    if (!rawMsg?.isEncrypted || !rawMsg.content || !rawMsg.nonce || !rawMsg.senderPublicKey) {
+                        return conv;
+                    }
+                    
+                    // Skip if already decrypted (not showing placeholder)
+                    if (conv.lastMessage && conv.lastMessage !== '🔒 Encrypted message') {
+                        return conv;
+                    }
+
+                    try {
+                        const decrypted = naclDecrypt(
+                            rawMsg.content,
+                            rawMsg.nonce,
+                            rawMsg.senderPublicKey,
+                            secretKey
+                        );
+                        
+                        if (decrypted) {
+                            // Cache the decrypted preview
+                            await secureDB.cacheConversationPreview(
+                                conv.id,
+                                decrypted,
+                                String(rawMsg.id)
+                            );
+                            hasUpdates = true;
+                            return { ...conv, lastMessage: decrypted };
+                        }
+                    } catch (error) {
+                        console.error(`Failed to decrypt preview for conversation ${conv.id}:`, error);
+                    }
+                    
+                    return conv;
+                })
+            );
+
+            if (hasUpdates) {
+                setConversations(updatedConversations);
+            }
+        };
+
+        decryptPreviews();
+    }, [secretKey, conversations.length]); // Only re-run when secretKey changes or new conversations
+
     // CRITICAL FIX: WebSocket effect for real-time messaging with proper cleanup
     useEffect(() => {
         if (!socket || !isConnected) return;
@@ -450,7 +535,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             return {
                 id: messageData.id,
-                senderId: messageData.sender_id,
+                senderId: String(messageData.sender_id),
                 content: decrypted,
                 ciphertext,
                 nonce,
@@ -462,11 +547,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     metadata: item.metadata || {},
                 })),
                 reactions: (messageData.reactions || []).map((reaction: any) => ({
-                    userId: reaction.user_id,
+                    userId: String(reaction.user_id),
                     reactionType: reaction.reaction_type,
                 })),
                 replyTo: messageData.reply_to,
-                isSent: messageData.sender_id === currentUser?.id,
+                isSent: String(messageData.sender_id) === String(currentUser?.id),
                 isRead: Boolean(messageData.is_read),
                 encrypted: messageData.encrypted,
             };
@@ -474,7 +559,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         const handleNewMessage = async (messageData: any) => {
             const incomingConversation = String(messageData.conversation_id);
-            const isActiveConversation = currentConversationId && incomingConversation === currentConversationId;
+            const isActiveConversation = currentConversationId && incomingConversation === String(currentConversationId);
 
             if (!isActiveConversation) {
                 // Refresh conversations to show unread count and new message preview
@@ -496,11 +581,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 return;
             }
 
-            setMessages(prev => prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]);
+            setMessages(prev => prev.some(msg => String(msg.id) === String(newMessage.id)) ? prev : [...prev, newMessage]);
         };
 
         const handleUserTyping = (data: any) => {
-            if (data.user_id === friendId && data.conversation_id === currentConversationId) {
+            // Normalize IDs to strings for comparison
+            if (String(data.user_id) === String(friendId) && String(data.conversation_id) === String(currentConversationId)) {
                 setIsTyping(data.is_typing);
 
                 if (typingTimeoutRef.current) {
@@ -914,22 +1000,30 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 if (canMakeRequest('upload_media')) {
                     markRequestStart('upload_media');
                     try {
-                        const formData = new FormData();
-                        Array.from(media).forEach((file, index) => {
-                            formData.append(`media_${index}`, file);
-                        });
+                        // Upload each file individually as the server expects 'file' key
+                        for (const file of Array.from(media)) {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('conversation_id', conversationId);
 
-                        const uploadResponse = await fetch(`${apiEndpoint}/upload`, {
-                            method: 'POST',
-                            headers: {
-                                Authorization: `Bearer ${authToken}`,
-                            },
-                            body: formData,
-                        });
+                            const uploadResponse = await fetch(`${apiEndpoint}/media/upload`, {
+                                method: 'POST',
+                                headers: {
+                                    Authorization: `Bearer ${authToken}`,
+                                },
+                                body: formData,
+                            });
 
-                        if (uploadResponse.ok) {
-                            uploadedMedia = await uploadResponse.json();
-                            markEndpointAvailability('upload', true);
+                            if (uploadResponse.ok) {
+                                const uploadResult = await uploadResponse.json();
+                                if (uploadResult.file_id && uploadResult.url) {
+                                    uploadedMedia.push({
+                                        url: uploadResult.url,
+                                        type: uploadResult.type || 'file'
+                                    });
+                                }
+                                markEndpointAvailability('upload', true);
+                            }
                         }
                     } catch (uploadError) {
                         console.error("Error uploading media:", uploadError);
@@ -1087,7 +1181,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                 return {
                     id: msg.id,
-                    senderId: msg.sender_id,
+                    senderId: String(msg.sender_id),
                     content: decryptedContent,
                     ciphertext,
                     nonce,
@@ -1097,11 +1191,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         type: mediaItem.type,
                     })),
                     reactions: (msg.reactions || []).map((reaction: any) => ({
-                        userId: reaction.user_id,
+                        userId: String(reaction.user_id),
                         reactionType: reaction.reaction_type
                     })),
                     replyTo: msg.reply_to,
-                    isSent: msg.sender_id === currentUser.id,
+                    isSent: String(msg.sender_id) === String(currentUser.id),
                     isRead: msg.is_read,
                     encrypted: msg.encrypted
                 };
@@ -1280,7 +1374,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     };
 
-    const uploadMedia = useCallback(async (files: FileList) => {
+    const uploadMedia = useCallback(async (files: FileList, conversationId?: string) => {
         if (!currentUser || !authToken || !canMakeRequest('upload_media')) {
             throw new Error('Cannot upload media');
         }
@@ -1288,30 +1382,44 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         markRequestStart('upload_media');
 
         try {
-            const formData = new FormData();
-            Array.from(files).forEach((file, index) => {
-                formData.append(`media_${index}`, file);
-            });
+            const uploadedMedia: { url: string; type: string }[] = [];
+            
+            // Upload each file individually as the server expects 'file' key
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('file', file);
+                if (conversationId) {
+                    formData.append('conversation_id', conversationId);
+                }
 
-            const response = await fetch(`${apiEndpoint}/upload`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${authToken}`,
-                },
-                body: formData,
-            });
+                const response = await fetch(`${apiEndpoint}/media/upload`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: formData,
+                });
 
-            if (response.status === 404) {
-                markEndpointAvailability('upload', false);
-                throw new Error('Media upload not available');
-            }
+                if (response.status === 404) {
+                    markEndpointAvailability('upload', false);
+                    throw new Error('Media upload not available');
+                }
 
-            if (!response.ok) {
-                throw new Error('Failed to upload media');
+                if (!response.ok) {
+                    throw new Error('Failed to upload media');
+                }
+
+                const result = await response.json();
+                if (result.file_id && result.url) {
+                    uploadedMedia.push({
+                        url: result.url,
+                        type: result.type || 'file'
+                    });
+                }
             }
 
             markEndpointAvailability('upload', true);
-            return await response.json();
+            return uploadedMedia;
         } catch (error) {
             console.error("Error uploading media:", error);
             throw error;
