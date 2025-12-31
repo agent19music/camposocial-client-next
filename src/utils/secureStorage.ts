@@ -45,15 +45,33 @@ export interface PendingMessage {
   maxRetries: number;
 }
 
+export interface CachedConversationPreview {
+  id: string;  // conversation ID
+visibleContent: string;  // decrypted preview text
+  lastMessageId: string;
+  updatedAt: Date;
+}
+
 class SecureDatabase extends Dexie {
   keyPairs!: Table<KeyPair>;
   messages!: Table<CachedMessage>;
   conversations!: Table<CachedConversation>;
   pendingMessages!: Table<PendingMessage>;
+  conversationPreviews!: Table<CachedConversationPreview>;
 
   constructor() {
     super('CampoSocialSecure');
     
+    // Version 2 adds conversationPreviews table
+    this.version(2).stores({
+      keyPairs: 'id, userId, createdAt',
+      messages: 'id, conversationId, timestamp, senderId, [conversationId+timestamp]',
+      conversations: 'id, friendId, lastMessageTime',
+      pendingMessages: 'id, conversationId, timestamp',
+      conversationPreviews: 'id, updatedAt'
+    });
+    
+    // Keep version 1 for backwards compatibility
     this.version(1).stores({
       keyPairs: 'id, userId, createdAt',
       messages: 'id, conversationId, timestamp, senderId, [conversationId+timestamp]',
@@ -96,11 +114,13 @@ class SecureDatabase extends Dexie {
   }
 
   async cacheMessage(message: CachedMessage): Promise<void> {
-    await this.messages.add(message);
+    // Use put instead of add to avoid ConstraintError when message already exists
+    await this.messages.put(message);
   }
 
   async cacheMessages(messages: CachedMessage[]): Promise<void> {
-    await this.messages.bulkAdd(messages);
+    // Use bulkPut instead of bulkAdd to avoid ConstraintError for existing messages
+    await this.messages.bulkPut(messages);
   }
 
   async getCachedMessages(
@@ -211,6 +231,32 @@ class SecureDatabase extends Dexie {
         message.content.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .toArray();
+  }
+
+  // Conversation preview caching for decrypted message previews
+  async cacheConversationPreview(
+    conversationId: string,
+    decryptedContent: string,
+    lastMessageId: string
+  ): Promise<void> {
+    await this.conversationPreviews.put({
+      id: conversationId,
+      visibleContent: decryptedContent,
+      lastMessageId,
+      updatedAt: new Date()
+    });
+  }
+
+  async getConversationPreview(conversationId: string): Promise<CachedConversationPreview | undefined> {
+    return this.conversationPreviews.get(conversationId);
+  }
+
+  async getAllConversationPreviews(): Promise<CachedConversationPreview[]> {
+    return this.conversationPreviews.toArray();
+  }
+
+  async clearConversationPreviews(): Promise<void> {
+    await this.conversationPreviews.clear();
   }
 }
 

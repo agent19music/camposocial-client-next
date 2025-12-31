@@ -176,9 +176,7 @@ function ChatPageInner() {
                         <p className="text-sm truncate text-muted-foreground">
                           {!conversation?.lastMessage
                             ? 'Start a conversation'
-                            : (conversation.lastMessage.length > 50 && /^[A-Za-z0-9+/=]+$/.test(conversation.lastMessage.slice(0, 50)))
-                              ? '🔒 Encrypted message'
-                              : conversation.lastMessage
+                            : conversation.lastMessage
                           }
                         </p>
                         {conversation?.unreadCount && conversation.unreadCount > 0 ? (

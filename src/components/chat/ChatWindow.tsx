@@ -99,6 +99,26 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     }
   }, [setMessages]);
 
+  // Helper to merge messages by union (prefer server data for conflicts, sort by timestamp)
+  const mergeMessages = useCallback((cached: ChatMessage[], server: ChatMessage[]): ChatMessage[] => {
+    const messageMap = new Map<string, ChatMessage>();
+    
+    // Add cached messages first
+    cached.forEach(msg => {
+      messageMap.set(String(msg.id), msg);
+    });
+    
+    // Server messages override cached (source of truth)
+    server.forEach(msg => {
+      messageMap.set(String(msg.id), msg);
+    });
+    
+    // Sort by timestamp ascending
+    return Array.from(messageMap.values()).sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  }, []);
+
   useEffect(() => {
     let active = true;
     const initialiseConversation = async () => {
@@ -114,14 +134,37 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         if (realConvId) {
           setConversationId(realConvId);
 
-          // Try to load from cache first
-          await loadCachedMessages(realConvId);
+          // Step 1: Load cached messages immediately for instant UI
+          const cached = await secureDB.getCachedMessages(realConvId, 50);
+          if (!active) return;
+          
+          if (cached.length > 0) {
+            const cachedMessages: ChatMessage[] = cached.map(msg => ({
+              id: parseInt(msg.id),
+              senderId: String(msg.senderId),
+              content: msg.content,
+              timestamp: msg.timestamp,
+              encrypted: msg.encrypted,
+              isSent: msg.isSent ?? false,
+              isRead: msg.isRead ?? false,
+              reactions: (msg.reactions || []).map(r => ({ userId: r.userId, reactionType: r.type })),
+              media: [] as ChatMedia[]
+            }));
+            setMessages(cachedMessages);
+          }
 
-          // Then fetch fresh messages from server
-          await getMessages(friendId, 50);
+          // Step 2: Fetch fresh messages from server in background
+          const serverMessages = await getMessages(friendId, 50);
+          if (!active) return;
+          
+          // Step 3: Merge - getMessages already sets messages, but we need to merge with any
+          // WebSocket messages that may have arrived during fetch
+          // The getMessages function in ChatContext already replaces messages,
+          // so we rely on that for the merge. Future WebSocket messages are deduplicated.
         }
       } catch (error) {
         console.error('Failed to initialize conversation:', error);
+        // On network error, cached messages are already displayed (if available)
       } finally {
         if (active) {
           setIsInitializing(false);
@@ -133,7 +176,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     return () => {
       active = false;
     };
-  }, [friendId, ensureConversation, getMessages, loadCachedMessages]);
+  }, [friendId, ensureConversation, getMessages, setMessages, mergeMessages]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -142,28 +185,30 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
       console.log('📨 New message received in ChatWindow:', data);
 
       // Only process if it's for the current conversation
-      if (conversationId && data.conversation_id !== conversationId) {
+      if (conversationId && String(data.conversation_id) !== String(conversationId)) {
         return;
       }
 
-      // State update is handled by ChatContext
-
-      // Cache the message
-      try {
-        await secureDB.cacheMessage({
-          id: String(data.id),
-          conversationId: conversationId || '',
-          content: data.content,
-          senderId: data.sender_id,
-          timestamp: new Date(data.timestamp),
-          encrypted: data.encrypted || false
-        });
-      } catch (error) {
-        console.error('Failed to cache message:', error);
+      // State update is handled by ChatContext - only cache and play sounds here
+      // Cache the message with proper conversation ID check
+      if (conversationId) {
+        try {
+          await secureDB.cacheMessage({
+            id: String(data.id),
+            conversationId: conversationId,
+            // Store ciphertext for encrypted messages, content otherwise
+            content: data.encrypted ? (data.ciphertext || data.content) : data.content,
+            senderId: String(data.sender_id),
+            timestamp: new Date(data.timestamp),
+            encrypted: data.encrypted || false
+          });
+        } catch (error) {
+          console.error('Failed to cache message:', error);
+        }
       }
 
       // Play sound and vibrate only for received messages (not own)
-      if (data.sender_id !== currentUser?.id) {
+      if (String(data.sender_id) !== String(currentUser?.id)) {
         playMessageSound();
         vibrate();
       }
@@ -186,14 +231,13 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     }
   }, [messages]);
 
-  // Handle typing indicator
+  // Handle typing indicator - must include conversation_id for proper routing
   const handleTyping = useCallback(() => {
-    if (!friendId || !isConnected) return;
+    if (!friendId || !isConnected || !conversationId) return;
 
-    // We don't need local isTyping state, just emit the event
-    // But we might want to debounce it
     emit('typing', {
       recipient_id: friendId,
+      conversation_id: conversationId,
       is_typing: true
     });
 
@@ -201,10 +245,11 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     typingTimeoutRef.current = setTimeout(() => {
       emit('typing', {
         recipient_id: friendId,
+        conversation_id: conversationId,
         is_typing: false
       });
     }, 2000);
-  }, [friendId, isConnected, emit]);
+  }, [friendId, isConnected, conversationId, emit]);
 
   // Handle infinite scroll
   const handleScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
@@ -511,7 +556,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         <AnimatePresence>
           {groupedMessages.map((message, index) => {
             const showDate = index === 0 ||
-              new Date(messages[index - 1].timestamp).toDateString() !==
+              new Date(groupedMessages[index - 1].timestamp).toDateString() !==
               new Date(message.timestamp).toDateString();
 
             return (
@@ -527,7 +572,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
                 )}
                 <MessageBubble
                   message={message}
-                  isOwn={message.senderId === currentUser?.id}
+                  isOwn={String(message.senderId) === String(currentUser?.id)}
                   isFirstInGroup={message.isFirstInGroup}
                   isLastInGroup={message.isLastInGroup}
                   showAvatar={true}
