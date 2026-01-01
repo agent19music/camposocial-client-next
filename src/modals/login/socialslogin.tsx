@@ -1,12 +1,13 @@
 'use client';
 
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { AuthContext } from '@/context/authcontext';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 
 /**
  * SocialLoginButtons - OAuth buttons for LOGIN page (existing users only)
@@ -14,12 +15,38 @@ import { motion } from 'framer-motion';
  */
 export function SocialLoginButtons() {
     const { oauthLogin, showSocialModal, setShowSocialModal } = useContext(AuthContext);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+    const loadingMessages = [
+        'just a moment',
+        'this is awkward',
+        '2 more secs i swear',
+        'almost ready',
+        'here goes',
+        'fingers crossed'
+    ];
+
+    // Rotate through loading messages
+    useEffect(() => {
+        if (!isLoading) return;
+
+        const interval = setInterval(() => {
+            setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [isLoading, loadingMessages.length]);
 
     const googleLogin = useGoogleLogin({
         onSuccess: async (credentialResponse) => {
+            setIsLoading(true);
+            setLoadingMessageIndex(0);
+            
             try {
                 if (!credentialResponse.access_token) {
                     toast.error('Invalid Google OAuth response');
+                    setIsLoading(false);
                     return;
                 }
 
@@ -31,16 +58,28 @@ export function SocialLoginButtons() {
                     scope: credentialResponse.scope
                 };
 
+                // Add timeout as safety net (30 seconds) - will clear loading if something goes wrong
+                const timeoutId = setTimeout(() => {
+                    setIsLoading(false);
+                }, 30000);
+
                 // Use oauthLogin which only allows existing users
                 await oauthLogin('google', transformedData);
+                
+                // Clear timeout if oauthLogin completes
+                clearTimeout(timeoutId);
+                // Note: On success, navigation happens so component unmounts
+                // On error, oauthLogin shows toast but doesn't throw, so timeout will clear loading after 30s
             } catch (error) {
                 console.error('Google login error:', error);
                 toast.error(`Google login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                setIsLoading(false);
             }
         },
         onError: (error) => {
             console.error('Google login error:', error);
             toast.error(`Google login failed: ${error?.error_description || 'Unknown error'}`);
+            setIsLoading(false);
         },
         scope: 'email profile',
         flow: 'implicit'
@@ -53,6 +92,9 @@ export function SocialLoginButtons() {
             toast.error('GitHub OAuth not configured');
             return;
         }
+
+        setIsLoading(true);
+        setLoadingMessageIndex(0);
 
         // Store login mode in session storage so callback knows it's login
         sessionStorage.setItem('oauth_mode', 'login');
@@ -96,6 +138,31 @@ export function SocialLoginButtons() {
                     </div>
                 </Button>
             </div>
+        );
+    }
+
+    // Loading state UI
+    if (isLoading) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-12 space-y-6"
+            >
+                <Loader2 className="h-12 w-12 animate-spin" style={{ color: 'var(--color-fun)' }} />
+                <motion.div
+                    key={loadingMessageIndex}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-center"
+                >
+                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                        {loadingMessages[loadingMessageIndex]}
+                    </p>
+                </motion.div>
+            </motion.div>
         );
     }
 
