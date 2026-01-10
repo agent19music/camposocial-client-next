@@ -103,6 +103,43 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const [keyGenerationAttempted, setKeyGenerationAttempted] = useState(false);
     const [keyPassword, setKeyPassword] = useState<string | null>(null);  // Cached for session
 
+    // CRITICAL FIX: Use refs for crypto keys to avoid stale closures in WebSocket handlers
+    // React state captured in useCallback/useEffect closures can become stale
+    const secretKeyRef = useRef<string | null>(null);
+    const publicKeyRef = useRef<string | null>(null);
+    const friendPublicKeysRef = useRef<Record<string, string>>({});
+
+    // Track if public key has been successfully uploaded to server
+    const [publicKeyUploaded, setPublicKeyUploaded] = useState(false);
+    const publicKeyUploadedRef = useRef(false);
+
+    // Pending decryption queue for messages arriving before keys are ready
+    const pendingDecryptionQueueRef = useRef<Array<{
+        messageData: any;
+        conversationId: string;
+        resolve: (msg: ChatMessage | null) => void;
+    }>>([]);
+
+    // Ref for fetchFriendPublicKey to avoid dependency ordering issues
+    const fetchFriendPublicKeyRef = useRef<((userId: string) => Promise<string | null>) | null>(null);
+
+    // Keep refs in sync with state to avoid stale closures
+    useEffect(() => {
+        secretKeyRef.current = secretKey;
+    }, [secretKey]);
+
+    useEffect(() => {
+        publicKeyRef.current = publicKey;
+    }, [publicKey]);
+
+    useEffect(() => {
+        friendPublicKeysRef.current = friendPublicKeys;
+    }, [friendPublicKeys]);
+
+    useEffect(() => {
+        publicKeyUploadedRef.current = publicKeyUploaded;
+    }, [publicKeyUploaded]);
+
     // Rate limiting and debouncing refs
     const lastRequestTimeRef = useRef(0);
     const requestCountRef = useRef(0);
@@ -245,26 +282,26 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }
 
             const data = await response.json();
-            
+
             // First, try to load cached decrypted previews for instant display
             const cachedPreviews = await secureDB.getAllConversationPreviews();
             const previewMap = new Map(cachedPreviews.map(p => [p.id, p]));
-            
+
             const conversationsData = data.conversations?.map((conv: any) => {
                 const convId = String(conv.conversation_id || conv.id);
                 const lastMsg = conv.last_message;
                 const cachedPreview = previewMap.get(convId);
-                
+
                 // Use cached decrypted preview if available and matches the message ID
                 let displayContent = lastMsg?.content || null;
-                if (lastMsg?.is_encrypted && cachedPreview && 
+                if (lastMsg?.is_encrypted && cachedPreview &&
                     String(cachedPreview.lastMessageId) === String(lastMsg.id)) {
                     displayContent = cachedPreview.visibleContent;
                 } else if (lastMsg?.is_encrypted) {
                     // Mark for decryption - will be processed by decryptConversationPreviews
                     displayContent = '🔒 Encrypted message';
                 }
-                
+
                 return {
                     id: convId,
                     friendId: String(conv.friend?.id || conv.friend_id),
@@ -418,57 +455,105 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
     }, []);
 
+    // Periodic retry for public key upload if it failed initially
+    useEffect(() => {
+        // Only run if we have keys but haven't successfully uploaded
+        if (!publicKey || publicKeyUploaded || !authToken) return;
+
+        const retryUpload = async () => {
+            if (publicKeyUploadedRef.current || !publicKeyRef.current) return;
+
+            console.log('[E2EE] Background retry: uploading public key...');
+            try {
+                const response = await fetch(`${apiEndpoint}/keys`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ public_key: publicKeyRef.current }),
+                });
+
+                if (response.ok) {
+                    setPublicKeyUploaded(true);
+                    console.log('[E2EE] Background retry: public key uploaded successfully');
+                }
+            } catch (error) {
+                console.error('[E2EE] Background retry failed:', error);
+            }
+        };
+
+        // Retry every 60 seconds
+        const intervalId = setInterval(retryUpload, 60000);
+
+        // Also try immediately
+        retryUpload();
+
+        return () => clearInterval(intervalId);
+    }, [publicKey, publicKeyUploaded, authToken, apiEndpoint]);
+
+    // CRITICAL FIX: Use ref instead of state to avoid stale closures in WebSocket handlers
     const decryptMessage = useCallback(async (
         ciphertext: string,
         nonce: string | null,
         senderPublicKey: string | null
     ): Promise<string> => {
+        // Use ref to get current value, avoiding stale closure
+        const currentSecretKey = secretKeyRef.current;
+
         // If no encryption data or keys, return ciphertext as-is
-        if (!secretKey || !nonce || !senderPublicKey) {
+        if (!currentSecretKey || !nonce || !senderPublicKey) {
+            console.log('[E2EE] Cannot decrypt - missing:', {
+                hasSecretKey: !!currentSecretKey,
+                hasNonce: !!nonce,
+                hasSenderPublicKey: !!senderPublicKey
+            });
             return ciphertext;
         }
 
         try {
-            const decrypted = naclDecrypt(ciphertext, nonce, senderPublicKey, secretKey);
+            const decrypted = naclDecrypt(ciphertext, nonce, senderPublicKey, currentSecretKey);
             if (!decrypted) {
-                console.error("Decryption failed: invalid keys or ciphertext");
+                console.error("[E2EE] Decryption failed: invalid keys or ciphertext");
                 return '[Unable to decrypt message]';
             }
             return decrypted;
         } catch (error) {
-            console.error("Error decrypting message:", error);
+            console.error("[E2EE] Error decrypting message:", error);
             return ciphertext;
         }
-    }, [secretKey]);
+    }, []); // No dependencies - uses ref
 
     // Decrypt conversation previews when secretKey becomes available
     useEffect(() => {
-        if (!secretKey || conversations.length === 0) return;
+        const currentSecretKey = secretKeyRef.current;
+        if (!currentSecretKey || conversations.length === 0) return;
 
         const decryptPreviews = async () => {
             let hasUpdates = false;
             const updatedConversations = await Promise.all(
                 conversations.map(async (conv: any) => {
                     const rawMsg = conv._rawLastMessage;
-                    
+
                     // Skip if not encrypted or no raw data
                     if (!rawMsg?.isEncrypted || !rawMsg.content || !rawMsg.nonce || !rawMsg.senderPublicKey) {
                         return conv;
                     }
-                    
+
                     // Skip if already decrypted (not showing placeholder)
                     if (conv.lastMessage && conv.lastMessage !== '🔒 Encrypted message') {
                         return conv;
                     }
 
                     try {
+                        // Use ref value captured at effect start
                         const decrypted = naclDecrypt(
                             rawMsg.content,
                             rawMsg.nonce,
                             rawMsg.senderPublicKey,
-                            secretKey
+                            currentSecretKey
                         );
-                        
+
                         if (decrypted) {
                             // Cache the decrypted preview
                             await secureDB.cacheConversationPreview(
@@ -480,9 +565,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                             return { ...conv, lastMessage: decrypted };
                         }
                     } catch (error) {
-                        console.error(`Failed to decrypt preview for conversation ${conv.id}:`, error);
+                        console.error(`[E2EE] Failed to decrypt preview for conversation ${conv.id}:`, error);
                     }
-                    
+
                     return conv;
                 })
             );
@@ -493,7 +578,85 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
 
         decryptPreviews();
-    }, [secretKey, conversations.length]); // Only re-run when secretKey changes or new conversations
+    }, [secretKey, conversations.length]); // Re-run when secretKey changes or new conversations
+
+    // CRITICAL FIX: Re-decrypt messages when secretKey becomes available
+    // This handles the case where messages arrived before keys were loaded
+    const reDecryptingRef = useRef(false);
+    const processedMessageIdsRef = useRef(new Set<string | number>());
+
+    useEffect(() => {
+        if (!secretKey || messages.length === 0) return;
+
+        // Prevent concurrent re-decryption attempts
+        if (reDecryptingRef.current) return;
+
+        const reDecryptMessages = async () => {
+            // Find messages that need re-decryption and haven't been processed yet
+            const messagesToProcess = messages.filter(msg => {
+                if (!msg.encrypted) return false;
+                if (processedMessageIdsRef.current.has(msg.id)) return false;
+
+                const needsReDecrypt = msg.content === '🔒 Encrypted message' ||
+                    (msg.ciphertext && msg.content === msg.ciphertext);
+                return needsReDecrypt;
+            });
+
+            if (messagesToProcess.length === 0) return;
+
+            reDecryptingRef.current = true;
+
+            // Build a map of decrypted content by message ID
+            const decryptedMap = new Map<string | number, string>();
+
+            try {
+                await Promise.all(
+                    messagesToProcess.map(async (msg) => {
+                        const ciphertext = msg.ciphertext;
+                        const nonce = msg.nonce;
+                        const senderPublicKey = msg.senderPublicKey;
+
+                        if (!ciphertext || !nonce || !senderPublicKey) {
+                            console.log('[E2EE] Cannot re-decrypt message', msg.id, '- missing data');
+                            processedMessageIdsRef.current.add(msg.id); // Mark as processed to avoid retry
+                            return;
+                        }
+
+                        try {
+                            const decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
+                            if (decrypted && decrypted !== ciphertext && decrypted !== '[Unable to decrypt message]') {
+                                console.log('[E2EE] Successfully re-decrypted message', msg.id);
+                                decryptedMap.set(msg.id, decrypted);
+                            }
+                            processedMessageIdsRef.current.add(msg.id);
+                        } catch (error) {
+                            console.error('[E2EE] Failed to re-decrypt message', msg.id, error);
+                            processedMessageIdsRef.current.add(msg.id); // Mark as processed to avoid infinite retry
+                        }
+                    })
+                );
+
+                // CRITICAL: Use functional update to avoid overwriting new messages
+                if (decryptedMap.size > 0) {
+                    setMessages(prevMessages =>
+                        prevMessages.map(msg => {
+                            const decrypted = decryptedMap.get(msg.id);
+                            return decrypted ? { ...msg, content: decrypted } : msg;
+                        })
+                    );
+                }
+            } finally {
+                reDecryptingRef.current = false;
+            }
+        };
+
+        reDecryptMessages();
+    }, [secretKey, messages.length, decryptMessage]); // Re-run when secretKey changes or new messages arrive
+
+    // Clear processed message IDs when conversation changes
+    useEffect(() => {
+        processedMessageIdsRef.current.clear();
+    }, [friendId]);
 
     // CRITICAL FIX: WebSocket effect for real-time messaging with proper cleanup
     useEffect(() => {
@@ -502,7 +665,10 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         const buildIncomingMessage = async (messageData: any): Promise<ChatMessage | null> => {
             const ciphertext = messageData.ciphertext || messageData.content;
             const nonce = messageData.nonce;
-            const senderPublicKey = messageData.sender_public_key;
+            let senderPublicKey = messageData.sender_public_key;
+
+            // CRITICAL FIX: Use ref to get current secret key value
+            const currentSecretKey = secretKeyRef.current;
 
             // Debug incoming message data
             console.log('[E2EE] Incoming message:', {
@@ -511,21 +677,29 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 hasCiphertext: !!ciphertext,
                 hasNonce: !!nonce,
                 hasSenderPublicKey: !!senderPublicKey,
-                hasSecretKey: !!secretKey,
+                hasSecretKey: !!currentSecretKey,
                 contentPreview: ciphertext?.slice(0, 30) + '...'
             });
 
             // Decrypt if encrypted and we have the necessary data
             let decrypted: string;
-            if (messageData.encrypted && ciphertext && nonce && senderPublicKey && secretKey) {
+
+            // CRITICAL FIX: Try to fetch sender's public key if missing
+            // Use ref to avoid dependency ordering issues
+            if (messageData.encrypted && !senderPublicKey && messageData.sender_id && fetchFriendPublicKeyRef.current) {
+                console.log('[E2EE] Fetching missing sender public key for user', messageData.sender_id);
+                senderPublicKey = await fetchFriendPublicKeyRef.current(String(messageData.sender_id));
+            }
+
+            if (messageData.encrypted && ciphertext && nonce && senderPublicKey && currentSecretKey) {
                 decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
                 console.log('[E2EE] Decryption result:', decrypted?.slice(0, 50));
-            } else if (messageData.encrypted && (!senderPublicKey || !nonce || !secretKey)) {
+            } else if (messageData.encrypted && (!senderPublicKey || !nonce || !currentSecretKey)) {
                 // Encrypted but missing key data - show graceful fallback
                 console.warn('[E2EE] Cannot decrypt: missing', {
                     senderPublicKey: !senderPublicKey,
                     nonce: !nonce,
-                    secretKey: !secretKey
+                    secretKey: !currentSecretKey
                 });
                 decrypted = '🔒 Encrypted message';
             } else {
@@ -539,6 +713,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 content: decrypted,
                 ciphertext,
                 nonce,
+                senderPublicKey,  // Store for potential re-decryption
                 timestamp: new Date(messageData.timestamp),
                 media: (messageData.media || []).map((item: any) => ({
                     id: item.id,
@@ -560,6 +735,18 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         const handleNewMessage = async (messageData: any) => {
             const incomingConversation = String(messageData.conversation_id);
             const isActiveConversation = currentConversationId && incomingConversation === String(currentConversationId);
+
+            // CRITICAL FIX: Skip processing our own messages from WebSocket broadcast
+            // We already handle them via optimistic update + API response confirmation
+            // Processing them here would cause:
+            // 1. Duplicate messages for the sender
+            // 2. Race conditions with optimistic updates
+            // 3. State replacement issues that cause recipient's messages to disappear
+            if (String(messageData.sender_id) === String(currentUser?.id)) {
+                // Just refresh conversations for updated preview, but don't touch messages
+                fetchConversations();
+                return;
+            }
 
             if (!isActiveConversation) {
                 // Refresh conversations to show unread count and new message preview
@@ -684,7 +871,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             socket.off('message_deleted', handleMessageDelete);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [socket, isConnected, friendId, currentUser?.id, currentConversationId, decryptMessage, fetchConversations]);
+    }, [socket, isConnected, friendId, currentUser?.id, currentConversationId, decryptMessage, fetchConversations]); // fetchFriendPublicKey accessed via ref
 
     // Generate a unique conversation ID from two user IDs
 
@@ -771,10 +958,15 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [currentUser, authToken, apiEndpoint]);
 
+    /**
+     * Fetch a user's public key from server and cache it
+     * Used for both encryption (recipient's key) and decryption (sender's key)
+     */
     const fetchFriendPublicKey = useCallback(async (userId: string): Promise<string | null> => {
-        // Check if we already have this friend's public key cached
-        if (friendPublicKeys[userId]) {
-            return friendPublicKeys[userId];
+        // Check if we already have this user's public key cached (use ref for latest value)
+        const cachedKey = friendPublicKeysRef.current[userId];
+        if (cachedKey) {
+            return cachedKey;
         }
 
         if (!currentUser || !authToken) {
@@ -824,6 +1016,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [friendPublicKeys, currentUser, authToken, apiEndpoint, markEndpointAvailability]);
 
+    // Keep ref in sync with the callback
+    useEffect(() => {
+        fetchFriendPublicKeyRef.current = fetchFriendPublicKey;
+    }, [fetchFriendPublicKey]);
+
     const encryptMessage = useCallback(async (
         content: string,
         recipientId: string,
@@ -833,8 +1030,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         nonce: string | null,
         isEncrypted: boolean
     }> => {
+        // CRITICAL FIX: Use ref to get current secret key, avoiding stale closures
         // Use override key if provided (for freshly generated keys before state updates)
-        const effectiveSecretKey = overrideSecretKey || secretKey;
+        const effectiveSecretKey = overrideSecretKey || secretKeyRef.current;
 
         // Check if we have our own secret key
         if (!effectiveSecretKey) {
@@ -843,8 +1041,40 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             return { ciphertext: content, nonce: null, isEncrypted: false };
         }
 
-        // Get friend's public key - use cached or fetch
-        let friendKey: string | null = friendPublicKeys[recipientId] || null;
+        // CRITICAL FIX: Check if our public key has been uploaded to server
+        // If not, recipient won't be able to decrypt our messages
+        if (!publicKeyUploadedRef.current) {
+            console.warn("[E2EE] Public key not uploaded to server yet. Triggering upload...");
+
+            // Try to upload now
+            if (publicKeyRef.current && authToken) {
+                try {
+                    const response = await fetch(`${apiEndpoint}/keys`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                        body: JSON.stringify({ public_key: publicKeyRef.current }),
+                    });
+
+                    if (response.ok) {
+                        setPublicKeyUploaded(true);
+                        console.log('[E2EE] Public key uploaded successfully during encryption');
+                    } else {
+                        // Upload failed - warn but continue with encryption
+                        // The message will be encrypted, but recipient may not be able to decrypt
+                        // until our key is synced
+                        console.warn('[E2EE] Public key upload failed. Recipient may not be able to decrypt.');
+                    }
+                } catch (error) {
+                    console.error('[E2EE] Error uploading public key:', error);
+                }
+            }
+        }
+
+        // Get friend's public key - use cached ref or fetch
+        let friendKey: string | null = friendPublicKeysRef.current[recipientId] || null;
 
         if (!friendKey) {
             // Try to fetch the friend's key
@@ -861,12 +1091,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             const { ciphertext, nonce } = naclEncrypt(content, friendKey, effectiveSecretKey);
             return { ciphertext, nonce, isEncrypted: true };
         } catch (error) {
-            console.error("Error encrypting message:", error);
+            console.error("[E2EE] Error encrypting message:", error);
             // Fallback to unencrypted if encryption fails
-            console.warn("Encryption failed. Sending message unencrypted.");
+            console.warn("[E2EE] Encryption failed. Sending message unencrypted.");
             return { ciphertext: content, nonce: null, isEncrypted: false };
         }
-    }, [secretKey, friendPublicKeys, fetchFriendPublicKey]);
+    }, [fetchFriendPublicKey, authToken, apiEndpoint]); // Added authToken and apiEndpoint for key upload
 
     const ensureConversation = useCallback(async (targetId: string): Promise<string | null> => {
         if (!currentUser || !authToken) return null;
@@ -971,8 +1201,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         // Track freshly generated keypair for immediate use (avoids React state timing issues)
         let freshKeyPair: { publicKey: string; secretKey: string } | null = null;
 
+        // CRITICAL FIX: Use ref to check for keys, avoiding stale closure
         // Generate keys if: unavailable (no keys) OR locked (keys exist but wrong password - regenerate)
-        if ((keyStatus === 'unavailable' || keyStatus === 'locked') && !secretKey) {
+        if ((keyStatus === 'unavailable' || keyStatus === 'locked') && !secretKeyRef.current) {
             const storedKeyPassword = typeof window !== 'undefined'
                 ? sessionStorage.getItem('e2ee_key_password')
                 : null;
@@ -1103,7 +1334,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         } finally {
             markRequestEnd('send_message');
         }
-    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, encryptMessage, keyStatus, secretKey]);
+    }, [friendId, currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, encryptMessage, keyStatus]); // Removed secretKey - uses ref
 
     // Send typing indicator
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1165,16 +1396,26 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             markEndpointAvailability('messages', true);
             const data = await response.json();
+
+            // CRITICAL FIX: Use ref to get current secret key
+            const currentSecretKey = secretKeyRef.current;
+
             const messagesData = await Promise.all((data.messages || []).map(async (msg: any) => {
                 const ciphertext = msg.ciphertext || msg.content;
                 const nonce = msg.nonce;
-                const senderPublicKey = msg.sender_public_key;
+                let senderPublicKey = msg.sender_public_key;
+
+                // CRITICAL FIX: Try to fetch sender's public key if missing
+                if (msg.encrypted && !senderPublicKey && msg.sender_id) {
+                    console.log('[E2EE] Fetching missing sender public key for message', msg.id);
+                    senderPublicKey = await fetchFriendPublicKey(String(msg.sender_id));
+                }
 
                 // Decrypt if encrypted and we have necessary data
                 let decryptedContent = ciphertext;
-                if (msg.encrypted && ciphertext && nonce && senderPublicKey && secretKey) {
+                if (msg.encrypted && ciphertext && nonce && senderPublicKey && currentSecretKey) {
                     decryptedContent = await decryptMessage(ciphertext, nonce, senderPublicKey);
-                } else if (msg.encrypted && (!senderPublicKey || !nonce || !secretKey)) {
+                } else if (msg.encrypted && (!senderPublicKey || !nonce || !currentSecretKey)) {
                     // Encrypted but missing keys - show graceful fallback
                     decryptedContent = '🔒 Encrypted message';
                 }
@@ -1185,6 +1426,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     content: decryptedContent,
                     ciphertext,
                     nonce,
+                    senderPublicKey,  // Store for potential re-decryption
                     timestamp: new Date(msg.timestamp),
                     media: (msg.media || []).map((mediaItem: any) => ({
                         url: mediaItem.url,
@@ -1202,7 +1444,26 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }));
 
             if (!lastMessageId) {
-                setMessagesCallback(messagesData.reverse());
+                // CRITICAL FIX: Merge server messages with any WebSocket messages that arrived
+                // during the fetch, instead of replacing everything
+                const reversedData = messagesData.reverse();
+                setMessages(prevMessages => {
+                    // Create a map of server message IDs for quick lookup
+                    const serverMessageIds = new Set(reversedData.map(m => String(m.id)));
+
+                    // Keep any messages that arrived via WebSocket but aren't in server response
+                    // (these are newer messages that arrived during the fetch)
+                    const wsOnlyMessages = prevMessages.filter(
+                        m => !serverMessageIds.has(String(m.id))
+                    );
+
+                    // Merge: server messages + any WebSocket-only messages, sorted by timestamp
+                    const merged = [...reversedData, ...wsOnlyMessages].sort(
+                        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    );
+
+                    return merged;
+                });
             }
 
             return messagesData;
@@ -1213,7 +1474,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             fetchingMessagesRef.current = false;
             markRequestEnd('get_messages');
         }
-    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, setMessagesCallback, decryptMessage]);
+    }, [currentUser, authToken, apiEndpoint, canMakeRequest, markRequestStart, markRequestEnd, markEndpointAvailability, ensureConversation, setMessagesCallback, decryptMessage, fetchFriendPublicKey]);
 
     const getChatList = async () => {
         if (!currentUser || !authToken || !canMakeRequest('get_chat_list')) {
@@ -1383,7 +1644,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         try {
             const uploadedMedia: { url: string; type: string }[] = [];
-            
+
             // Upload each file individually as the server expects 'file' key
             for (const file of Array.from(files)) {
                 const formData = new FormData();
@@ -1430,40 +1691,70 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
 
 
-    const uploadPublicKey = useCallback(async (base64PublicKey: string): Promise<any> => {
+    /**
+     * Upload public key with exponential backoff retry
+     * This is critical for E2EE - if upload fails, recipients can't decrypt our messages
+     */
+    const uploadPublicKey = useCallback(async (
+        base64PublicKey: string,
+        maxRetries: number = 3
+    ): Promise<{ success: boolean; data?: any }> => {
         if (!currentUser || !authToken) {
             throw new Error('Authentication required');
         }
 
-        // Note: No rate limiting for public key upload - critical for E2EE
         const url = `${apiEndpoint}/keys`;
+        let lastError: Error | null = null;
 
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({ public_key: base64PublicKey }),
-            });
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                // Exponential backoff: 0ms, 1000ms, 2000ms
+                if (attempt > 0) {
+                    const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+                    console.log(`[E2EE] Retry ${attempt}/${maxRetries} - waiting ${delay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
 
-            if (response.status === 404) {
-                markEndpointAvailability('keys', false);
-                throw new Error('Keys endpoint not available');
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ public_key: base64PublicKey }),
+                });
+
+                if (response.status === 404) {
+                    markEndpointAvailability('keys', false);
+                    throw new Error('Keys endpoint not available');
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to upload public key: ${errorText}`);
+                }
+
+                markEndpointAvailability('keys', true);
+                const data = await response.json();
+
+                // Mark upload as successful
+                setPublicKeyUploaded(true);
+                console.log('[E2EE] Public key uploaded successfully');
+
+                return { success: true, data };
+            } catch (err) {
+                lastError = err as Error;
+                console.error(`[E2EE] Upload attempt ${attempt + 1}/${maxRetries} failed:`, err);
+
+                // Don't retry on 404 (endpoint doesn't exist)
+                if (lastError.message.includes('not available')) {
+                    break;
+                }
             }
-
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Failed to upload public key: ${error}`);
-            }
-
-            markEndpointAvailability('keys', true);
-            return response.json();
-        } catch (err) {
-            console.error('[E2EE] Failed to upload public key:', err);
-            throw err;
         }
+
+        console.error('[E2EE] All upload attempts failed:', lastError);
+        return { success: false };
     }, [currentUser, authToken, apiEndpoint, markEndpointAvailability]);
 
     /**
@@ -1509,21 +1800,31 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             setKeyPassword(keyPwd);  // Cache for session
             setKeyStatus('available');
 
-            // Upload public key to server - MUST complete for E2EE to work
-            try {
-                await uploadPublicKey(keyPair.publicKey);
-            } catch (uploadErr) {
-                console.error('[E2EE] Failed to upload public key:', uploadErr);
-                // Still continue - keys are generated locally, upload can be retried
-            }
+            // Upload public key to server with retry - CRITICAL for E2EE
+            const uploadResult = await uploadPublicKey(keyPair.publicKey, 3);
 
             toast.dismiss();
-            toast.success("Encryption keys generated successfully");
+
+            if (uploadResult.success) {
+                toast.success("Encryption keys generated successfully");
+            } else {
+                // Keys generated locally but upload failed - warn user
+                console.warn('[E2EE] Keys generated but server upload failed - recipients may not be able to decrypt');
+                toast.success("Encryption keys generated (sync pending)");
+
+                // Schedule background retry
+                setTimeout(async () => {
+                    if (!publicKeyUploadedRef.current && publicKeyRef.current) {
+                        console.log('[E2EE] Retrying public key upload in background...');
+                        await uploadPublicKey(publicKeyRef.current, 3);
+                    }
+                }, 30000); // Retry after 30 seconds
+            }
 
             // Return the keypair for immediate use (avoids React state timing issues)
             return keyPair;
         } catch (error) {
-            console.error("Error generating keys:", error);
+            console.error("[E2EE] Error generating keys:", error);
             setKeyStatus('unavailable');
             toast.dismiss();
             toast.error("Failed to generate encryption keys");
@@ -1534,7 +1835,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 setTimeout(() => setKeyGenerationAttempted(false), 10000);
             }
         }
-    }, [currentUser, keyGenerationAttempted, keyPassword, uploadPublicKey, keyStatus, setKeyStatus, setSecretKey, setPublicKey, setKeyPassword, setKeyGenerationAttempted]);
+    }, [currentUser, keyGenerationAttempted, keyPassword, uploadPublicKey, keyStatus]);
 
     /**
      * Load keys from IndexedDB with password

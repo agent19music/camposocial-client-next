@@ -39,26 +39,20 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
   const getPageSpecificItems = () => {
     if (pathname?.includes('/yaps')) {
       return [
-        { icon: Bookmark, label: "Bookmarked Yaps", href: "/yaps/bookmarks" },
-        { icon: TrendingUp, label: "Trending", href: "/yaps?type=trending" },
-        { icon: Users, label: "Following", href: "/yaps?type=following" },
-        { icon: History, label: "Your Yaps", href: "/yaps/history" },
+        { icon: TrendingUp, label: "Trending", href: "/yaps" },
+        { icon: Users, label: "Following", href: "/yaps" },
       ];
     } else if (pathname?.includes('/marketplace')) {
       return [
-        { icon: ShoppingCart, label: "Cart", href: "/marketplace/cart" },
-        { icon: Package, label: "Orders", href: "/marketplace/orders" },
-        { icon: Star, label: "Wishlist", href: "/marketplace/wishlist" },
+        // Marketplace-specific links can be added when routes are implemented
       ];
     } else if (pathname?.includes('/events')) {
       return [
-        { icon: Calendar, label: "My Events", href: "/events/my-events" },
-        { icon: Bookmark, label: "Saved Events", href: "/events/saved" },
-        { icon: MapPin, label: "Nearby Events", href: "/events/nearby" },
+        // Events-specific links can be added when routes are implemented
       ];
     } else if (pathname?.includes('/friends')) {
       return [
-        { icon: MessageSquare, label: "Messages", href: "/chat" },
+        { icon: MessageSquare, label: "Messages", href: "/friends?tab=messages" },
         { icon: Users, label: "Friend Requests", href: "/friends?tab=requests" },
         { icon: UserPlus, label: "Discover People", href: "/friends?tab=discover" },
       ];
@@ -103,7 +97,7 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
               href={item.href}
               className={cn(
                 "flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-muted/50",
-                pathname === item.href
+                pathname === item.href || (item.href.includes('?') && pathname?.includes(item.href.split('?')[0]))
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
