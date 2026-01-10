@@ -61,13 +61,39 @@ function FriendsPageInner() {
     }
   }, [users.length]);
 
-  // Check for user param to switch to messages tab
+  // Handle tab switching via URL hash or query param
   useEffect(() => {
-    const userParam = searchParams.get('user');
-    if (userParam) {
-      setActiveTab('messages');
+    const tabParam = searchParams.get('tab');
+    const validTabs = ['friends', 'messages', 'discover', 'requests', 'activity'];
+    
+    // Check query param first
+    if (tabParam && validTabs.includes(tabParam)) {
+      setActiveTab(tabParam);
+      return;
+    }
+    
+    // Check URL hash (e.g., /friends#messages)
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.slice(1); // Remove #
+      if (hash && validTabs.includes(hash)) {
+        setActiveTab(hash);
+      }
     }
   }, [searchParams]);
+  
+  // Listen for hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      const validTabs = ['friends', 'messages', 'discover', 'requests', 'activity'];
+      if (hash && validTabs.includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Filter pills with notification counts
   const filterPills: FilterPill[] = [
@@ -95,7 +121,8 @@ function FriendsPageInner() {
   const handleMessageFriend = (friend: any) => {
     // Switch to messages tab and select user
     // We can push to URL to let the effect handle it, or just set state
-    router.push(`/friends?user=${friend.id || friend.username}`);
+    // Navigate to dedicated chat page with clean URL (like X's /i/chat/[id])
+    router.push(`/friends/chat/${friend.id}`);
     setActiveTab('messages');
   };
 

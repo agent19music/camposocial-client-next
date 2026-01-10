@@ -39,7 +39,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import AddYap from '@/components/addyap'
 import AddEvent from "@/components/addevent";
@@ -364,7 +365,10 @@ const Header: FC<HeaderProps> = ({
               <span className="text-xs">Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 bg-background">
+          <SheetContent side="left" className="p-0 bg-white dark:bg-background border-r">
+            <SheetTitle asChild>
+              <VisuallyHidden.Root>Navigation Menu</VisuallyHidden.Root>
+            </SheetTitle>
             <EnhancedMobileSideNav />
           </SheetContent>
         </Sheet>

@@ -119,10 +119,19 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     );
   }, []);
 
+  // Track if we've initialized for this friendId to prevent duplicate fetches
+  const initializedFriendIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
     let active = true;
+    
     const initialiseConversation = async () => {
       if (!friendId) return;
+      
+      // Prevent re-initialization for the same friend
+      if (initializedFriendIdRef.current === friendId) {
+        return;
+      }
 
       setIsInitializing(true);
 
@@ -133,6 +142,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
 
         if (realConvId) {
           setConversationId(realConvId);
+          initializedFriendIdRef.current = friendId;
 
           // Step 1: Load cached messages immediately for instant UI
           const cached = await secureDB.getCachedMessages(realConvId, 50);
@@ -154,13 +164,9 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
           }
 
           // Step 2: Fetch fresh messages from server in background
-          const serverMessages = await getMessages(friendId, 50);
-          if (!active) return;
-          
-          // Step 3: Merge - getMessages already sets messages, but we need to merge with any
-          // WebSocket messages that may have arrived during fetch
-          // The getMessages function in ChatContext already replaces messages,
-          // so we rely on that for the merge. Future WebSocket messages are deduplicated.
+          // This will replace cached messages with server data
+          await getMessages(friendId, 50);
+          // Note: getMessages handles setting messages internally
         }
       } catch (error) {
         console.error('Failed to initialize conversation:', error);
@@ -171,12 +177,15 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         }
       }
     };
+    
     initialiseConversation();
 
     return () => {
       active = false;
     };
-  }, [friendId, ensureConversation, getMessages, setMessages, mergeMessages]);
+    // Only re-run when friendId changes - other deps are stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendId]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;

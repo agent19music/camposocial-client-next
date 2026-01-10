@@ -67,6 +67,7 @@ export interface ChatMessage {
   content: string;
   ciphertext?: string | null;
   nonce?: string;  // E2EE nonce for NaCl box decryption
+  senderPublicKey?: string | null;  // Sender's public key for E2EE decryption
   timestamp: Date;
   media: ChatMedia[] | null;
   reactions: { userId: string; reactionType: string }[];

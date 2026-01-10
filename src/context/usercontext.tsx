@@ -260,17 +260,35 @@ export default function UserProvider({ children }: { children: ReactNode }) {
         const errorMessage = (data.error || '').toLowerCase();
 
         // If backend indicates an existing pending request, surface as info
-        if (errorMessage.includes('already sent') || errorMessage.includes('already received')) {
-          toast.error(data.error || 'Friend request already pending.');
+        if (errorMessage.includes('already sent') || errorMessage.includes('already received') || errorMessage.includes('already friends')) {
+          // Don't show error toast for already sent - just keep the optimistic update
+          // The user already sees "Sent" state in the UI
           return;
         }
 
         // Attempt fallback endpoint if specific not-friends message occurs
         if (errorMessage.includes('not friends yet')) {
           ({ response, data } = await attemptRequest(`${normalizedEndpoint}/friends/request`));
-        }
-
-        if (!response.ok) {
+          
+          // Check again after retry
+          if (!response.ok) {
+            const retryErrorMessage = (data.error || '').toLowerCase();
+            if (retryErrorMessage.includes('already sent') || retryErrorMessage.includes('already received') || retryErrorMessage.includes('already friends')) {
+              // Don't show error toast for already sent - just keep the optimistic update
+              return;
+            }
+            console.error("Failed to send friend request:", data);
+            toast.error(data.error || "Failed to send friend request.");
+            // Revert optimistic update on error
+            setSentRequestIds(prev => {
+              const next = new Set(prev);
+              next.delete(receipientId);
+              return next;
+            });
+            return;
+          }
+        } else {
+          // Original request failed with non-retryable error
           console.error("Failed to send friend request:", data);
           toast.error(data.error || "Failed to send friend request.");
           // Revert optimistic update on error
@@ -283,7 +301,13 @@ export default function UserProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      toast.success("Friend request sent!");
+      // Success case - request was sent successfully
+      // Double-check data doesn't indicate it was already sent (some APIs return 200 with error message)
+      const responseErrorMessage = (data.error || '').toLowerCase();
+      if (!responseErrorMessage.includes('already sent') && !responseErrorMessage.includes('already received') && !responseErrorMessage.includes('already friends')) {
+        toast.success("Friend request sent!");
+      }
+      // Always mutate to refresh pending requests state
       await mutate(swrKey.pending);
     } catch (error) {
       console.error("Error sending friend request:", error);

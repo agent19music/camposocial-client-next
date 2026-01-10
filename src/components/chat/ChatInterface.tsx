@@ -82,20 +82,37 @@ export default function ChatInterface({ onChatOpen }: ChatInterfaceProps) {
     }, [isAuthenticated, loadConversations]);
 
     const handleSelectFriend = (friend: any) => {
-        setSelectedFriend(friend.id);
-        setFriendId(friend.id);
-        setShowChats(false);
-        onChatOpen?.(true);
+        // Navigate to dedicated chat page
+        router.push(`/friends/chat/${friend.id}`);
     };
 
-    const filteredChatList = chatList?.filter((user: any) => {
-        const matchesSearch = `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
-        if (filter === 'unread') {
-            const conversation = conversations.find(c => c.friendId === user.id);
-            return matchesSearch && (conversation?.unreadCount || 0) > 0;
-        }
-        return matchesSearch;
-    }) || [];
+    // Sort and filter conversation list - latest messages on top
+    const sortedAndFilteredList = useMemo(() => {
+        // First, filter the chat list
+        const filtered = chatList?.filter((user: any) => {
+            const matchesSearch = `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
+            if (filter === 'unread') {
+                const conversation = conversations.find(c => c.friendId === user.id);
+                return matchesSearch && (conversation?.unreadCount || 0) > 0;
+            }
+            return matchesSearch;
+        }) || [];
+
+        // Then sort by latest message time (newest first)
+        return filtered.sort((a: any, b: any) => {
+            const convA = conversations.find(c => c.friendId === a.id);
+            const convB = conversations.find(c => c.friendId === b.id);
+            
+            const timeA = convA?.lastMessageTime ? new Date(convA.lastMessageTime).getTime() : 0;
+            const timeB = convB?.lastMessageTime ? new Date(convB.lastMessageTime).getTime() : 0;
+            
+            // Sort descending (newest first)
+            return timeB - timeA;
+        });
+    }, [chatList, conversations, searchQuery, filter]);
+
+    // For backward compatibility
+    const filteredChatList = sortedAndFilteredList;
 
     const selectedFriendData = useMemo(() => {
         return chatList?.find((f: any) => f.id === selectedFriend);
@@ -152,25 +169,71 @@ export default function ChatInterface({ onChatOpen }: ChatInterfaceProps) {
                     </div>
                 </div>
 
+                {/* Unread Messages Banner */}
+                {conversations.some(c => (c.unreadCount || 0) > 0) && filter === 'all' && (
+                    <div 
+                        onClick={() => setFilter('unread')}
+                        className="mx-3 my-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 cursor-pointer hover:bg-primary/15 transition-colors"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                <span className="text-sm font-medium text-primary">
+                                    {conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)} unread messages
+                                </span>
+                            </div>
+                            <span className="text-xs text-primary/70">Tap to filter</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Chat List */}
                 <div className="flex-1 overflow-y-auto">
                     {isLoadingConversations ? (
                         <div className="flex justify-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                         </div>
+                    ) : filteredChatList.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <ChatCircle size={48} weight="thin" className="text-muted-foreground mb-3" />
+                            <p className="text-muted-foreground text-sm">
+                                {filter === 'unread' ? 'No unread messages' : 'No conversations yet'}
+                            </p>
+                            {filter === 'unread' && (
+                                <button 
+                                    onClick={() => setFilter('all')}
+                                    className="mt-2 text-xs text-primary hover:underline"
+                                >
+                                    Show all chats
+                                </button>
+                            )}
+                        </div>
                     ) : (
                         filteredChatList.map((user: any) => {
                             const conversation = conversations.find(c => c.friendId === user.id);
                             const isSelected = selectedFriend === user.id;
+                            const hasUnread = (conversation?.unreadCount || 0) > 0;
 
                             return (
                                 <div
                                     key={user.id}
                                     onClick={() => handleSelectFriend(user)}
-                                    className="flex items-center gap-3 p-4 cursor-pointer transition-all border-l-4 hover:bg-muted/50"
+                                    className={`
+                                        flex items-center gap-3 p-4 cursor-pointer transition-all border-l-4
+                                        hover:bg-muted/50
+                                        ${hasUnread ? 'bg-primary/5' : ''}
+                                    `}
                                     style={{
-                                        backgroundColor: isSelected ? 'hsl(var(--muted))' : 'transparent',
-                                        borderLeftColor: isSelected ? 'hsl(var(--primary))' : 'transparent'
+                                        backgroundColor: isSelected 
+                                            ? 'hsl(var(--muted))' 
+                                            : hasUnread 
+                                                ? 'hsl(var(--primary) / 0.05)' 
+                                                : 'transparent',
+                                        borderLeftColor: isSelected 
+                                            ? 'hsl(var(--primary))' 
+                                            : hasUnread 
+                                                ? 'hsl(var(--primary) / 0.5)' 
+                                                : 'transparent'
                                     }}
                                 >
                                     <div className="relative">
@@ -183,21 +246,27 @@ export default function ChatInterface({ onChatOpen }: ChatInterfaceProps) {
                                                 className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background bg-green-500"
                                             />
                                         )}
+                                        {/* Unread dot indicator on avatar */}
+                                        {hasUnread && (
+                                            <div
+                                                className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary border-2 border-background"
+                                            />
+                                        )}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
-                                            <h3 className="font-medium truncate text-foreground">
+                                            <h3 className={`font-medium truncate ${hasUnread ? 'text-foreground font-semibold' : 'text-foreground'}`}>
                                                 {user.firstName} {user.lastName}
                                             </h3>
                                             {conversation?.lastMessageTime && (
-                                                <span className="text-xs text-muted-foreground">
+                                                <span className={`text-xs ${hasUnread ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                                                     {format(new Date(conversation.lastMessageTime), 'HH:mm')}
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm truncate text-muted-foreground">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className={`text-sm truncate ${hasUnread ? 'text-foreground' : 'text-muted-foreground'}`}>
                                                 {!conversation?.lastMessage
                                                     ? 'Start a conversation'
                                                     : (conversation.lastMessage.length > 50 && /^[A-Za-z0-9+/=]+$/.test(conversation.lastMessage.slice(0, 50)))
@@ -205,13 +274,13 @@ export default function ChatInterface({ onChatOpen }: ChatInterfaceProps) {
                                                         : conversation.lastMessage
                                                 }
                                             </p>
-                                            {conversation?.unreadCount && conversation.unreadCount > 0 ? (
+                                            {hasUnread && (
                                                 <span
-                                                    className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-primary text-primary-foreground"
+                                                    className="min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold flex-shrink-0 bg-primary text-primary-foreground flex items-center justify-center"
                                                 >
-                                                    {conversation.unreadCount}
+                                                    {conversation!.unreadCount! > 99 ? '99+' : conversation!.unreadCount}
                                                 </span>
-                                            ) : null}
+                                            )}
                                         </div>
                                     </div>
                                 </div>
