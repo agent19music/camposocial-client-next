@@ -148,12 +148,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Google OAuth Client ID - must be prefixed with NEXT_PUBLIC_ to be accessible in the browser
-  // IMPORTANT: In Google Cloud Console, you must add the following Authorized JavaScript origins:
-  // - https://www.camposocial.app
-  // - https://camposocial.app (if you support both www and non-www)
-  // - http://localhost:3000 (for local development)
-  // For implicit flow with @react-oauth/google, only JavaScript origins need to be registered (not redirect URIs)
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   return (
