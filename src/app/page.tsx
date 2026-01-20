@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { 
+import {
   ArrowRight,
   Users,
   Calendar,
@@ -19,7 +19,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { FloatingBackground } from "@/components/ui/floating-background";
 import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DarkColors, Colors as Palette } from "../../constants/Colors";
 import {
   HeartStraightIcon,
@@ -36,6 +36,7 @@ import {
   Books
 } from '@phosphor-icons/react'
 import { useTheme } from "@/context/themecontext";
+
 
 // Landing page components
 import { SectionScrollConnector } from "@/components/landing/scroll-trail-icon";
@@ -85,195 +86,141 @@ const stats = [
 export default function Home() {
   const { currentUser } = useContext(AuthContext);
   const C = Palette;
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
 
   return (
-   <div className="min-h-screen bg-stone-50 dark:bg-stone-950"
- style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
-        }}>
+    <div className="min-h-screen"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
+      }}>
 
-    
-      
+
+
       {/* Navigation - Clean header with unified dark mode */}
       <nav className="fixed top-0 w-full z-50  backdrop-blur-2xl ">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-          <div className="flex justify-between items-center h-14">
-              <div className="flex items-center space-x-3">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
               <Image
-                src= {theme !== 'dark'
+                src={theme !== 'dark'
                   ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-light.png"
                   : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/camposocial-logo-dark.png"
                 }
                 alt="CampoSocial"
-                width={36}
-                height={36}
+                width={44}
+                height={44}
                 className="rounded-xl shadow-sm"
                 priority
               />
-           <Image
+              <Image
                 src={theme !== 'dark'
                   ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
                   : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"
                 }
                 alt="University Logo"
-                width={90}
-                height={90}
-                className="  rounded-sm"
+                width={110}
+                height={110}
+                className="rounded-sm"
                 priority
               />
             </div>
             <div className="flex items-center gap-2">
-          <ThemeToggle />
+              <ThemeToggle
+                className="w-11 h-11 rounded-xl bg-white/90 hover:bg-white border border-white/60 shadow-sm"
+                iconClassName="h-6 w-6"
+              />
               {/* <ThemeToggle /> */}
-              {currentUser &&(
+              {currentUser && (
                 <Link href="/yaps">
-                    <Avatar>
-                      <AvatarImage src={currentUser.avatar} alt={currentUser.username} />
-                      <AvatarFallback>{currentUser.username.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                  <Avatar>
+                    <AvatarImage src={currentUser.avatar} alt={currentUser.username} />
+                    <AvatarFallback>{currentUser.username.charAt(0)}</AvatarFallback>
+                  </Avatar>
                 </Link>
               )}
-          
-         
+
+
             </div>
           </div>
         </div>
       </nav>
 
       {/* ========================================================
-        HERO SECTION - TRANSFORMED
+        HERO SECTION - CALM NATUREFUL DESIGN
         ========================================================
       */}
- <section className="pt-24 pb-0 px-6 sm:px-8 lg:px-10 relative overflow-hidden min-h-[85vh]"
+      <section className="relative h-screen overflow-hidden">
+        {/* Background Image - Valley Picnic Scene */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/slop_hero3.webp"
+            alt="Serene valley landscape with students enjoying a picnic"
+            fill
+            priority
+            quality={100}
+            sizes="100vw"
 
- >
+            className="object-cover object-center"
+            style={{ objectFit: 'cover' }}
+          />
+        </div>
 
-        <div className="max-w-6xl mx-auto relative z-20"> {/* Increased z-index for text/CTA */}
-          <div className="text-center">
+        {/* Hero Content - Vertically centered (account for fixed nav height) */}
+        <div className="relative z-10 h-full flex flex-col justify-center pt-16 px-6 sm:px-8 lg:px-12 xl:px-20">
+          <div className="max-w-2xl">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             >
-            
-              
-              {/* Main headline - Text centered, bold, and impactful */}
-              <div className="mb-2">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center w-full mb-3 md:mb-4 tracking-tight" 
-              style={{ 
-                color: 'var(--color-heading)',
-                fontFamily: 'Helvetica',
-              }}>
-                The 
-                 
-                 Campus Social
-                
-               Network That Gets You
-              </h2>
-              </div>
-              
-              {/* Clean description */}
-              <motion.p 
-                className="text-base  text-center  leading-[28px] max-w-[700px] w-full mx-auto font-normal"
+              {/* Main H1 - Duna-inspired typography */}
+              <h1
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal leading-[1.1] mb-6"
+                style={{
+                  letterSpacing: '-0.04em',
+                  color: '#222221',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                }}
+              >
+                Build networks that last a lifetime
+              </h1>
+
+              {/* Helper Text - Muted, breathable */}
+              <motion.p
+                className="text-lg md:text-xl leading-relaxed max-w-lg mb-8"
+                style={{
+                  color: '#4a4a4a',
+                  lineHeight: '1.6',
+                }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
               >
-                Connect with students who share your interests. Discover events that matter. 
-                Build friendships that last beyond graduation.
+                Connect with students who share your passions.
+                Discover experiences that matter. Create friendships that outlast graduation.
               </motion.p>
-              
-              {/* Clean CTA buttons - Apple style */}
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-4 justify-center items-center mx-auto"
+
+              {/* CTA Button */}
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
               >
-                {/* <Link href="/signup">
-                  
-                </Link> */}
-                
                 <Link href="/signup">
                   <Button
                     size="lg"
-                    variant="default"
-                    className="font-medium px-8 bg-[#ff9013]  py-3 my-4 rounded-full transition-colors duration-200 text-[1.0625rem]"
-                    style={{ color: C.white }}
+                    className="font-medium px-8 py-6 bg-[#ff9013] hover:bg-[#e8820f] text-white rounded-full transition-all duration-300 text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                   >
                     Get Started
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
               </motion.div>
-
             </motion.div>
           </div>
         </div>
-        
- {/* HERO GIRL IMAGE PLACEMENT */}
- <motion.div
-            className="relative w-full h-[500px] flex justify-center mt-[-60px] pb-10" 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-        >
-            <Image
-                src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/hero%20girl.png"
-                alt="Happy student using CampoSocial"
-                width={700}
-                height={700}
-                quality={100}
-                className="object-contain w-full h-full max-w-xl lg:max-w-2xl xl:max-w-3xl absolute bottom-[-100px] left-1/2 transform -translate-x-1/2 z-10"
-            />
-            
-            {/* Floating Icon Bubbles */}
-            {/* INBOX BUBBLE - Top Left */}
-            <motion.div
-              className="absolute top-[5%] left-[5%] md:left-[15%] lg:left-[20%] w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center shadow-lg z-20"
-              style={{ backgroundColor: '#B5D4E8' }}
-              initial={{ opacity: 0, scale: 0.5, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-            >
-              <ChatsCircleIcon size={40} weight="regular" color="white" className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" />
-            </motion.div>
 
-            {/* SHOPPING BUBBLE - Top Right */}
-            <motion.div
-              className="absolute top-[5%] right-[5%] md:right-[15%] lg:right-[20%] w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center shadow-lg z-20"
-              style={{ backgroundColor: '#E8B4C4' }}
-              initial={{ opacity: 0, scale: 0.5, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-            >
-              <ShoppingBagOpenIcon size={40} weight="regular" color="white" className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" />
-            </motion.div>
-
-            {/* LIKE BUBBLE - Bottom Left */}
-            <motion.div
-              className="absolute bottom-[15%] left-[5%] md:left-[15%] lg:left-[20%] w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center shadow-lg z-20"
-              style={{ backgroundColor: '#89B8A0' }}
-              initial={{ opacity: 0, scale: 0.5, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.9 }}
-            >
-              <HeartStraightIcon size={40} weight="regular" color="white" className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" />
-            </motion.div>
-
-            {/* EVENT BUBBLE - Bottom Right */}
-            <motion.div
-              className="absolute bottom-[15%] right-[5%] md:right-[15%] lg:right-[20%] w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center shadow-lg z-20"
-              style={{ backgroundColor: '#D4A574' }}
-              initial={{ opacity: 0, scale: 0.5, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.0 }}
-            >
-              <CalendarDotsIcon size={40} weight="regular" color="white" className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" />
-            </motion.div>
-        </motion.div>
       </section>
 
 
@@ -283,9 +230,9 @@ export default function Home() {
         NEW STATS SECTION (Separated from Hero)
         ========================================================
       */}
-      <section className="py-20 px-6 sm:px-8 lg:px-10">
+      <section className="py-20 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
         <div className="max-w-6xl mx-auto">
-          <motion.div 
+          <motion.div
             className="grid grid-cols-2 lg:grid-cols-4 gap-8 pt-10  max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -315,7 +262,7 @@ export default function Home() {
       </section>
 
       {/* Features Section - Clean grid layout */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10">
+      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <motion.div
@@ -324,7 +271,7 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
             >
-                <h2 className="text-4xl lg:text-5xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'Helvetica', color: 'var(--color-heading)' }}>
+              <h2 className="text-4xl lg:text-5xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'Helvetica', color: 'var(--color-heading)' }}>
                 Built for Campus Life
               </h2>
               <p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl mx-auto" >
@@ -332,7 +279,7 @@ export default function Home() {
               </p>
             </motion.div>
           </div>
-          
+
           <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <motion.div
@@ -345,9 +292,9 @@ export default function Home() {
                 <div className="bg-white dark:bg-stone-900 p-8 h-full rounded-2xl border border-stone-200 dark:border-stone-800 transition-all duration-300 group hover:-translate-y-1">
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300"
-                    
+
                   >
-                      <feature.icon className="h-6 w-6 text-stone-700 dark:text-stone-300"  />
+                    <feature.icon className="h-6 w-6 text-stone-700 dark:text-stone-300" />
                   </div>
                   <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-2">
                     {feature.title}
@@ -375,7 +322,7 @@ export default function Home() {
             <div className="h-full flex flex-col">
               <div className="relative rounded-xl mb-4 flex-1 min-h-[200px] overflow-hidden">
                 <Image
-                  src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/popupstores.jpg" 
+                  src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/popupstores.jpg"
                   alt="Students at campus coffee shop marketplace pop-up"
                   fill
                   className="object-cover"
@@ -388,7 +335,7 @@ export default function Home() {
               </div>
             </div>
           </BentoCard>
-          
+
           <ProductCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/sadeshirtthrift.jpg"
             imageAlt="Vintage Sade graphic tee with classic tour design, oversized fit, perfect condition"
@@ -396,7 +343,7 @@ export default function Home() {
             price="$28"
             seller="@vintagevibes"
           />
-          
+
           <ProductCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/adidassamba.jpg"
             imageAlt="Samba classic shoes in white leather with iconic three stripes, gently worn"
@@ -404,7 +351,7 @@ export default function Home() {
             price="$65"
             seller="@sneakerhead"
           />
-          
+
           <ProductCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/manutd2007homekitthrift.jpg"
             imageAlt="Manchester United official kit jersey, authentic merchandise, great condition"
@@ -412,7 +359,7 @@ export default function Home() {
             price="$45"
             seller="@footie_fan"
           />
-          
+
           <ProductCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/lipaccessories.jpg"
             imageAlt="Makeup collection with trendy lip accessories, glosses and liners in various shades"
@@ -420,19 +367,19 @@ export default function Home() {
             price="$22"
             seller="@beauty_hub"
           />
-                    <ProductCard
+          <ProductCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/floralcupcakes.jpg"
             imageAlt="Assorted floral-themed cupcakes with intricate icing designs, perfect for events"
             title="Floral Cupcakes"
             price="$7"
             seller="@sweettooth"
           />
-          
-          
+
+
           <BentoCard>
             <StatCard label="Active Listings" value="2,400+" />
           </BentoCard>
-          
+
           <BentoCard>
             <StatCard label="Sold This Week" value="180" />
           </BentoCard>
@@ -456,7 +403,7 @@ export default function Home() {
             location="Main Quad"
             attendees={234}
           />
-          
+
           <EventCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/naturetrail.jpg"
             imageAlt="Students hiking on nature trail"
@@ -465,8 +412,8 @@ export default function Home() {
             location="Greenwood Park"
             attendees={56}
           />
-  
-          
+
+
           <EventCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/christmasparty.jpg"
             imageAlt="Holiday party celebration on campus"
@@ -475,7 +422,7 @@ export default function Home() {
             location="Main Quad"
             attendees={450}
           />
-          
+
           <EventCard
             image="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/clubmeet.jpg"
             imageAlt="Students in study lounge planning session"
@@ -484,14 +431,14 @@ export default function Home() {
             location="Student Center"
             attendees={45}
           />
-          
+
           <BentoCard className="md:col-span-2">
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <div className="text-4xl font-bold text-stone-800 dark:text-stone-100 mb-2">50+</div>
               <div className="text-sm text-stone-600 dark:text-stone-400">Events This Week</div>
             </div>
           </BentoCard>
-          
+
           <BentoCard className="md:col-span-2">
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <div className="text-4xl font-bold text-stone-800 dark:text-stone-100 mb-2">12k</div>
@@ -537,7 +484,7 @@ export default function Home() {
               />
             </div>
           </BentoCard>
-          
+
           <BentoCard>
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <Lock className="w-12 h-12 text-stone-700 dark:text-stone-300 mb-4" weight="duotone" />
@@ -545,11 +492,11 @@ export default function Home() {
               <div className="text-sm text-stone-600 dark:text-stone-400">Encrypted Messages</div>
             </div>
           </BentoCard>
-          
+
           <BentoCard>
             <StatCard label="Active Chats" value="5.2k" />
           </BentoCard>
-          
+
           <BentoCard className="md:col-span-2">
             <div className="h-full flex items-center justify-between p-2">
               <div>
@@ -576,12 +523,12 @@ export default function Home() {
               <Image
                 src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/events/unisocial.png"
                 alt="Students collaborating in campus lounge"
-                fill  
+                fill
                 className="object-cover"
               />
             </div>
           </BentoCard>
-          
+
           <BentoCard>
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <UserAvatarGroup count={5} />
@@ -589,7 +536,7 @@ export default function Home() {
               <div className="text-sm text-stone-600 dark:text-stone-400">Students Connected</div>
             </div>
           </BentoCard>
-          
+
           <BentoCard>
             <div className="h-full flex flex-col justify-center p-4">
               <GraduationCap className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
@@ -597,7 +544,7 @@ export default function Home() {
               <div className="text-sm text-stone-600 dark:text-stone-400">Universities</div>
             </div>
           </BentoCard>
-          
+
           <BentoCard>
             <div className="h-full flex flex-col justify-center p-4">
               <Handshake className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
@@ -605,7 +552,7 @@ export default function Home() {
               <div className="text-sm text-stone-600 dark:text-stone-400">Friendships Made</div>
             </div>
           </BentoCard>
-          
+
           <BentoCard>
             <div className="h-full flex flex-col justify-center p-4">
               <Star className="w-8 h-8 text-[#ff9013] mb-2" weight="duotone" />
@@ -617,7 +564,7 @@ export default function Home() {
       </BentoSection>
 
       {/* Final CTA Section */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10">
+      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
