@@ -154,7 +154,7 @@ export default function Home() {
         {/* Background Image - Valley Picnic Scene */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/slop_hero3.png"
+            src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/slop_hero3.webp"
             alt="Serene valley landscape with students enjoying a picnic"
             fill
             priority
