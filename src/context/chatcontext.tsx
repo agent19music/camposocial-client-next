@@ -401,7 +401,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 // This ensures BOTH sender and recipient have keys for E2EE
                 const hasKeys = await hasStoredKeys();
                 if (!hasKeys && storedKeyPassword) {
-                    console.log('[E2EE] No keys found, proactively generating for user', currentUser.id);
                     await generateKeys(storedKeyPassword);
                 } else if (hasKeys && storedKeyPassword) {
                     // Keys exist - try to retrieve them with the password
@@ -409,7 +408,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     if (!keyPair) {
                         // Keys exist but can't be decrypted - password mismatch
                         // This happens when key derivation changed. Clear and regenerate.
-                        console.log('[E2EE] Keys exist but locked, clearing and regenerating for user', currentUser.id);
                         const { deleteStoredKeys } = await import('../lib/keyStorage');
                         await deleteStoredKeys();
                         await generateKeys(storedKeyPassword);
@@ -463,7 +461,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         const retryUpload = async () => {
             if (publicKeyUploadedRef.current || !publicKeyRef.current) return;
 
-            console.log('[E2EE] Background retry: uploading public key...');
             try {
                 const response = await fetch(`${apiEndpoint}/keys`, {
                     method: 'POST',
@@ -476,7 +473,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                 if (response.ok) {
                     setPublicKeyUploaded(true);
-                    console.log('[E2EE] Background retry: public key uploaded successfully');
                 }
             } catch (error) {
                 console.error('[E2EE] Background retry failed:', error);
@@ -503,11 +499,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         // If no encryption data or keys, return ciphertext as-is
         if (!currentSecretKey || !nonce || !senderPublicKey) {
-            console.log('[E2EE] Cannot decrypt - missing:', {
-                hasSecretKey: !!currentSecretKey,
-                hasNonce: !!nonce,
-                hasSenderPublicKey: !!senderPublicKey
-            });
             return ciphertext;
         }
 
@@ -617,7 +608,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         const senderPublicKey = msg.senderPublicKey;
 
                         if (!ciphertext || !nonce || !senderPublicKey) {
-                            console.log('[E2EE] Cannot re-decrypt message', msg.id, '- missing data');
                             processedMessageIdsRef.current.add(msg.id); // Mark as processed to avoid retry
                             return;
                         }
@@ -625,7 +615,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         try {
                             const decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
                             if (decrypted && decrypted !== ciphertext && decrypted !== '[Unable to decrypt message]') {
-                                console.log('[E2EE] Successfully re-decrypted message', msg.id);
                                 decryptedMap.set(msg.id, decrypted);
                             }
                             processedMessageIdsRef.current.add(msg.id);
@@ -670,16 +659,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             // CRITICAL FIX: Use ref to get current secret key value
             const currentSecretKey = secretKeyRef.current;
 
-            // Debug incoming message data
-            console.log('[E2EE] Incoming message:', {
-                id: messageData.id,
-                encrypted: messageData.encrypted,
-                hasCiphertext: !!ciphertext,
-                hasNonce: !!nonce,
-                hasSenderPublicKey: !!senderPublicKey,
-                hasSecretKey: !!currentSecretKey,
-                contentPreview: ciphertext?.slice(0, 30) + '...'
-            });
 
             // Decrypt if encrypted and we have the necessary data
             let decrypted: string;
@@ -687,13 +666,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             // CRITICAL FIX: Try to fetch sender's public key if missing
             // Use ref to avoid dependency ordering issues
             if (messageData.encrypted && !senderPublicKey && messageData.sender_id && fetchFriendPublicKeyRef.current) {
-                console.log('[E2EE] Fetching missing sender public key for user', messageData.sender_id);
                 senderPublicKey = await fetchFriendPublicKeyRef.current(String(messageData.sender_id));
             }
 
             if (messageData.encrypted && ciphertext && nonce && senderPublicKey && currentSecretKey) {
                 decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
-                console.log('[E2EE] Decryption result:', decrypted?.slice(0, 50));
             } else if (messageData.encrypted && (!senderPublicKey || !nonce || !currentSecretKey)) {
                 // Encrypted but missing key data - show graceful fallback
                 console.warn('[E2EE] Cannot decrypt: missing', {
@@ -704,7 +681,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 decrypted = '🔒 Encrypted message';
             } else {
                 decrypted = messageData.content || ciphertext || '';
-                console.log('[E2EE] Using plaintext content:', decrypted?.slice(0, 50));
             }
 
             return {
@@ -1060,7 +1036,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                     if (response.ok) {
                         setPublicKeyUploaded(true);
-                        console.log('[E2EE] Public key uploaded successfully during encryption');
                     } else {
                         // Upload failed - warn but continue with encryption
                         // The message will be encrypted, but recipient may not be able to decrypt
@@ -1407,7 +1382,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                 // CRITICAL FIX: Try to fetch sender's public key if missing
                 if (msg.encrypted && !senderPublicKey && msg.sender_id) {
-                    console.log('[E2EE] Fetching missing sender public key for message', msg.id);
                     senderPublicKey = await fetchFriendPublicKey(String(msg.sender_id));
                 }
 
@@ -1711,7 +1685,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 // Exponential backoff: 0ms, 1000ms, 2000ms
                 if (attempt > 0) {
                     const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-                    console.log(`[E2EE] Retry ${attempt}/${maxRetries} - waiting ${delay}ms`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
@@ -1739,7 +1712,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                 // Mark upload as successful
                 setPublicKeyUploaded(true);
-                console.log('[E2EE] Public key uploaded successfully');
 
                 return { success: true, data };
             } catch (err) {
@@ -1815,7 +1787,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 // Schedule background retry
                 setTimeout(async () => {
                     if (!publicKeyUploadedRef.current && publicKeyRef.current) {
-                        console.log('[E2EE] Retrying public key upload in background...');
                         await uploadPublicKey(publicKeyRef.current, 3);
                     }
                 }, 30000); // Retry after 30 seconds

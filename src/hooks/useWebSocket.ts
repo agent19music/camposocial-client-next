@@ -60,7 +60,6 @@ export function useWebSocket(): WebSocketHook {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ WebSocket connected, ID:', socket.id);
       setIsConnected(true);
       reconnectAttemptsRef.current = 0;
     });
@@ -103,7 +102,6 @@ export function useWebSocket(): WebSocketHook {
     const joinedRoomsAtSetup = joinedRoomsRef.current;
 
     return () => {
-      console.log('🧹 Cleaning up socket connection');
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -116,7 +114,6 @@ export function useWebSocket(): WebSocketHook {
   const emit = useCallback((event: string, data: any) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit(event, data);
-      console.log(`📤 Emitted ${event}:`, data);
     } else {
       console.warn(`⚠️ Cannot emit ${event}: Socket not connected`);
     }
@@ -126,11 +123,9 @@ export function useWebSocket(): WebSocketHook {
   const on = useCallback((event: string, handler: (data: any) => void): (() => void) => {
     if (socketRef.current) {
       socketRef.current.on(event, handler);
-      console.log(`👂 Listening for ${event}`);
       // Return cleanup function
       return () => {
         socketRef.current?.off(event, handler);
-        console.log(`🔇 Stopped listening for ${event}`);
       };
     }
     return () => {};
@@ -153,7 +148,6 @@ export function useWebSocket(): WebSocketHook {
     if (socketRef.current?.connected && !joinedRoomsRef.current.has(normalized)) {
       socketRef.current.emit('join_conversation', { conversation_id: normalized });
       // Do not add to joinedRoomsRef here, wait for server confirmation
-      console.log(`🚪 Requested to join conversation room: ${normalized}`);
     }
   }, []);
 
@@ -164,7 +158,6 @@ export function useWebSocket(): WebSocketHook {
     if (socketRef.current?.connected && joinedRoomsRef.current.has(normalized)) {
       socketRef.current.emit('leave_conversation', { conversation_id: normalized });
       // Do not delete from joinedRoomsRef here, wait for server confirmation
-      console.log(`🚪 Requested to leave conversation room: ${normalized}`);
     }
   }, []);
 

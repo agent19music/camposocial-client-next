@@ -191,7 +191,6 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     if (!socket || !isConnected) return;
 
     const handleNewMessage = async (data: any) => {
-      console.log('📨 New message received in ChatWindow:', data);
 
       // Only process if it's for the current conversation
       if (conversationId && String(data.conversation_id) !== String(conversationId)) {

@@ -76,13 +76,6 @@ const features = [
   }
 ];
 
-const stats = [
-  { value: "50K+", label: "Squad Members" },
-  { value: "200+", label: "Campus Takeovers" },
-  { value: "10K+", label: "Epic Hangouts" },
-  { value: "24/7", label: "Good Vibes Only" }
-];
-
 export default function Home() {
   const { currentUser } = useContext(AuthContext);
   const C = Palette;
@@ -206,7 +199,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                <Link href="/comingsoon">
+                <Link href="/signup">
                   <Button
                     size="lg"
                     className="font-medium px-8 py-6 bg-[#ff9013] hover:bg-[#e8820f] text-white rounded-full transition-all duration-300 text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5"
@@ -224,41 +217,6 @@ export default function Home() {
 
 
 
-
-      {/* ========================================================
-        NEW STATS SECTION (Separated from Hero)
-        ========================================================
-      */}
-      <section className="py-20 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-8 pt-10  max-w-4xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true, amount: 0.5 }}
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 * index }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="text-3xl font-semibold mb-1 text-stone-800 dark:text-stone-100">
-                  {stat.value.replace('+', '')}
-                  {stat.value.includes('+') && <span className="text-[#ff9013]">+</span>}
-                </div>
-                <div className="text-sm font-medium text-stone-500 dark:text-stone-400">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
 
       {/* Features Section - Clean grid layout */}
       <section className="py-24 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
@@ -373,15 +331,6 @@ export default function Home() {
             price="$7"
             seller="@sweettooth"
           />
-
-
-          <BentoCard>
-            <StatCard label="Active Listings" value="2,400+" />
-          </BentoCard>
-
-          <BentoCard>
-            <StatCard label="Sold This Week" value="180" />
-          </BentoCard>
         </BentoGrid>
       </BentoSection>
 
@@ -430,20 +379,6 @@ export default function Home() {
             location="Student Center"
             attendees={45}
           />
-
-          <BentoCard className="md:col-span-2">
-            <div className="h-full flex flex-col justify-center items-center text-center p-4">
-              <div className="text-4xl font-bold text-stone-800 dark:text-stone-100 mb-2">50+</div>
-              <div className="text-sm text-stone-600 dark:text-stone-400">Events This Week</div>
-            </div>
-          </BentoCard>
-
-          <BentoCard className="md:col-span-2">
-            <div className="h-full flex flex-col justify-center items-center text-center p-4">
-              <div className="text-4xl font-bold text-stone-800 dark:text-stone-100 mb-2">12k</div>
-              <div className="text-sm text-stone-600 dark:text-stone-400">Students Attending</div>
-            </div>
-          </BentoCard>
         </BentoGrid>
       </BentoSection>
 
@@ -492,17 +427,13 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard>
-            <StatCard label="Active Chats" value="5.2k" />
-          </BentoCard>
-
           <BentoCard className="md:col-span-2">
-            <div className="h-full flex items-center justify-between p-2">
+            <div className="h-full flex items-center justify-between p-4">
               <div>
                 <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Group Chats</div>
                 <div className="text-sm text-stone-600 dark:text-stone-400">Study groups, clubs, dorms & more</div>
               </div>
-              <div className="text-3xl font-bold text-stone-800 dark:text-stone-100">340+</div>
+              <ChatsCircleIcon className="w-10 h-10 text-stone-600 dark:text-stone-400" weight="duotone" />
             </div>
           </BentoCard>
         </BentoGrid>
@@ -531,32 +462,32 @@ export default function Home() {
           <BentoCard>
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <UserAvatarGroup count={5} />
-              <div className="mt-4 text-lg font-semibold text-stone-800 dark:text-stone-100">8,500+</div>
-              <div className="text-sm text-stone-600 dark:text-stone-400">Students Connected</div>
+              <div className="mt-4 text-lg font-semibold text-stone-800 dark:text-stone-100">Growing Community</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Students Connecting Daily</div>
             </div>
           </BentoCard>
 
           <BentoCard>
             <div className="h-full flex flex-col justify-center p-4">
               <GraduationCap className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
-              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">50+</div>
-              <div className="text-sm text-stone-600 dark:text-stone-400">Universities</div>
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Universities</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Campus networks</div>
             </div>
           </BentoCard>
 
           <BentoCard>
             <div className="h-full flex flex-col justify-center p-4">
               <Handshake className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
-              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">25k</div>
-              <div className="text-sm text-stone-600 dark:text-stone-400">Friendships Made</div>
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Friendships</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Connections that last</div>
             </div>
           </BentoCard>
 
           <BentoCard>
             <div className="h-full flex flex-col justify-center p-4">
               <Star className="w-8 h-8 text-[#ff9013] mb-2" weight="duotone" />
-              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">4.9</div>
-              <div className="text-sm text-stone-600 dark:text-stone-400">App Store Rating</div>
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Launching Soon</div>
+              <div className="text-sm text-stone-600 dark:text-stone-400">Be among the first</div>
             </div>
           </BentoCard>
         </BentoGrid>
@@ -575,11 +506,11 @@ export default function Home() {
               Ready to join your campus?
             </h2>
             <p className="text-xl text-stone-600 dark:text-stone-400 mb-10 max-w-2xl mx-auto">
-              Connect with thousands of students. Buy, sell, chat, and discover events all in one place.
+              Connect with students on your campus. Buy, sell, chat, and discover events all in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/comingsoon"
+                href="/signup"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white rounded-full transition-all duration-300 hover:-translate-y-1"
                 style={{ backgroundColor: '#ff9013' }}
               >
@@ -587,7 +518,7 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <Link
-                href="/comingsoon"
+                href="/login"
 
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-stone-700 dark:text-stone-100 bg-stone-100 dark:bg-stone-800 rounded-full transition-all duration-300 hover:-translate-y-1"
               >

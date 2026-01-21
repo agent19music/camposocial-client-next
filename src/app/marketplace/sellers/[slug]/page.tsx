@@ -79,7 +79,6 @@ export default function SellerProfile() {
 
   const sellerInfo = sellerData || selectedSeller;
 
-  console.log(sellerInfo)
 
   return (
     <div className="w-screen h-screen lg:container mx-auto p-4">

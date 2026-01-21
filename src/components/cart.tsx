@@ -113,7 +113,6 @@ export default function CartComponent() {
 
   const incrementQuantity = async (id: string, currentQuantity: number) => { // Add currentQuantity as a parameter
     try {
-      console.log(JSON.stringify({ itemId: id, quantity: currentQuantity + 1 }));
 
       const response = await fetch(`${apiEndpoint}/cart/update_quantity`, {
         method: 'POST',

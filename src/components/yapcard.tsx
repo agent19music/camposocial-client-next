@@ -205,14 +205,12 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
         });
       } catch (error) {
         // User cancelled sharing or sharing failed
-        console.log('Sharing cancelled or failed');
       }
     } else {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(window.location.origin + `/yaps/${targetYap.id}`);
         // You could show a toast here
-        console.log('Link copied to clipboard');
       } catch (error) {
         console.error('Failed to copy link');
       }

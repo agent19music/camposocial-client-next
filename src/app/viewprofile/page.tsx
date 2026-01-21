@@ -26,13 +26,11 @@ export default function Component() {
     setIsBlocked(true)
     setIsFollowing(false)
     // Here you would typically call an API to block the account
-    console.log("Blocked @johndoe")
   }
 
   const handleMute = () => {
     setIsMuted(true)
     // Here you would typically call an API to mute the account
-    console.log("Muted @johndoe")
   }
 
 
@@ -170,17 +168,14 @@ function TweetCard({ name, username, content, timestamp }: TweetCardProps) {
   const handleMute = () => {
     setIsMuted(true)
     // Here you would typically call an API to mute the account
-    console.log(`Muted ${username}`)
   }
 
   const handleReport = () => {
     // Here you would typically call an API to report the tweet
-    console.log(`Reported tweet from ${username}`)
   }
 
   const handleNotInterested = () => {
     // Here you would typically call an API to mark as not interested
-    console.log(`Marked as not interested: ${username}`)
   }
 
   return (

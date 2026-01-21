@@ -20,7 +20,6 @@ interface ApplePayModalProps {
 export function ApplePayModal({ isOpen, onClose }: ApplePayModalProps) {
   const handleApplePay = () => {
     // Implement Apple Pay logic here
-    console.log("Processing Apple Pay payment...")
     onClose()
   }
 

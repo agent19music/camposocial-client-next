@@ -50,7 +50,6 @@ function FriendsPageInner() {
   // Get WebSocket context for notification counts
   const { notificationCounts, markFriendRequestsAsSeen } = useWebSocket();
 
-  console.log('received requests:', receivedRequests);
 
   const router = useRouter();
 

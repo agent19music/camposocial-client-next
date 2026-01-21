@@ -77,7 +77,6 @@ export function EmailLoginForm() {
                     if (userId) {
                         const keyPassword = await deriveKeyPassword(password, userId);
                         sessionStorage.setItem('e2ee_key_password', keyPassword);
-                        console.log('[E2EE] Stored key password for email login');
                     }
                 } catch (e) {
                     console.error('Failed to derive key password:', e);

@@ -34,21 +34,20 @@ export default function AnimatedFooter() {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Features", href: "/comingsoon" },
-    { label: "Events", href: "/comingsoon" },
-    { label: "Marketplace", href: "/comingsoon" },
-    { label: "Login", href: "/comingsoon" },
+    { label: "Events", href: "/events" },
+    { label: "Marketplace", href: "/marketplace" },
+    { label: "Login", href: "/login" },
   ];
 
   const socialLinks = [
-    { label: "Instagram", href: "https://instagram.com", external: true },
+    { label: "Instagram", href: "https://instagram.com/camposocial", external: true },
     { label: "Discord", href: "https://discord.com", external: true },
-    { label: "X (Twitter)", href: "https://x.com", external: true },
+    { label: "X (Twitter)", href: "https://x.com/camposocial", external: true },
   ];
 
   const legalLinks = [
-    { label: "Privacy Policy", href: "/comingsoon" },
-    { label: "Terms of Service", href: "/comingsoon" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
   ];
 
   return (

@@ -67,7 +67,6 @@ export function SocialLoginModal() {
       setLoadingMessageIndex(0);
       
       try {
-        console.log('Google OAuth Response:', credentialResponse);
 
         // Check if we have the expected response structure
         if (!credentialResponse.access_token) {
@@ -86,7 +85,6 @@ export function SocialLoginModal() {
           scope: credentialResponse.scope
         };
 
-        console.log('Sending to backend:', transformedData);
         
         // Add timeout as safety net (30 seconds) - will clear loading if something goes wrong
         const timeoutId = setTimeout(() => {
