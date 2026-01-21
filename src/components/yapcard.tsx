@@ -10,7 +10,8 @@ import { YapContext } from '@/context/yapcontext'
 import { cn } from '@/lib/utils'
 import { MediaGrid } from './yapmediagrid'
 import BadgeDisplay from './badgedisplay'
-import { 
+import PollCard from './polls/PollCard'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -40,7 +41,8 @@ interface Yap {
   media: MediaItem[];
   replies: Reply[];
   hashtags: string[];
-  badges?: Array<{id: number, name: string, image_url: string, is_animated: boolean}>;
+  poll_id?: string; // Associated poll ID
+  badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>;
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
   optimisticLikesCount?: number;
@@ -68,38 +70,38 @@ interface MediaItem {
   type: 'image' | 'video';
 }
 
-const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets_count, badges }: { 
-  display_name: string, 
-  username: string, 
-  content: string, 
-  avatar: string, 
-  media: MediaItem[], 
-  yap: Yap, 
-  likes_count: number, 
-  replies_count: number, 
+const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets_count, badges }: {
+  display_name: string,
+  username: string,
+  content: string,
+  avatar: string,
+  media: MediaItem[],
+  yap: Yap,
+  likes_count: number,
+  replies_count: number,
   retweets_count: number,
-  badges?: Array<{id: number, name: string, image_url: string, is_animated: boolean}>
+  badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>
 }) => {
   const { navigateToSingleYapView, toggleLike, addReply, retweet, quoteRetweet } = useContext(YapContext)
   const router = useRouter();
-  
+
   // Determine if this is a retweet or quote tweet
   const isRetweet = yap.is_retweet || yap.original_yap_id;
   const isQuoteTweet = yap.is_quote || (yap.original_yap_id && yap.content.trim());
   const isPureRetweet = isRetweet && !isQuoteTweet;
-  
+
   // For retweets, we need to use the original yap data for interactions
   const targetYap = (isPureRetweet && yap.original_yap) ? yap.original_yap : yap;
   const targetLikesCount = targetYap.likes_count || likes_count;
   const targetRepliesCount = targetYap.replies_count || replies_count;
   const targetRetweetsCount = targetYap.retweets_count || retweets_count;
-  
+
   // Local states for UI interactions
   const [isLiked, setIsLiked] = useState(targetYap.optimisticLiked ?? false);
   const [currentLikesCount, setCurrentLikesCount] = useState(targetYap.optimisticLikesCount ?? targetLikesCount);
   const [currentRepliesCount, setCurrentRepliesCount] = useState(targetYap.optimisticRepliesCount ?? targetRepliesCount);
   const [currentRetweetsCount, setCurrentRetweetsCount] = useState(targetYap.optimisticRetweetsCount ?? targetRetweetsCount);
-  
+
   // Dialog states
   const [isReplyDialogOpen, setIsReplyDialogOpen] = useState(false);
   const [isRetweetDialogOpen, setIsRetweetDialogOpen] = useState(false);
@@ -119,12 +121,12 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Immediate UI feedback
     const newIsLiked = !isLiked;
     setIsLiked(newIsLiked);
     setCurrentLikesCount(prev => newIsLiked ? prev + 1 : prev - 1);
-    
+
     try {
       // Always use the target yap (original for pure retweets, current for quote tweets)
       await toggleLike(targetYap.id);
@@ -142,9 +144,9 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   const submitReply = async () => {
     if (!replyContent.trim() || isSubmittingReply) return;
-    
+
     setIsSubmittingReply(true);
-    
+
     try {
       // Always reply to the target yap
       await addReply(targetYap.id, replyContent.trim());
@@ -166,9 +168,9 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   const submitRetweet = async (isQuote: boolean) => {
     if (isSubmittingRetweet) return;
-    
+
     setIsSubmittingRetweet(true);
-    
+
     try {
       if (isQuote) {
         // For quote retweet, we need content
@@ -178,7 +180,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
         // For pure retweet, no content needed
         await retweet(targetYap.id);
       }
-      
+
       setRetweetContent('');
       setIsRetweetDialogOpen(false);
       setIsQuoteRetweetDialogOpen(false);
@@ -193,7 +195,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -230,12 +232,12 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   // Render retweet header if this is a retweet
   const renderRetweetHeader = () => {
     if (!isRetweet) return null;
-    
+
     return (
       <div className="flex items-center gap-2 px-4 pt-3 pb-0 text-sm text-muted-foreground">
         <Repeat2 className="w-4 h-4" />
         <span>
-          <span 
+          <span
             className="font-medium hover:underline cursor-pointer"
             onClick={(e) => handleUserClick(e, yap.username)}
           >
@@ -259,19 +261,19 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   return (
     <>
-      <Card 
+      <Card
         className={cn(
           "border-b border-x-0 rounded-none first:border-t-0 transition-colors duration-200 hover:cursor-pointer",
           "hover:bg-gray-50 dark:hover:bg-foreground/5",
           yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
-        )} 
+        )}
         onClick={handleYapClick}
       >
         {renderRetweetHeader()}
-        
+
         <CardHeader className="flex flex-row items-start space-y-0 pb-2 px-4 pt-3">
-          <Avatar 
-            className="w-10 h-10 mr-3 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+          <Avatar
+            className="w-10 h-10 mr-3 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={(e) => handleUserClick(e, displayUsername)}
           >
             <AvatarImage src={displayAvatar} alt={displayName} />
@@ -279,7 +281,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 mb-1">
-              <h3 
+              <h3
                 className="font-bold text-[15px] truncate cursor-pointer hover:underline flex items-center gap-2"
                 onClick={(e) => handleUserClick(e, displayUsername)}
               >
@@ -288,7 +290,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                   <BadgeDisplay badges={displayBadges} size="sm" />
                 )}
               </h3>
-              <p 
+              <p
                 className="text-[15px] text-muted-foreground truncate cursor-pointer hover:underline"
                 onClick={(e) => handleUserClick(e, displayUsername)}
               >
@@ -307,12 +309,12 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                 <span className="text-xs text-blue-500 ml-2">Posting...</span>
               )}
             </div>
-            
+
             {/* Quote tweet content (if this is a quote tweet) */}
             {isQuoteTweet && yap.content.trim() && (
               <p className="text-[15px] break-words whitespace-pre-wrap mb-3">{yap.content}</p>
             )}
-            
+
             {/* Main content */}
             {isQuoteTweet ? (
               /* For quote tweets, show the original yap content */
@@ -406,7 +408,12 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               /* For regular yaps and pure retweets, show displayContent */
               <p className="text-[15px] break-words whitespace-pre-wrap">{displayContent}</p>
             )}
-            
+
+            {/* Poll display */}
+            {targetYap.poll_id && (
+              <PollCard pollId={targetYap.poll_id} compact />
+            )}
+
             {displayLocation && (
               <p className="text-sm text-muted-foreground mt-1">📍 {displayLocation}</p>
             )}
@@ -424,18 +431,18 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
         <CardContent className="pt-0 pb-2 px-4">
           {displayMedia && displayMedia.length > 0 && (
-            <MediaGrid 
-              media={displayMedia} 
-              showInOriginalAspect={displayMedia.length === 1} 
+            <MediaGrid
+              media={displayMedia}
+              showInOriginalAspect={displayMedia.length === 1}
               enableFocusView={true}
             />
           )}
         </CardContent>
 
         <CardFooter className="flex justify-between py-2 px-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-muted-foreground hover:text-blue-500 group p-2 h-8 transition-colors"
             onClick={handleReply}
             disabled={yap.isOptimistic}
@@ -443,7 +450,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
             <MessageCircle className="w-[18px] h-[18px] mr-2 group-hover:text-blue-500" />
             <span className="text-sm group-hover:text-blue-500">{currentRepliesCount}</span>
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -454,10 +461,10 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
             <Repeat2 className="w-[18px] h-[18px] mr-2 group-hover:text-green-500" />
             <span className="text-sm group-hover:text-green-500">{currentRetweetsCount}</span>
           </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             className={cn(
               "group p-2 h-8 transition-colors",
               isLiked ? "text-red-500" : "text-muted-foreground hover:text-red-500"
@@ -465,11 +472,11 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
             onClick={handleLike}
             disabled={yap.isOptimistic}
           >
-            <Heart 
+            <Heart
               className={cn(
                 "w-[18px] h-[18px] mr-2 transition-all",
                 isLiked ? "fill-current text-red-500 scale-110" : "group-hover:text-red-500"
-              )} 
+              )}
             />
             <span className={cn(
               "text-sm transition-colors",
@@ -478,10 +485,10 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               {currentLikesCount}
             </span>
           </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-muted-foreground hover:text-blue-500 group p-2 h-8 transition-colors"
             onClick={handleShare}
           >
@@ -518,7 +525,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               <span className="text-sm text-muted-foreground">
                 {replyContent.length}/280
               </span>
-              <Button 
+              <Button
                 onClick={submitReply}
                 disabled={!replyContent.trim() || isSubmittingReply}
                 className="bg-[#92736C] hover:bg-[#92736C]/90"
@@ -562,9 +569,9 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-3">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => submitRetweet(false)}
                 disabled={isSubmittingRetweet}
@@ -573,8 +580,8 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                 <Repeat2 className="w-4 h-4 mr-2" />
                 {isSubmittingRetweet ? 'Retweeting...' : 'Retweet'}
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => {
                   setIsRetweetDialogOpen(false);
@@ -589,7 +596,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Quote Retweet Dialog */}
       <Dialog open={isQuoteRetweetDialogOpen} onOpenChange={setIsQuoteRetweetDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
@@ -614,18 +621,18 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                 <div className="flex-1">
                   <div className="flex items-center gap-1 mb-1">
                     <span className="font-medium text-sm">{displayName}</span>
-                      <span className="text-sm text-muted-foreground">
-                        @{displayUsername}
-                        {displayUsername === "ufwsean" && (
-                           <Image
-                           src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
-                           alt="Verified"
-                           className="inline-block ml-1 w-4 h-4 align-text-bottom"
-                           width={16}
-                           height={16}
-                         />
-                        )}
-                      </span>
+                    <span className="text-sm text-muted-foreground">
+                      @{displayUsername}
+                      {displayUsername === "ufwsean" && (
+                        <Image
+                          src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
+                          alt="Verified"
+                          className="inline-block ml-1 w-4 h-4 align-text-bottom"
+                          width={16}
+                          height={16}
+                        />
+                      )}
+                    </span>
                   </div>
                   <p className="text-sm">{displayContent}</p>
                 </div>
@@ -635,7 +642,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               <span className="text-sm text-muted-foreground">
                 {retweetContent.length}/280
               </span>
-              <Button 
+              <Button
                 onClick={() => submitRetweet(true)}
                 disabled={!retweetContent.trim() || isSubmittingRetweet}
                 className="bg-[#92736C] hover:bg-[#92736C]/90"

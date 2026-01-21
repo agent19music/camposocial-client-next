@@ -161,10 +161,10 @@ export const RequestCard: React.FC<RequestCardProps> = ({
       )}
 
       {/* Action Buttons - Accept and Decline */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <Button
           size="sm"
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm bg-green-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-green-700 text-white"
+          className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm bg-green-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-green-700 text-white"
           onClick={handleAccept}
           disabled={isAccepting || isDeclining || isLoading}
         >
@@ -180,7 +180,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
         <Button
           size="sm"
           variant="outline"
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm border-muted-foreground/20 text-muted-foreground hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+          className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm border-muted-foreground/20 text-muted-foreground hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400"
           onClick={handleDecline}
           disabled={isAccepting || isDeclining || isLoading}
         >

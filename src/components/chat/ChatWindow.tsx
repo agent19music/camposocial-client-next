@@ -102,17 +102,17 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
   // Helper to merge messages by union (prefer server data for conflicts, sort by timestamp)
   const mergeMessages = useCallback((cached: ChatMessage[], server: ChatMessage[]): ChatMessage[] => {
     const messageMap = new Map<string, ChatMessage>();
-    
+
     // Add cached messages first
     cached.forEach(msg => {
       messageMap.set(String(msg.id), msg);
     });
-    
+
     // Server messages override cached (source of truth)
     server.forEach(msg => {
       messageMap.set(String(msg.id), msg);
     });
-    
+
     // Sort by timestamp ascending
     return Array.from(messageMap.values()).sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -121,13 +121,13 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
 
   // Track if we've initialized for this friendId to prevent duplicate fetches
   const initializedFriendIdRef = useRef<string | null>(null);
-  
+
   useEffect(() => {
     let active = true;
-    
+
     const initialiseConversation = async () => {
       if (!friendId) return;
-      
+
       // Prevent re-initialization for the same friend
       if (initializedFriendIdRef.current === friendId) {
         return;
@@ -147,7 +147,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
           // Step 1: Load cached messages immediately for instant UI
           const cached = await secureDB.getCachedMessages(realConvId, 50);
           if (!active) return;
-          
+
           if (cached.length > 0) {
             const cachedMessages: ChatMessage[] = cached.map(msg => ({
               id: parseInt(msg.id),
@@ -177,7 +177,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
         }
       }
     };
-    
+
     initialiseConversation();
 
     return () => {
@@ -464,7 +464,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
   }, [friendDetails, chatList, friendId]);
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full min-h-screen bg-background">
       {/* Header */}
       <div
         className="flex items-center justify-between p-4 border-b border-border bg-surface"
@@ -554,7 +554,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
       <ScrollArea
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 px-6 lg:px-4 py-4"
+        className="flex-1 min-h-0 px-6 lg:px-4 py-4"
       >
         {isLoadingMore && (
           <div className="flex justify-center py-2">

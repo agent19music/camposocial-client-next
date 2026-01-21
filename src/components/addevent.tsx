@@ -57,22 +57,22 @@ export default function AddEvent() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    
+
     if (!eventDate) {
       toast.error('Please select an event date')
       return
     }
-    
+
     if (!startTime || !endTime) {
       toast.error('Please select start and end times')
       return
     }
-    
+
     if (!category) {
       toast.error('Please select a category')
       return
     }
-    
+
     setIsSubmitting(true)
 
     const formData = new FormData(e.target as HTMLFormElement)
@@ -90,7 +90,7 @@ export default function AddEvent() {
 
     // Format the date as YYYY-MM-DD
     const formattedDate = eventDate.toISOString().split('T')[0]
-    
+
     // Convert 24-hour time to 12-hour format with AM/PM as expected by backend
     const formatTime = (time: string) => {
       const [hours, minutes] = time.split(':')
@@ -99,7 +99,7 @@ export default function AddEvent() {
       const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
       return `${displayHour}:${minutes} ${ampm}`
     }
-    
+
     const event = {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
@@ -117,7 +117,7 @@ export default function AddEvent() {
       comments: [],
       ticketGroups,
     }
-    
+
     try {
       const success = await addEvent(event)
       if (success) {
@@ -130,7 +130,7 @@ export default function AddEvent() {
         setEndTime('')
         setIsOpen(false)
         setTicketGroups([])
-        
+
         toast.success('Event added successfully')
       } else {
         toast.error('Failed to add event. Please try again.')
@@ -144,26 +144,26 @@ export default function AddEvent() {
   }
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-  <DialogTrigger asChild>
-    <Button >Add Event</Button>
-  </DialogTrigger>
-  <DialogContent className="sm:max-w-[425px] md:max-w-2xl max-h-[75vh] overflow-y-auto">
-    <Card className="w-full">
-      <DialogHeader>
-        <DialogTitle className="text-2xl font-bold">Add New Event</DialogTitle>
-      </DialogHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+      <DialogTrigger asChild>
+        <Button >Add Event</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] md:max-w-2xl max-w-[90vw] max-h-[75vh] overflow-y-auto fixed top-[8%] left-1/2 -translate-x-1/2 translate-y-0 sm:top-1/2 sm:-translate-y-1/2">
+        <Card className="w-full">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Add New Event</DialogTitle>
+          </DialogHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="title">Event Title</Label>
                 <Input id="title" name="title" placeholder="Enter event title" required />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" placeholder="Enter event description" required />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={category} onValueChange={setCategory} required>
@@ -177,7 +177,7 @@ export default function AddEvent() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Calendar
@@ -188,20 +188,20 @@ export default function AddEvent() {
                   disabled={(date) => date < new Date()}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="startTime">Start Time</Label>
                   <Select value={startTime} onValueChange={setStartTime} required>
-                  <SelectTrigger id="startTime">
-                    <SelectValue placeholder="Select start time" />
-                  </SelectTrigger>
+                    <SelectTrigger id="startTime">
+                      <SelectValue placeholder="Select start time" />
+                    </SelectTrigger>
                     <SelectContent>
                       {generateTimeOptions()}
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="endTime">End Time</Label>
                   <Select value={endTime} onValueChange={setEndTime} required>
@@ -214,105 +214,30 @@ export default function AddEvent() {
                   </Select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input id="location" name="location" placeholder="Enter event location" required />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="entryFee">Base Entry Fee</Label>
                 <Input id="entryFee" name="entryFee" type="number" placeholder="Enter entry fee" min="0" step="0.01" required />
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Ticket Groups</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTicketGroups(prev => [...prev, { name: '', price: 0, quantity: 0, ticketsPerGroup: 1 }])}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-1" /> Add Group
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {ticketGroups.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No ticket groups added. Base entry fee will apply.</p>
-                  )}
-
-                  {ticketGroups.map((group, index) => (
-                    <div key={index} className="border rounded-md p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="font-semibold">Group {index + 1}</Label>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setTicketGroups(prev => prev.filter((_, idx) => idx !== index))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Name</Label>
-                          <Input
-                            value={group.name}
-                            onChange={(e) => setTicketGroups(prev => prev.map((g, idx) => idx === index ? { ...g, name: e.target.value } : g))}
-                            placeholder="e.g., VIP"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Price (KES)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={group.price}
-                            onChange={(e) => setTicketGroups(prev => prev.map((g, idx) => idx === index ? { ...g, price: Number(e.target.value) } : g))}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Total Groups Available</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={group.quantity}
-                            onChange={(e) => setTicketGroups(prev => prev.map((g, idx) => idx === index ? { ...g, quantity: Number(e.target.value) } : g))}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Tickets per Group</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={group.ticketsPerGroup || 1}
-                            onChange={(e) => setTicketGroups(prev => prev.map((g, idx) => idx === index ? { ...g, ticketsPerGroup: Number(e.target.value) } : g))}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Description (optional)</Label>
-                        <Textarea
-                          value={group.description || ''}
-                          onChange={(e) => setTicketGroups(prev => prev.map((g, idx) => idx === index ? { ...g, description: e.target.value } : g))}
-                          placeholder="Brief description of the ticket group"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Label htmlFor="ticket_link">Ticket Purchase Link (optional)</Label>
+                <Input
+                  id="ticket_link"
+                  name="ticket_link"
+                  type="url"
+                  placeholder="https://ticketplatform.com/your-event"
+                />
+                <p className="text-xs text-muted-foreground">
+                  External link where attendees can purchase tickets
+                </p>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="poster">Event Poster</Label>
                 <Input id="poster" name="poster" type="file" accept="image/*" onChange={handleImageChange} />
@@ -322,7 +247,7 @@ export default function AddEvent() {
                   </div>
                 )}
               </div>
-              
+
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Adding Event...' : 'Add Event'}
               </Button>

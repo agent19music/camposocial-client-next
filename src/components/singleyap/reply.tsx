@@ -126,7 +126,7 @@ export const ReplyComponent = ({ reply, onReplyToReply, depth = 0 }: ReplyCompon
 
   return (
     <article className={cn(
-      "px-4 py-3 hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-colors",
+      "px-4 py-3 transition-colors",
       depth > 0 && "ml-10 border-l-2 border-border"
     )}>
       <div className="flex gap-3">

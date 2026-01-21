@@ -33,17 +33,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { YapContext } from "@/context/yapcontext"
+import { usePoll } from "@/context/pollcontext"
 import { Colors as Palette } from "@/constants/Colors"
 import { AuthContext } from "@/context/authcontext"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import toast from "react-hot-toast"
 
 interface YapPayload {
   content: string;
   location?: string;
   originalYapId?: string;
   mediaFiles?: File[];
+  pollId?: string;
 }
 
 export default function AddYap() {
@@ -71,6 +74,7 @@ export default function AddYap() {
 
   const { postYap, getHashtagSuggestions, getLocationSuggestions } = useContext(YapContext)
   const { currentUser } = useContext(AuthContext)
+  const { createPoll } = usePoll()
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -210,10 +214,46 @@ export default function AddYap() {
     setIsSubmitting(true)
 
     try {
+      // If poll mode, create poll first
+      let pollId: string | undefined
+      if (isPollMode) {
+        const validOptions = pollOptions.filter(opt => opt.trim())
+        if (validOptions.length < 2) {
+          toast.error('Please add at least 2 poll options')
+          setIsSubmitting(false)
+          return
+        }
+
+        // Map duration to hours
+        const durationMap: Record<string, number> = {
+          '5 minutes': 0.083,
+          '1 hour': 1,
+          '1 day': 24,
+          '3 days': 72,
+          '7 days': 168
+        }
+
+        const pollResult = await createPoll({
+          title: yapContent.trim(),
+          options: validOptions,
+          duration_hours: durationMap[pollDuration] || 24
+        })
+
+        if (!pollResult.success) {
+          toast.error(pollResult.error || 'Failed to create poll')
+          setIsSubmitting(false)
+          return
+        }
+
+        pollId = pollResult.poll?.id
+        toast.success('Poll created!')
+      }
+
       const payload: YapPayload = {
         content: yapContent.trim(),
         location: location.trim() || undefined,
-        mediaFiles: mediaFiles.length > 0 ? mediaFiles : undefined
+        mediaFiles: mediaFiles.length > 0 ? mediaFiles : undefined,
+        pollId: pollId
       }
 
       await postYap(payload)
@@ -229,6 +269,7 @@ export default function AddYap() {
 
     } catch (error) {
       console.error('Failed to post yap:', error)
+      toast.error('Failed to post yap')
     } finally {
       setIsSubmitting(false)
     }
@@ -243,7 +284,7 @@ export default function AddYap() {
           What&apos;s happening?
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-w-[90vw] max-h-[80vh] overflow-y-auto fixed top-[8%] left-1/2 -translate-x-1/2 translate-y-0 sm:top-1/2 sm:-translate-y-1/2">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold">Compose Yap</DialogTitle>
         </DialogHeader>
