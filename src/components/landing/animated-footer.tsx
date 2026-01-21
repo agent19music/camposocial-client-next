@@ -35,9 +35,9 @@ export default function AnimatedFooter() {
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Features", href: "/comingsoon" },
-    { label: "Events", href: "/events" },
-    { label: "Marketplace", href: "/marketplace" },
-    { label: "Login", href: "/login" },
+    { label: "Events", href: "/comingsoon" },
+    { label: "Marketplace", href: "/comingsoon" },
+    { label: "Login", href: "/comingsoon" },
   ];
 
   const socialLinks = [
@@ -47,8 +47,8 @@ export default function AnimatedFooter() {
   ];
 
   const legalLinks = [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
+    { label: "Privacy Policy", href: "/comingsoon" },
+    { label: "Terms of Service", href: "/comingsoon" },
   ];
 
   return (
@@ -59,11 +59,10 @@ export default function AnimatedFooter() {
       <div className="max-w-7xl mx-auto">
         {/* Top Section */}
         <div
-          className={`flex flex-col lg:flex-row justify-between items-start lg:items-center mb-16 transition-all duration-1000 ${
-            isVisible
-              ? "opacity-100 blur-0 translate-y-0"
-              : "opacity-0 blur-sm translate-y-4"
-          }`}
+          className={`flex flex-col lg:flex-row justify-between items-start lg:items-center mb-16 transition-all duration-1000 ${isVisible
+            ? "opacity-100 blur-0 translate-y-0"
+            : "opacity-0 blur-sm translate-y-4"
+            }`}
           style={{ transitionDelay: "0ms" }}
         >
           {/* Left Side - Headline and Contact */}
@@ -83,11 +82,10 @@ export default function AnimatedFooter() {
           <div className="flex gap-12 md:gap-20">
             {/* Main Nav */}
             <nav
-              className={`flex flex-col gap-3 transition-all duration-1000 ${
-                isVisible
-                  ? "opacity-100 blur-0 translate-y-0"
-                  : "opacity-0 blur-sm translate-y-4"
-              }`}
+              className={`flex flex-col gap-3 transition-all duration-1000 ${isVisible
+                ? "opacity-100 blur-0 translate-y-0"
+                : "opacity-0 blur-sm translate-y-4"
+                }`}
               style={{ transitionDelay: "200ms" }}
             >
               {navLinks.map((link) => (
@@ -103,11 +101,10 @@ export default function AnimatedFooter() {
 
             {/* Social Links */}
             <nav
-              className={`flex flex-col gap-3 transition-all duration-1000 ${
-                isVisible
-                  ? "opacity-100 blur-0 translate-y-0"
-                  : "opacity-0 blur-sm translate-y-4"
-              }`}
+              className={`flex flex-col gap-3 transition-all duration-1000 ${isVisible
+                ? "opacity-100 blur-0 translate-y-0"
+                : "opacity-0 blur-sm translate-y-4"
+                }`}
               style={{ transitionDelay: "400ms" }}
             >
               {socialLinks.map((link) => (
@@ -125,11 +122,10 @@ export default function AnimatedFooter() {
 
         {/* Large "campus" Text */}
         <div
-          className={`mb-12 transition-all duration-1000 overflow-hidden ${
-            isVisible
-              ? "opacity-100 blur-0 translate-y-0"
-              : "opacity-0 blur-md translate-y-8"
-          }`}
+          className={`mb-12 transition-all duration-1000 overflow-hidden ${isVisible
+            ? "opacity-100 blur-0 translate-y-0"
+            : "opacity-0 blur-md translate-y-8"
+            }`}
           style={{ transitionDelay: "600ms" }}
         >
           <h1
@@ -146,11 +142,10 @@ export default function AnimatedFooter() {
 
         {/* Bottom Section */}
         <div
-          className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-gray-400 text-sm transition-all duration-1000 ${
-            isVisible
-              ? "opacity-100 blur-0 translate-y-0"
-              : "opacity-0 blur-sm translate-y-4"
-          }`}
+          className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-gray-400 text-sm transition-all duration-1000 ${isVisible
+            ? "opacity-100 blur-0 translate-y-0"
+            : "opacity-0 blur-sm translate-y-4"
+            }`}
           style={{ transitionDelay: "800ms" }}
         >
           {/* Tagline */}
@@ -175,11 +170,10 @@ export default function AnimatedFooter() {
 
         {/* Overcaffeinated Undergrad Attribution */}
         <div
-          className={`mt-12 pt-8 border-t border-gray-800 text-center transition-all duration-1000 ${
-            isVisible
-              ? "opacity-100 blur-0 translate-y-0"
-              : "opacity-0 blur-sm translate-y-4"
-          }`}
+          className={`mt-12 pt-8 border-t border-gray-800 text-center transition-all duration-1000 ${isVisible
+            ? "opacity-100 blur-0 translate-y-0"
+            : "opacity-0 blur-sm translate-y-4"
+            }`}
           style={{ transitionDelay: "1000ms" }}
         >
           <p className="text-sm text-gray-400 flex items-center justify-center gap-2 flex-wrap">

@@ -206,7 +206,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                <Link href="/signup">
+                <Link href="/comingsoon">
                   <Button
                     size="lg"
                     className="font-medium px-8 py-6 bg-[#ff9013] hover:bg-[#e8820f] text-white rounded-full transition-all duration-300 text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5"
@@ -579,7 +579,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/signup"
+                href="/comingsoon"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white rounded-full transition-all duration-300 hover:-translate-y-1"
                 style={{ backgroundColor: '#ff9013' }}
               >
@@ -587,8 +587,8 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <Link
-                href="/signup
-                "
+                href="/comingsoon"
+
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-stone-700 dark:text-stone-100 bg-stone-100 dark:bg-stone-800 rounded-full transition-all duration-300 hover:-translate-y-1"
               >
                 I Have an Account
