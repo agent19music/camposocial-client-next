@@ -113,7 +113,7 @@ export function FriendCard({ friend, onMessage, onRemoveFriend, onViewProfile }:
             {/* Message Button - Always Blue */}
             <button
                 onClick={() => onMessage(friend)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm  bg-[#4A90E2] shadow-lg hover:shadow- transition-all duration-200 hover:bg-[#4A90E2]/90 text-white"
+                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm bg-[#4A90E2] shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-[#4A90E2]/90 text-white"
             >
                 <ChatCircleIcon size={16} weight="fill" />
                 Message

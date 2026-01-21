@@ -160,9 +160,8 @@ export default function Home() {
             priority
             quality={100}
             sizes="100vw"
-
-            className="object-cover object-center"
-            style={{ objectFit: 'cover' }}
+            className="object-cover"
+            style={{ objectFit: 'cover', objectPosition: '70% 50%' }}
           />
         </div>
 

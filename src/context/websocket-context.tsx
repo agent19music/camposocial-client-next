@@ -104,20 +104,20 @@ const defaultValue: WebSocketContextProps = {
   isConnected: false,
   notificationCounts: { friend_requests: 0, general_notifications: 0 },
   yapCounts: { new_yaps_count: 0, recent_authors: [] },
-  markYapsAsSeen: () => {},
-  markFriendRequestsAsSeen: () => {},
+  markYapsAsSeen: () => { },
+  markFriendRequestsAsSeen: () => { },
   hasNewNotifications: false,
   hasNewYaps: false,
   latestFriendRequest: null,
   latestYapNotification: null,
   pendingRequests: [],
   offlineMessages: {},
-  joinConversation: () => {},
-  leaveConversation: () => {},
+  joinConversation: () => { },
+  leaveConversation: () => { },
   joinedConversations: [],
-  removePendingRequest: () => {},
-  appendFriend: () => {},
-  updateFriendList: () => {},
+  removePendingRequest: () => { },
+  appendFriend: () => { },
+  updateFriendList: () => { },
   consumeOfflineConversationMessages: () => [],
 };
 
@@ -170,7 +170,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Extract base URL from API endpoint (remove /camposocial/api)
     const baseUrl = apiEndpoint.replace('/camposocial/api', '');
-    
+
     console.log('Connecting to WebSocket at:', baseUrl);
 
     const newSocket = io(baseUrl, {
@@ -238,16 +238,16 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     newSocket.on('disconnect', (reason: any) => {
       console.log('WebSocket disconnected:', reason);
       setIsConnected(false);
-      
+
       // Attempt to reconnect if it wasn't a manual disconnect
       if (reason !== 'io client disconnect' && reconnectAttempts.current < maxReconnectAttempts) {
         reconnectAttempts.current++;
         console.log(`Reconnection attempt ${reconnectAttempts.current}/${maxReconnectAttempts}`);
-        
+
         if (reconnectTimeout.current) {
           clearTimeout(reconnectTimeout.current);
         }
-        
+
         reconnectTimeout.current = setTimeout(() => {
           newSocket.connect();
         }, 2000 * reconnectAttempts.current);
@@ -291,9 +291,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         friend_requests: data.friend_requests_count,
       }));
-      
+
       setPendingRequests(data.all_pending_requests);
-      
+
       // Show notification toast or handle UI update
       // You can add toast notification here
     });
@@ -314,11 +314,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Friend request response notifications (for when your request is accepted/declined)
     newSocket.on('friend_request_response', (data: any) => {
       console.log('Friend request response received:', data);
-      
+
       // You can show a toast notification here
       // For example: if accepted, show "John accepted your friend request!"
       // This helps the user know when their sent requests are responded to
-      
+
       // You could also update some local state if needed
     });
 
@@ -330,10 +330,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Live friend request notifications
     newSocket.on('friend_request', (data: any) => {
       console.log('Live friend request received:', data);
-      
+
       // Update pending requests immediately
       setPendingRequests(prev => [data, ...prev]);
-      
+
       // Show toast notification
       toast.success(`${data.sender.display_name} sent you a friend request!`);
     });
@@ -357,17 +357,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Live follower notifications
     newSocket.on('new_follower', (data: any) => {
       console.log('New follower notification:', data);
-      toast(`${data.follower_name} started following you`, {
-        icon: '👤',
-      });
+      toast(`${data.follower_name} started following you`);
     });
 
     // Live reply notifications
     newSocket.on('new_reply', (data: any) => {
       console.log('New reply notification:', data);
-      toast(`${data.reply_author_name} replied to your yap`, {
-        icon: '💬',
-      });
+      toast(`${data.reply_author_name} replied to your yap`);
     });
 
     // Friend status change notifications
@@ -375,27 +371,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       console.log('Friend status change:', data);
       toast(
         `${data.username} is now ${data.is_online ? 'online' : 'offline'}`,
-        { 
-          duration: 2000,
-          icon: data.is_online ? '🟢' : '🔴'
-        }
+        { duration: 2000 }
       );
     });
 
     // Live yap like notifications
     newSocket.on('yap_liked', (data: any) => {
       console.log('Yap liked notification:', data);
-      toast(`${data.liker_name} liked your yap`, {
-        icon: '❤️',
-      });
+      toast(`${data.liker_name} liked your yap`);
     });
 
     // New yap from followed users
     newSocket.on('new_yap_from_following', (data: any) => {
       console.log('New yap from following:', data);
-      toast(`${data.author_name} posted a new yap`, {
-        icon: '📝',
-      });
+      toast(`${data.author_name} posted a new yap`);
     });
 
     setSocket(newSocket);

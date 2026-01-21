@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/context/themecontext";
 import AuthProvider from "@/context/authcontext";
 import { WebSocketProvider } from "@/context/websocket-context";
+import { PollProvider } from "@/context/pollcontext";
 import AuthenticatedWrapper from "@/components/AuthenticatedWrapper";
 import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -181,9 +182,11 @@ export default function RootLayout({
             />
             <GoogleOAuthProvider clientId={googleClientId || ''}>
               <WebSocketProvider>
-                <AuthenticatedWrapper>
-                  {children}
-                </AuthenticatedWrapper>
+                <PollProvider>
+                  <AuthenticatedWrapper>
+                    {children}
+                  </AuthenticatedWrapper>
+                </PollProvider>
               </WebSocketProvider>
             </GoogleOAuthProvider>
           </AuthProvider>

@@ -246,8 +246,8 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
         <Card
           key={badge.id}
           className={`cursor-pointer transition-all hover:shadow-md ${selectedBadge?.id === badge.id
-              ? 'ring-2 ring-[#B5A8D1] bg-[#B5A8D1]/10'
-              : 'hover:shadow-lg hover:border-[#B5A8D1]/50'
+            ? 'ring-2 ring-[#B5A8D1] bg-[#B5A8D1]/10'
+            : 'hover:shadow-lg hover:border-[#B5A8D1]/50'
             }`}
           onClick={() => setSelectedBadge(badge)}
         >
@@ -550,7 +550,7 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-w-[90vw] max-h-[80vh] overflow-y-auto fixed top-[8%] left-1/2 -translate-x-1/2 translate-y-0 sm:top-1/2 sm:-translate-y-1/2">
         {paymentStep === 'selection' && renderSelectionStep()}
         {paymentStep === 'payment' && renderSelectionStep()}
         {paymentStep === 'processing' && renderProcessingStep()}
