@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { CardOrbBackground, OrbColorScheme } from "@/components/ui/card-orb-background";
 
 // Animation variants for the container to stagger children
 const containerVariants = {
@@ -32,17 +33,21 @@ const itemVariants = {
   },
 };
 
-// Bento Card Component - flat design, 4px lift on hover
+// Bento Card Component - flat design, 4px lift on hover, optional dreamy orbs
 interface BentoCardProps {
   children: React.ReactNode;
   className?: string;
   span?: "1" | "2" | "3" | "row-2" | "row-3";
+  withOrbs?: boolean;
+  orbColorScheme?: OrbColorScheme;
 }
 
 export const BentoCard: React.FC<BentoCardProps> = ({
   children,
   className,
   span = "1",
+  withOrbs = false,
+  orbColorScheme = "mixed",
 }) => {
   const spanClasses = {
     "1": "",
@@ -58,7 +63,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className={cn(
-        "rounded-2xl border border-stone-200 dark:border-stone-800",
+        "relative rounded-2xl border border-stone-200 dark:border-stone-800",
         "bg-white dark:bg-stone-900",
         "overflow-hidden",
         "transition-colors duration-200",
@@ -66,7 +71,8 @@ export const BentoCard: React.FC<BentoCardProps> = ({
         className
       )}
     >
-      {children}
+      {withOrbs && <CardOrbBackground colorScheme={orbColorScheme} orbCount={3} />}
+      <div className="relative z-10 h-full">{children}</div>
     </motion.div>
   );
 };

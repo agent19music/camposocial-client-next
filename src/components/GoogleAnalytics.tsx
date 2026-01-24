@@ -24,7 +24,6 @@ export default function GoogleAnalytics() {
     // Don't render anything if GA is not configured
     if (!isGAConfigured()) {
         if (process.env.NODE_ENV === 'development') {
-            console.log('[GA4] Google Analytics not configured. Set NEXT_PUBLIC_GA_MEASUREMENT_ID in your .env.local');
         }
         return null;
     }

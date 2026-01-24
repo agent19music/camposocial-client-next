@@ -174,7 +174,6 @@ export default function EventProvider({ children }: EventProviderProps) {
       setEvents(transformed);
       setFilteredEvents(transformed); // Initially set filteredEvents to all events
 
-      console.log("[fetchEvents] Events:", data);
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error("Error fetching events:", error);
@@ -209,7 +208,6 @@ export default function EventProvider({ children }: EventProviderProps) {
       return false;
     }
 
-    console.log("[addEvent] Called with payload:", event);
     try {
       const endpoint = `${apiEndpoint}/add-event`;
       
@@ -229,7 +227,6 @@ export default function EventProvider({ children }: EventProviderProps) {
         formData.append('image_url', event.posterFile);
       }
 
-      console.log("[addEvent] Sending request to:", endpoint);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -239,7 +236,6 @@ export default function EventProvider({ children }: EventProviderProps) {
         body: formData,
       });
 
-      console.log("[addEvent] Response status:", response.status);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -256,7 +252,6 @@ export default function EventProvider({ children }: EventProviderProps) {
       }
       
       const result = await response.json();
-      console.log("[addEvent] Success Response:", result);
 
       if (result.event) {
         setEvents(prev => [{
@@ -291,7 +286,6 @@ export default function EventProvider({ children }: EventProviderProps) {
       return false;
     }
 
-    console.log("[updateEvent] Called with eventId:", eventId, "payload:", event);
     try {
       const endpoint = `${apiEndpoint}/update-event/${eventId}`;
       
@@ -311,7 +305,6 @@ export default function EventProvider({ children }: EventProviderProps) {
         formData.append('image_url', event.posterFile);
       }
 
-      console.log("[updateEvent] Sending request to:", endpoint);
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -321,7 +314,6 @@ export default function EventProvider({ children }: EventProviderProps) {
         body: formData,
       });
 
-      console.log("[updateEvent] Response status:", response.status);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -338,7 +330,6 @@ export default function EventProvider({ children }: EventProviderProps) {
       }
       
       const result = await response.json();
-      console.log("[updateEvent] Success Response:", result);
 
       if (result.event) {
         const updateFn = (collection: any[]) => collection.map(existing => {
@@ -379,11 +370,9 @@ export default function EventProvider({ children }: EventProviderProps) {
       return false;
     }
 
-    console.log("[deleteEvent] Called with eventId:", eventId);
     try {
       const endpoint = `${apiEndpoint}/delete-event/${eventId}`;
 
-      console.log("[deleteEvent] Sending request to:", endpoint);
 
       const response = await fetch(endpoint, {
         method: 'DELETE',
@@ -392,7 +381,6 @@ export default function EventProvider({ children }: EventProviderProps) {
         },
       });
 
-      console.log("[deleteEvent] Response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -402,7 +390,6 @@ export default function EventProvider({ children }: EventProviderProps) {
       }
       
       const result = await response.json();
-      console.log("[deleteEvent] Success Response:", result);
 
       setEvents(prev => prev.filter(event => (event.eventId || event.id) !== eventId));
       setFilteredEvents(prev => prev.filter(event => (event.eventId || event.id) !== eventId));

@@ -20,7 +20,6 @@ interface PayPalModalProps {
 export function PayPalModal({ isOpen, onClose }: PayPalModalProps) {
   const handlePayPal = () => {
     // Implement PayPal logic here
-    console.log("Processing PayPal payment...")
     onClose()
   }
 

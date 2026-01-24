@@ -125,7 +125,6 @@ export default function CardsPaymentMethod() {
   // Handle successful Paystack payment
   const handlePaymentSuccess = (reference: any) => {
     toast.success('Payment successful!');
-    console.log('Payment successful. Reference:', reference);
     
     // Set payment as completed in the context
     setIsPayed(true);
@@ -137,7 +136,6 @@ export default function CardsPaymentMethod() {
   // Handle payment close/cancel
   const handlePaymentClose = () => {
     toast.error('Payment cancelled or failed.');
-    console.log('Payment window closed');
   };
 
   // Initialize Paystack payment
@@ -208,7 +206,6 @@ export default function CardsPaymentMethod() {
         
         if (statusResponse.ok) {
           const statusData = await statusResponse.json();
-          console.log("Payment verification response:", statusData);
           
           // Check for success status in different possible locations in the response
           const isSuccess = 

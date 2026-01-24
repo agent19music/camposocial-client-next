@@ -37,7 +37,6 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await context.params;
-  console.log(`Fetching order details for order ID: ${params.id}`);
   
   try {
     // Get the order ID from the route params

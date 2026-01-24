@@ -92,7 +92,6 @@ export default function SmartFAB() {
       window.dispatchEvent(new CustomEvent('open-cart'));
     } else if (fabConfig.action === 'message') {
       // Handle messages/DM action
-      console.log('Open messages');
     } else {
       // Add action will be handled by the popover
     }

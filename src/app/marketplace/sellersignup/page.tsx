@@ -45,7 +45,6 @@ export default function SellerSignup() {
       setAvatar(currentUser.avatar || '');
 
       // Log for debugging
-      console.log('CurrentUser data:', currentUser);
     }
   }, [currentUser]);
 
@@ -132,7 +131,6 @@ export default function SellerSignup() {
         throw new Error('Authentication token is missing');
       }
 
-      console.log('[Seller Signup] Submitting with auth token');
 
       // Use the API route instead of direct backend call
       const response = await fetch('/api/seller/signup', {
@@ -156,7 +154,6 @@ export default function SellerSignup() {
       if (response.ok) {
         setSellerStausChange(!sellerStatusChange)
         toast.success('Your seller account has been created successfully!');
-        console.log('Seller account created:', result);
         // Redirect to dashboard
         setTimeout(() => {
           if (sellerDashboardUrl) {

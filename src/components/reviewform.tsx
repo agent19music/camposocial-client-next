@@ -32,7 +32,6 @@ export default function ReviewForm({ product_id }: { product_id: string }) {
       comment: review,
     }
 
-    console.log(reviewData);
     
 
     try {

@@ -48,7 +48,6 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState<string>("")
   const { authToken } = useContext(AuthContext)
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
-  console.log("[Dashboard] Events:", events);
   const categories = useMemo(() => {
     const set = new Set<string>(["all"])
     events.forEach(e => {

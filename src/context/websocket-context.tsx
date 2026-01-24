@@ -171,7 +171,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     // Extract base URL from API endpoint (remove /camposocial/api)
     const baseUrl = apiEndpoint.replace('/camposocial/api', '');
 
-    console.log('Connecting to WebSocket at:', baseUrl);
 
     const newSocket = io(baseUrl, {
       transports: ['websocket', 'polling'],
@@ -201,7 +200,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     newSocket.on('connect', () => {
-      console.log('WebSocket connected:', newSocket.id);
       setIsConnected(true);
       reconnectAttempts.current = 0;
 
@@ -223,7 +221,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           }
           return [...prev, { id: data.conversation_id, joined: true }];
         });
-        console.log('Joined conversation room', data.conversation_id);
       }
     });
 
@@ -231,18 +228,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (data?.conversation_id) {
         conversationRoomsRef.current.delete(data.conversation_id);
         setJoinedConversations(prev => prev.map(item => item.id === data.conversation_id ? { ...item, joined: false } : item));
-        console.log('Left conversation room', data.conversation_id);
       }
     });
 
     newSocket.on('disconnect', (reason: any) => {
-      console.log('WebSocket disconnected:', reason);
       setIsConnected(false);
 
       // Attempt to reconnect if it wasn't a manual disconnect
       if (reason !== 'io client disconnect' && reconnectAttempts.current < maxReconnectAttempts) {
         reconnectAttempts.current++;
-        console.log(`Reconnection attempt ${reconnectAttempts.current}/${maxReconnectAttempts}`);
 
         if (reconnectTimeout.current) {
           clearTimeout(reconnectTimeout.current);
@@ -261,7 +255,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Notification count updates
     newSocket.on('notification_counts_update', (data: NotificationCounts & { timestamp: string }) => {
-      console.log('Notification counts updated:', data);
       setNotificationCounts({
         friend_requests: data.friend_requests,
         general_notifications: data.general_notifications,
@@ -270,13 +263,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Pending requests update
     newSocket.on('pending_requests_update', (data: any) => {
-      console.log('Pending requests updated:', data);
       setPendingRequests(data.pending_requests || []);
     });
 
     // Yap count updates
     newSocket.on('yap_counts_update', (data: YapCounts & { timestamp: string }) => {
-      console.log('Yap counts updated:', data);
       setYapCounts({
         new_yaps_count: data.new_yaps_count,
         recent_authors: data.recent_authors,
@@ -285,7 +276,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // New friend request notifications
     newSocket.on('new_friend_request', (data: FriendRequestNotification) => {
-      console.log('New friend request notification:', data);
       setLatestFriendRequest(data);
       setNotificationCounts(prev => ({
         ...prev,
@@ -300,7 +290,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // New yap notifications
     newSocket.on('new_yap_notification', (data: YapNotification) => {
-      console.log('New yap notification:', data);
       setLatestYapNotification(data);
       setYapCounts(prev => ({
         ...prev,
@@ -313,7 +302,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Friend request response notifications (for when your request is accepted/declined)
     newSocket.on('friend_request_response', (data: any) => {
-      console.log('Friend request response received:', data);
 
       // You can show a toast notification here
       // For example: if accepted, show "John accepted your friend request!"
@@ -329,7 +317,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Live friend request notifications
     newSocket.on('friend_request', (data: any) => {
-      console.log('Live friend request received:', data);
 
       // Update pending requests immediately
       setPendingRequests(prev => [data, ...prev]);
@@ -340,7 +327,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Live friend request responses (accept/decline)  
     newSocket.on('friend_request_response', (data: any) => {
-      console.log('Friend request response received:', data);
       if (data.action === 'accepted') {
         const displayName = data.recipient?.display_name || data.recipient?.username || data.friend?.display_name || 'Someone';
         toast.success(`${displayName} accepted your friend request!`);
@@ -356,19 +342,16 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Live follower notifications
     newSocket.on('new_follower', (data: any) => {
-      console.log('New follower notification:', data);
       toast(`${data.follower_name} started following you`);
     });
 
     // Live reply notifications
     newSocket.on('new_reply', (data: any) => {
-      console.log('New reply notification:', data);
       toast(`${data.reply_author_name} replied to your yap`);
     });
 
     // Friend status change notifications
     newSocket.on('friend_status_change', (data: any) => {
-      console.log('Friend status change:', data);
       toast(
         `${data.username} is now ${data.is_online ? 'online' : 'offline'}`,
         { duration: 2000 }
@@ -377,13 +360,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Live yap like notifications
     newSocket.on('yap_liked', (data: any) => {
-      console.log('Yap liked notification:', data);
       toast(`${data.liker_name} liked your yap`);
     });
 
     // New yap from followed users
     newSocket.on('new_yap_from_following', (data: any) => {
-      console.log('New yap from following:', data);
       toast(`${data.author_name} posted a new yap`);
     });
 

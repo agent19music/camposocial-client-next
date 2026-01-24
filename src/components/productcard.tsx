@@ -11,7 +11,6 @@ import { Product } from '@/utils/types';
 
 export default function ProductCard({ product }: { product: Product }) {
   const { navigateToSingleProductView, isInWishlist, toggleWishlist } = useContext(MarketplaceContext)
-  console.log(product.reviews?.length);
 
   const inWishlist = isInWishlist(product.id);
 

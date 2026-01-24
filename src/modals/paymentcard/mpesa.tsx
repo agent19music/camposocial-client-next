@@ -58,7 +58,6 @@ const MpesaModal: React.FC<MpesaModalProps> = ({
     setIsLoading(true);
     
     // Log for debugging
-    console.log(`Initiating M-Pesa payment to: ${phoneNumber} for ${amount} ${currency}`);
     
     // Call the onSubmit function provided by the parent component
     onSubmit(phoneNumber);

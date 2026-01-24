@@ -137,7 +137,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           if (userId) {
             const keyPassword = await deriveKeyPassword(password, userId);
             sessionStorage.setItem('e2ee_key_password', keyPassword);
-            console.log('E2EE key password stored for user', userId);
           }
         } catch (e) {
           console.error('Failed to derive key password:', e);
@@ -159,7 +158,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   async function socialLogin(provider: string, data: any) {
     try {
-      console.log(`Attempting ${provider} OAuth with data:`, data);
 
       if (!apiEndpoint) {
         throw new Error('API endpoint not configured');
@@ -175,7 +173,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       });
 
       const result = await response.json();
-      console.log(`${provider} OAuth response:`, result);
 
       if (result.access_token) {
         // Set token via API route to set HTTP-only cookie
@@ -210,7 +207,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             const oauthKeyBase = `oauth-e2ee-stable-key-${userId}`;
             const keyPassword = await deriveKeyPassword(oauthKeyBase, userId);
             sessionStorage.setItem('e2ee_key_password', keyPassword);
-            console.log('E2EE key password stored for OAuth user', userId);
           }
         } catch (e) {
           console.error('Failed to derive key password for OAuth:', e);
@@ -464,7 +460,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             }
             const keyPassword = await deriveKeyPassword(keyBase, userId);
             sessionStorage.setItem('e2ee_key_password', keyPassword);
-            console.log('[E2EE] Stored key password for email user');
           }
         } catch (e) {
           console.error('Failed to derive key password for email user:', e);
