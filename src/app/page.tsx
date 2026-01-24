@@ -16,7 +16,8 @@ import {
   ChevronRight
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { FloatingBackground } from "@/components/ui/floating-background";
+import { DreamyOrbs } from "@/components/ui/dreamy-orbs";
+import { HeroAuraGlow } from "@/components/ui/hero-aura-glow";
 import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -83,12 +84,13 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen"
+    <div className="min-h-screen relative"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
       }}>
 
-
+      {/* Dreamy floating orbs background */}
+      <DreamyOrbs orbCount={10} />
 
       {/* Navigation - Clean header with unified dark mode */}
       <nav className="fixed top-0 w-full z-50  backdrop-blur-2xl ">
@@ -140,7 +142,7 @@ export default function Home() {
       </nav>
 
       {/* ========================================================
-        HERO SECTION - CALM NATUREFUL DESIGN
+        HERO SECTION - CALM NATUREFUL DESIGN WITH DREAMY AURA
         ========================================================
       */}
       <section className="relative h-screen overflow-hidden">
@@ -157,6 +159,9 @@ export default function Home() {
             style={{ objectFit: 'cover', objectPosition: '70% 50%' }}
           />
         </div>
+
+        {/* Hemisphere aura glow from bottom */}
+        <HeroAuraGlow />
 
         {/* Hero Content - Vertically centered (account for fixed nav height) */}
         <div className="relative z-10 h-full flex flex-col justify-center pt-16 px-6 sm:px-8 lg:px-12 xl:px-20">
@@ -219,7 +224,7 @@ export default function Home() {
 
 
       {/* Features Section - Clean grid layout */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
+      <section className="py-24 px-6 sm:px-8 lg:px-10 relative bg-stone-50/80 dark:bg-stone-950/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <motion.div
@@ -277,7 +282,7 @@ export default function Home() {
         <BentoGrid columns={3}>
           <BentoCard className="md:col-span-2 md:row-span-2 overflow-hidden">
             <div className="h-full flex flex-col">
-              <div className="relative rounded-xl mb-4 flex-1 min-h-[200px] overflow-hidden">
+              <div className="relative flex-1 min-h-[300px] overflow-hidden">
                 <Image
                   src="https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/heroimages/marketplace/popupstores.jpg"
                   alt="Students at campus coffee shop marketplace pop-up"
@@ -285,7 +290,7 @@ export default function Home() {
                   className="object-cover"
                 />
               </div>
-              <div className="p-4">
+              <div className="p-4 flex-shrink-0">
                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Featured Seller</span>
                 <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mt-1">Campus Coffee Pop-Up</h3>
                 <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">Weekly vendor marketplace at the campus café</p>
@@ -419,7 +424,7 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard>
+          <BentoCard withOrbs orbColorScheme="lavender">
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <Lock className="w-12 h-12 text-stone-700 dark:text-stone-300 mb-4" weight="duotone" />
               <div className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">End-to-End</div>
@@ -427,7 +432,7 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard className="md:col-span-2">
+          <BentoCard className="md:col-span-2" withOrbs orbColorScheme="peach">
             <div className="h-full flex items-center justify-between p-4">
               <div>
                 <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Group Chats</div>
@@ -459,7 +464,7 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard>
+          <BentoCard withOrbs orbColorScheme="pink">
             <div className="h-full flex flex-col justify-center items-center text-center p-4">
               <UserAvatarGroup count={5} />
               <div className="mt-4 text-lg font-semibold text-stone-800 dark:text-stone-100">Growing Community</div>
@@ -467,7 +472,7 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard>
+          <BentoCard withOrbs orbColorScheme="lavender">
             <div className="h-full flex flex-col justify-center p-4">
               <GraduationCap className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
               <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Universities</div>
@@ -475,7 +480,7 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard>
+          <BentoCard withOrbs orbColorScheme="peach">
             <div className="h-full flex flex-col justify-center p-4">
               <Handshake className="w-8 h-8 text-stone-700 dark:text-stone-300 mb-2" weight="duotone" />
               <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Friendships</div>
@@ -483,7 +488,7 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          <BentoCard>
+          <BentoCard withOrbs orbColorScheme="gold">
             <div className="h-full flex flex-col justify-center p-4">
               <Star className="w-8 h-8 text-[#ff9013] mb-2" weight="duotone" />
               <div className="text-lg font-semibold text-stone-800 dark:text-stone-100">Launching Soon</div>
@@ -494,7 +499,7 @@ export default function Home() {
       </BentoSection>
 
       {/* Final CTA Section */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-stone-50 dark:bg-stone-950">
+      <section className="py-24 px-6 sm:px-8 lg:px-10 relative bg-stone-50/80 dark:bg-stone-950/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

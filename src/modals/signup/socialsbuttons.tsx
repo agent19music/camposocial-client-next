@@ -175,13 +175,7 @@ export function SocialLoginModal() {
       color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
       description: 'Create account with your Google'
     },
-    {
-      name: 'GitHub',
-      icon: Icons.github,
-      onClick: handleGithubLogin,
-      color: 'bg-white  dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
-      description: 'Create account with your GitHub'
-    }
+
   ];
 
   if (!showSocialModal) {

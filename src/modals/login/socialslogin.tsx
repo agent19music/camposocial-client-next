@@ -115,13 +115,6 @@ export function SocialLoginButtons() {
             onClick: () => googleLogin(),
             color: 'bg-white dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
             description: 'Sign in with your Google account'
-        },
-        {
-            name: 'GitHub',
-            icon: Icons.github,
-            onClick: handleGithubLogin,
-            color: 'bg-white dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600',
-            description: 'Sign in with your GitHub account'
         }
     ];
 

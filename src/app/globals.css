@@ -4,6 +4,17 @@
 
 @layer base {
   :root {
+    /* Dreamy pastel palette - from hero illustration */
+    --pastel-lavender: #C4A8C8;
+    --pastel-lavender-medium: #B8A0C8;
+    --pastel-peach: #F5D4B8;
+    --pastel-cream: #F5E6D3;
+    --pastel-pink: #F4A8B8;
+    --pastel-coral: #F8B888;
+    --pastel-gold: #F4C878;
+    --pastel-mauve: #D4B8C8;
+    --pastel-warm-peach: #E8C8A8;
+    
     /* Pastel color palette from constants/Colors.ts */
     --color-primary: #7B8FA8;
     --color-primary-light: #D4E4F0;
@@ -160,19 +171,6 @@
   .dark .landing-gradient {
     background: var(--color-background-hex);
   }
-
-  /* Remove all gradient utilities - use solid colors only */
-  [class*="bg-gradient-to-"],
-  [class*="bg-gradient"],
-  [class*="bg-clip-text"],
-  [class*="repeating-linear-gradient"],
-  [class*="linear-gradient"] {
-    background-image: none !important;
-    background: var(--color-surface) !important;
-    -webkit-background-clip: unset !important;
-    background-clip: unset !important;
-    color: var(--color-text-primary) !important;
-  }
 }
 
 body {
@@ -291,6 +289,27 @@ body {
   /* Smooth transitions for mobile interactions */
   .mobile-nav-transition {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Dreamy pastel background utilities */
+  .dreamy-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  .dreamy-blur-sm {
+    filter: blur(40px);
+  }
+
+  .dreamy-blur-md {
+    filter: blur(60px);
+  }
+
+  .dreamy-blur-lg {
+    filter: blur(80px);
+  }
+
+  .dreamy-blur-xl {
+    filter: blur(100px);
   }
 }
 
