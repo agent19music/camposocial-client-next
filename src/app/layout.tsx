@@ -12,6 +12,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import StructuredData, { websiteSchema, organizationSchema } from "@/components/StructuredData";
 import Script from "next/script";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -191,6 +192,7 @@ export default function RootLayout({
             </GoogleOAuthProvider>
           </AuthProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
