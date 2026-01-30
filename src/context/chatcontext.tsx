@@ -20,8 +20,20 @@ import {
     getPublicKey as getStoredPublicKey,
     retrieveKeyPair,
     generateAndStoreKeyPair,
-    storeKeyPair
+    storeKeyPair,
+    checkServerBackupStatus,
+    restoreKeyFromServer,
+    backupKeyToServer,
+    storeKeyPairWithBackup
 } from "../lib/keyStorage";
+import {
+    registerDevice,
+    getOrCreateDeviceId,
+    getDeviceId,
+    getBulkDeviceKeys,
+    sendDeviceHeartbeat,
+    DeviceKeysResponse
+} from "../lib/deviceManager";
 
 
 
@@ -76,6 +88,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const [isTyping, setIsTyping] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
+    // FIX: Ref to access current messages without stale closures in callbacks
+    const messagesRef = useRef<ChatMessage[]>([]);
+
     // CRITICAL FIX: Wrap setFriendId to clear messages when switching conversations
     // This prevents old conversation messages from persisting in the UI
     const setFriendId = useCallback((newFriendId: string | null) => {
@@ -103,15 +118,27 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const [keyGenerationAttempted, setKeyGenerationAttempted] = useState(false);
     const [keyPassword, setKeyPassword] = useState<string | null>(null);  // Cached for session
 
+    // FIX: keysReady state gates message processing until encryption keys are loaded
+    // This prevents decryption failures when messages arrive before keys are ready
+    const [keysReady, setKeysReady] = useState(false);
+
     // CRITICAL FIX: Use refs for crypto keys to avoid stale closures in WebSocket handlers
     // React state captured in useCallback/useEffect closures can become stale
     const secretKeyRef = useRef<string | null>(null);
     const publicKeyRef = useRef<string | null>(null);
     const friendPublicKeysRef = useRef<Record<string, string>>({});
+    const keysReadyRef = useRef(false);
 
     // Track if public key has been successfully uploaded to server
     const [publicKeyUploaded, setPublicKeyUploaded] = useState(false);
     const publicKeyUploadedRef = useRef(false);
+
+    // Multi-device E2EE: Track device registration status
+    const [deviceRegistered, setDeviceRegistered] = useState(false);
+    const currentDeviceIdRef = useRef<string | null>(null);
+
+    // Cache of user device keys for multi-device encryption
+    const deviceKeysCache = useRef<Record<string, DeviceKeysResponse[]>>({});
 
     // Pending decryption queue for messages arriving before keys are ready
     const pendingDecryptionQueueRef = useRef<Array<{
@@ -139,6 +166,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     useEffect(() => {
         publicKeyUploadedRef.current = publicKeyUploaded;
     }, [publicKeyUploaded]);
+
+    useEffect(() => {
+        keysReadyRef.current = keysReady;
+    }, [keysReady]);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // Rate limiting and debouncing refs
     const lastRequestTimeRef = useRef(0);
@@ -515,10 +550,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, []); // No dependencies - uses ref
 
-    // Decrypt conversation previews when secretKey becomes available
+    // FIX: Decrypt conversation previews when keysReady becomes true
+    // Using keysReady ensures we wait for keys to be fully loaded before attempting decryption
     useEffect(() => {
+        // FIX: Check keysReady instead of just secretKey to ensure timing is correct
+        if (!keysReady || conversations.length === 0) return;
+
         const currentSecretKey = secretKeyRef.current;
-        if (!currentSecretKey || conversations.length === 0) return;
+        if (!currentSecretKey) return;
 
         const decryptPreviews = async () => {
             let hasUpdates = false;
@@ -531,8 +570,10 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         return conv;
                     }
 
-                    // Skip if already decrypted (not showing placeholder)
-                    if (conv.lastMessage && conv.lastMessage !== '🔒 Encrypted message') {
+                    // Skip if already decrypted (not showing placeholder or unable to decrypt message)
+                    if (conv.lastMessage &&
+                        conv.lastMessage !== '🔒 Encrypted message' &&
+                        conv.lastMessage !== '[Unable to decrypt message]') {
                         return conv;
                     }
 
@@ -569,7 +610,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
 
         decryptPreviews();
-    }, [secretKey, conversations.length]); // Re-run when secretKey changes or new conversations
+    }, [keysReady, conversations]); // FIX: Use keysReady and full conversations array for proper re-run
 
     // CRITICAL FIX: Re-decrypt messages when secretKey becomes available
     // This handles the case where messages arrived before keys were loaded
@@ -577,7 +618,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const processedMessageIdsRef = useRef(new Set<string | number>());
 
     useEffect(() => {
-        if (!secretKey || messages.length === 0) return;
+        // FIX: Use keysReady instead of secretKey to ensure keys are fully loaded
+        if (!keysReady || messages.length === 0) return;
 
         // Prevent concurrent re-decryption attempts
         if (reDecryptingRef.current) return;
@@ -588,7 +630,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 if (!msg.encrypted) return false;
                 if (processedMessageIdsRef.current.has(msg.id)) return false;
 
+                // FIX: Skip own messages - sender cannot decrypt their own messages
+                // due to NaCl box asymmetry. Own messages should use cached plaintext.
+                if (String(msg.senderId) === String(currentUser?.id)) return false;
+
                 const needsReDecrypt = msg.content === '🔒 Encrypted message' ||
+                    msg.content === '[Unable to decrypt message]' ||
                     (msg.ciphertext && msg.content === msg.ciphertext);
                 return needsReDecrypt;
             });
@@ -607,20 +654,28 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         const nonce = msg.nonce;
                         const senderPublicKey = msg.senderPublicKey;
 
+                        // FIX: Only mark as permanently processed if missing required data
+                        // (not when keys aren't ready - that's handled by the keysReady check above)
                         if (!ciphertext || !nonce || !senderPublicKey) {
-                            processedMessageIdsRef.current.add(msg.id); // Mark as processed to avoid retry
+                            processedMessageIdsRef.current.add(msg.id); // Mark as processed - permanent failure (missing data)
                             return;
                         }
 
                         try {
                             const decrypted = await decryptMessage(ciphertext, nonce, senderPublicKey);
-                            if (decrypted && decrypted !== ciphertext && decrypted !== '[Unable to decrypt message]') {
+
+                            // FIX: Only mark as processed if decryption was successful
+                            // Don't mark failed decryptions so they can be retried
+                            if (decrypted && decrypted !== ciphertext &&
+                                decrypted !== '[Unable to decrypt message]' &&
+                                decrypted !== '🔒 Encrypted message') {
                                 decryptedMap.set(msg.id, decrypted);
+                                processedMessageIdsRef.current.add(msg.id); // Success - mark as processed
                             }
-                            processedMessageIdsRef.current.add(msg.id);
+                            // FIX: Don't add to processedMessageIdsRef on failure - allow retry
                         } catch (error) {
                             console.error('[E2EE] Failed to re-decrypt message', msg.id, error);
-                            processedMessageIdsRef.current.add(msg.id); // Mark as processed to avoid infinite retry
+                            // FIX: Don't mark as processed on error - allow retry when keys might be available
                         }
                     })
                 );
@@ -640,12 +695,19 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
 
         reDecryptMessages();
-    }, [secretKey, messages.length, decryptMessage]); // Re-run when secretKey changes or new messages arrive
+    }, [keysReady, messages.length, decryptMessage]); // FIX: Use keysReady instead of secretKey
 
     // Clear processed message IDs when conversation changes
     useEffect(() => {
         processedMessageIdsRef.current.clear();
     }, [friendId]);
+
+    // FIX: Clear processed message IDs when keysReady becomes true to allow retry
+    useEffect(() => {
+        if (keysReady) {
+            processedMessageIdsRef.current.clear();
+        }
+    }, [keysReady]);
 
     // CRITICAL FIX: WebSocket effect for real-time messaging with proper cleanup
     useEffect(() => {
@@ -701,16 +763,56 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     userId: String(reaction.user_id),
                     reactionType: reaction.reaction_type,
                 })),
-                replyTo: messageData.reply_to,
+                // Process reply_details from server if available, otherwise just use ID
+                replyTo: messageData.reply_details ? {
+                    id: String(messageData.reply_details.id),
+                    content: messageData.reply_details.is_encrypted
+                        ? '🔒 Encrypted message'  // Reply content is encrypted, show placeholder
+                        : (messageData.reply_details.content || ''),
+                    senderName: messageData.reply_details.sender_name || 'Unknown'
+                } : (messageData.reply_to ? { id: String(messageData.reply_to), content: '', senderName: '' } : undefined),
                 isSent: String(messageData.sender_id) === String(currentUser?.id),
                 isRead: Boolean(messageData.is_read),
                 encrypted: messageData.encrypted,
+                isEdited: messageData.is_edited || false,
+                isDeleted: messageData.is_deleted || false,
             };
         };
 
         const handleNewMessage = async (messageData: any) => {
             const incomingConversation = String(messageData.conversation_id);
             const isActiveConversation = currentConversationId && incomingConversation === String(currentConversationId);
+
+            // FIX: Helper to update conversation preview optimistically instead of refetching
+            const updateConversationPreview = (decryptedContent: string | null, incrementUnread: boolean) => {
+                setConversations(prev => prev.map(conv => {
+                    if (String(conv.id) !== incomingConversation) return conv;
+
+                    // Determine the preview text
+                    let previewText = decryptedContent;
+                    if (!previewText && messageData.encrypted) {
+                        previewText = '🔒 Encrypted message';
+                    } else if (!previewText) {
+                        previewText = messageData.content || '';
+                    }
+
+                    return {
+                        ...conv,
+                        lastMessage: previewText,
+                        lastMessageTime: new Date(messageData.timestamp),
+                        lastMessageEncrypted: messageData.encrypted || false,
+                        unreadCount: incrementUnread ? (conv.unreadCount || 0) + 1 : conv.unreadCount,
+                        // Store raw data for potential re-decryption
+                        _rawLastMessage: {
+                            id: messageData.id,
+                            content: messageData.ciphertext || messageData.content,
+                            nonce: messageData.nonce,
+                            senderPublicKey: messageData.sender_public_key,
+                            isEncrypted: messageData.encrypted
+                        }
+                    };
+                }));
+            };
 
             // CRITICAL FIX: Skip processing our own messages from WebSocket broadcast
             // We already handle them via optimistic update + API response confirmation
@@ -719,27 +821,31 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             // 2. Race conditions with optimistic updates
             // 3. State replacement issues that cause recipient's messages to disappear
             if (String(messageData.sender_id) === String(currentUser?.id)) {
-                // Just refresh conversations for updated preview, but don't touch messages
-                fetchConversations();
+                // FIX: Update conversation preview optimistically instead of refetching
+                // For own messages, we already have the plaintext content
+                updateConversationPreview(messageData.content, false);
                 return;
             }
 
+            // Build the decrypted message first (for both preview and message list)
+            const newMessage = await buildIncomingMessage(messageData);
+            const decryptedContent = newMessage?.content || null;
+
             if (!isActiveConversation) {
-                // Refresh conversations to show unread count and new message preview
-                await fetchConversations();
+                // FIX: Update conversation preview optimistically instead of refetching
+                updateConversationPreview(decryptedContent, true);
                 if (messageData.sender_username) {
                     toast.success(`New message from ${messageData.sender_username}`);
                 } else {
                     toast.success('New message received');
                 }
                 return;
-            } else {
-                // Even if active, we want to update the conversation list to show the new last message
-                // We can do this optimistically or by fetching
-                fetchConversations();
             }
 
-            const newMessage = await buildIncomingMessage(messageData);
+            // Active conversation - update preview and add message to list
+            // FIX: Update conversation preview optimistically instead of refetching
+            updateConversationPreview(decryptedContent, false);
+
             if (!newMessage) {
                 return;
             }
@@ -806,17 +912,40 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         };
         socket.on('reaction_added', handleReactionUpdate);
 
-        const handleMessageEdit = (data: any) => {
+        const handleMessageEdit = async (data: any) => {
+            // For E2EE: The new_content is ciphertext, need to decrypt
+            const currentSecretKey = secretKeyRef.current;
+            let decryptedContent = data.new_content;
+
+            // Find the original message to get sender info for decryption
+            const originalMsg = messagesRef.current.find(m => m.id === data.message_id);
+
+            if (originalMsg?.encrypted && currentSecretKey && originalMsg.senderPublicKey && data.nonce) {
+                try {
+                    const decrypted = await decryptMessage(data.new_content, data.nonce, originalMsg.senderPublicKey);
+                    if (decrypted && decrypted !== '[Unable to decrypt message]') {
+                        decryptedContent = decrypted;
+                    }
+                } catch (error) {
+                    console.error('[E2EE] Failed to decrypt edited message:', error);
+                }
+            }
+
             setMessages(prev => prev.map(msg =>
                 msg.id === data.message_id
-                    ? { ...msg, content: data.new_content, isEdited: true }
+                    ? { ...msg, content: decryptedContent, isEdited: true }
                     : msg
             ));
         };
         socket.on('message_edited', handleMessageEdit);
 
         const handleMessageDelete = (data: any) => {
-            setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
+            // Soft delete - mark as deleted instead of removing
+            setMessages(prev => prev.map(msg =>
+                msg.id === data.message_id
+                    ? { ...msg, isDeleted: true, content: '' }
+                    : msg
+            ));
         };
         socket.on('message_deleted', handleMessageDelete);
 
@@ -1073,6 +1202,123 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         }
     }, [fetchFriendPublicKey, authToken, apiEndpoint]); // Added authToken and apiEndpoint for key upload
 
+    /**
+     * Encrypt a message for all devices of both sender and recipient.
+     * This enables multi-device E2EE where each device can decrypt independently.
+     * 
+     * @param content - Plaintext message content
+     * @param recipientId - The recipient's user ID
+     * @param overrideSecretKey - Optional freshly generated secret key
+     * @returns Object with per-device ciphertexts and a fallback for legacy clients
+     */
+    const encryptForDevices = useCallback(async (
+        content: string,
+        recipientId: string,
+        overrideSecretKey?: string
+    ): Promise<{
+        encrypted_payloads: Record<string, { ciphertext: string; nonce: string }>;
+        fallback_ciphertext: string;
+        fallback_nonce: string | null;
+        isEncrypted: boolean;
+    }> => {
+        const effectiveSecretKey = overrideSecretKey || secretKeyRef.current;
+
+        // If no secret key, fall back to legacy unencrypted
+        if (!effectiveSecretKey || !authToken || !apiEndpoint || !currentUser) {
+            console.warn("[E2EE Multi-Device] Cannot encrypt for devices: missing keys or auth");
+            return {
+                encrypted_payloads: {},
+                fallback_ciphertext: content,
+                fallback_nonce: null,
+                isEncrypted: false
+            };
+        }
+
+        try {
+            // Fetch device keys for both recipient and sender
+            const userIds = [recipientId, String(currentUser.id)];
+
+            // Check cache first
+            const needToFetch: string[] = [];
+            for (const userId of userIds) {
+                if (!deviceKeysCache.current[userId]) {
+                    needToFetch.push(userId);
+                }
+            }
+
+            // Fetch any missing device keys
+            if (needToFetch.length > 0) {
+                const fetchedKeys = await getBulkDeviceKeys(needToFetch, apiEndpoint, authToken);
+                if (fetchedKeys) {
+                    for (const userId of needToFetch) {
+                        deviceKeysCache.current[userId] = fetchedKeys[userId] || [];
+                    }
+                }
+            }
+
+            // Get all devices for both users
+            const recipientDevices = deviceKeysCache.current[recipientId] || [];
+            const senderDevices = deviceKeysCache.current[String(currentUser.id)] || [];
+            const allDevices = [...recipientDevices, ...senderDevices];
+
+            // If no devices registered, fall back to legacy single-key encryption
+            if (allDevices.length === 0) {
+                console.log("[E2EE Multi-Device] No devices found, using legacy encryption");
+                const result = await encryptMessage(content, recipientId, overrideSecretKey);
+                return {
+                    encrypted_payloads: {},
+                    fallback_ciphertext: result.ciphertext,
+                    fallback_nonce: result.nonce,
+                    isEncrypted: result.isEncrypted
+                };
+            }
+
+            // Encrypt for each device
+            const encrypted_payloads: Record<string, { ciphertext: string; nonce: string }> = {};
+            let fallbackCiphertext = content;
+            let fallbackNonce: string | null = null;
+            let anyEncrypted = false;
+
+            for (const device of allDevices) {
+                if (!device.public_key || !isValidPublicKey(device.public_key)) {
+                    console.warn(`[E2EE Multi-Device] Invalid public key for device ${device.device_id}`);
+                    continue;
+                }
+
+                try {
+                    const { ciphertext, nonce } = naclEncrypt(content, device.public_key, effectiveSecretKey);
+                    encrypted_payloads[device.device_id] = { ciphertext, nonce };
+                    anyEncrypted = true;
+
+                    // Use first successful encryption as fallback for legacy clients
+                    if (!fallbackNonce) {
+                        fallbackCiphertext = ciphertext;
+                        fallbackNonce = nonce;
+                    }
+                } catch (err) {
+                    console.error(`[E2EE Multi-Device] Failed to encrypt for device ${device.device_id}:`, err);
+                }
+            }
+
+            return {
+                encrypted_payloads,
+                fallback_ciphertext: fallbackCiphertext,
+                fallback_nonce: fallbackNonce,
+                isEncrypted: anyEncrypted
+            };
+        } catch (error) {
+            console.error("[E2EE Multi-Device] Error encrypting for devices:", error);
+            // Fall back to legacy encryption
+            const result = await encryptMessage(content, recipientId, overrideSecretKey);
+            return {
+                encrypted_payloads: {},
+                fallback_ciphertext: result.ciphertext,
+                fallback_nonce: result.nonce,
+                isEncrypted: result.isEncrypted
+            };
+        }
+    }, [encryptMessage, authToken, apiEndpoint, currentUser]);
+
     const ensureConversation = useCallback(async (targetId: string): Promise<string | null> => {
         if (!currentUser || !authToken) return null;
 
@@ -1124,7 +1370,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                             userId: reaction.user_id,
                             reactionType: reaction.reaction_type,
                         })),
-                        replyTo: normalized.reply_to,
+                        // Process reply_details from server if available
+                        replyTo: normalized.reply_details ? {
+                            id: String(normalized.reply_details.id),
+                            content: normalized.reply_details.is_encrypted
+                                ? '🔒 Encrypted message'
+                                : (normalized.reply_details.content || ''),
+                            senderName: normalized.reply_details.sender_name || 'Unknown'
+                        } : (normalized.reply_to ? { id: String(normalized.reply_to), content: '', senderName: '' } : undefined),
                         isSent: normalized.sender_id === currentUser?.id,
                         isRead: Boolean(normalized.is_read),
                         encrypted: normalized.encrypted,
@@ -1239,8 +1492,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 }
             }
 
-            // Pass freshly generated secret key if available (avoids React state timing issues)
-            const { ciphertext, nonce, isEncrypted } = await encryptMessage(content, friendId, freshKeyPair?.secretKey);
+            // Multi-device E2EE: Encrypt for all recipient and sender devices
+            // Falls back to single-key encryption if no devices are registered
+            const {
+                encrypted_payloads,
+                fallback_ciphertext: ciphertext,
+                fallback_nonce: nonce,
+                isEncrypted
+            } = await encryptForDevices(content, friendId, freshKeyPair?.secretKey);
 
             const optimisticMessage: ChatMessage = {
                 id: Date.now(),
@@ -1267,12 +1526,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 },
                 body: JSON.stringify({
                     content: ciphertext,
-                    nonce: nonce,  // Send nonce for E2EE decryption
+                    nonce: nonce,  // Send nonce for E2EE decryption (legacy fallback)
                     recipient_id: friendId,
                     conversation_id: conversationId,
                     media: uploadedMedia,
                     reply_to: replyTo,
-                    encrypted: isEncrypted
+                    encrypted: isEncrypted,
+                    // Multi-device E2EE: Per-device encrypted payloads
+                    encrypted_payloads: Object.keys(encrypted_payloads).length > 0 ? encrypted_payloads : undefined
                 }),
             });
 
@@ -1300,6 +1561,24 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     }
                     : msg
             ));
+
+            // FIX: Cache plaintext for own sent messages to IndexedDB
+            // This allows us to retrieve the plaintext later since sender cannot decrypt
+            // their own messages due to NaCl box asymmetry
+            try {
+                await secureDB.cacheMessage({
+                    id: String(result.message_id),
+                    conversationId: conversationId,
+                    content: content,  // Store PLAINTEXT, not ciphertext
+                    senderId: String(currentUser.id),
+                    timestamp: new Date(result.message_data.timestamp),
+                    encrypted: false,  // Mark as NOT encrypted (it's plaintext cache)
+                    isSent: true,
+                    isRead: false
+                });
+            } catch (e) {
+                console.warn('Failed to cache sent message plaintext:', e);
+            }
 
             markEndpointAvailability('messages', true);
 
@@ -1349,6 +1628,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 url.searchParams.append('before', lastMessageId.toString());
             }
 
+            // Multi-device E2EE: Include device ID to get device-specific ciphertexts
+            const deviceId = currentDeviceIdRef.current || getDeviceId();
+            if (deviceId) {
+                url.searchParams.append('device_id', deviceId);
+            }
+
             const response = await fetch(url.toString(), {
                 method: 'GET',
                 headers: {
@@ -1375,19 +1660,70 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             // CRITICAL FIX: Use ref to get current secret key
             const currentSecretKey = secretKeyRef.current;
 
+            // FIX: Use ref to get current messages without stale closure issues
+            const currentMessages = messagesRef.current;
+
             const messagesData = await Promise.all((data.messages || []).map(async (msg: any) => {
                 const ciphertext = msg.ciphertext || msg.content;
                 const nonce = msg.nonce;
                 let senderPublicKey = msg.sender_public_key;
+                const isOwnMessage = String(msg.sender_id) === String(currentUser.id);
 
-                // CRITICAL FIX: Try to fetch sender's public key if missing
-                if (msg.encrypted && !senderPublicKey && msg.sender_id) {
+                // CRITICAL FIX: Try to fetch sender's public key if missing (only for incoming messages)
+                if (msg.encrypted && !senderPublicKey && msg.sender_id && !isOwnMessage) {
                     senderPublicKey = await fetchFriendPublicKey(String(msg.sender_id));
                 }
 
                 // Decrypt if encrypted and we have necessary data
                 let decryptedContent = ciphertext;
-                if (msg.encrypted && ciphertext && nonce && senderPublicKey && currentSecretKey) {
+
+                // Multi-device E2EE: Check for device-specific ciphertext
+                const hasDeviceKey = msg.has_device_key === true;
+                const deviceCiphertext = msg.device_ciphertext;
+                const deviceNonce = msg.device_nonce;
+
+                // FIX: For own messages in multi-device mode, use device-specific ciphertext
+                // This allows the sender to decrypt their own messages on any of their devices
+                if (isOwnMessage && msg.encrypted && hasDeviceKey && deviceCiphertext && deviceNonce && currentSecretKey) {
+                    // Multi-device mode: Decrypt our own messages using device-specific ciphertext
+                    // We need to use our own public key as the "sender" key for NaCl box decryption
+                    const myPublicKey = publicKeyRef.current;
+                    if (myPublicKey) {
+                        decryptedContent = await decryptMessage(deviceCiphertext, deviceNonce, myPublicKey);
+                        if (!decryptedContent || decryptedContent === '[Unable to decrypt message]') {
+                            // Fallback to cached plaintext
+                            decryptedContent = '[Sent message]';
+                        }
+                    }
+                } else if (isOwnMessage && msg.encrypted) {
+                    // Legacy mode or no device key: Check cache for plaintext
+                    const existingMsg = currentMessages.find(m => String(m.id) === String(msg.id));
+                    if (existingMsg && existingMsg.content &&
+                        existingMsg.content !== '[Unable to decrypt message]' &&
+                        existingMsg.content !== '🔒 Encrypted message' &&
+                        existingMsg.content !== ciphertext) {
+                        decryptedContent = existingMsg.content;
+                    } else {
+                        // Check IndexedDB cache for plaintext
+                        try {
+                            const cachedMsg = await secureDB.messages.get(String(msg.id));
+                            if (cachedMsg && cachedMsg.content &&
+                                cachedMsg.content !== ciphertext &&
+                                !cachedMsg.encrypted) {
+                                decryptedContent = cachedMsg.content;
+                            } else {
+                                // Fallback - we cannot decrypt our own messages
+                                decryptedContent = '[Sent message]';
+                            }
+                        } catch {
+                            decryptedContent = '[Sent message]';
+                        }
+                    }
+                } else if (msg.encrypted && hasDeviceKey && deviceCiphertext && deviceNonce && senderPublicKey && currentSecretKey) {
+                    // Multi-device mode: Decrypt incoming messages using device-specific ciphertext
+                    decryptedContent = await decryptMessage(deviceCiphertext, deviceNonce, senderPublicKey);
+                } else if (msg.encrypted && ciphertext && nonce && senderPublicKey && currentSecretKey) {
+                    // Legacy mode: Decrypt incoming messages normally
                     decryptedContent = await decryptMessage(ciphertext, nonce, senderPublicKey);
                 } else if (msg.encrypted && (!senderPublicKey || !nonce || !currentSecretKey)) {
                     // Encrypted but missing keys - show graceful fallback
@@ -1410,10 +1746,19 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         userId: String(reaction.user_id),
                         reactionType: reaction.reaction_type
                     })),
-                    replyTo: msg.reply_to,
-                    isSent: String(msg.sender_id) === String(currentUser.id),
+                    // Process reply_details from server if available
+                    replyTo: msg.reply_details ? {
+                        id: String(msg.reply_details.id),
+                        content: msg.reply_details.is_encrypted
+                            ? '🔒 Encrypted message'  // Reply content is encrypted
+                            : (msg.reply_details.content || ''),
+                        senderName: msg.reply_details.sender_name || 'Unknown'
+                    } : (msg.reply_to ? { id: String(msg.reply_to), content: '', senderName: '' } : undefined),
+                    isSent: isOwnMessage,
                     isRead: msg.is_read,
-                    encrypted: msg.encrypted
+                    encrypted: msg.encrypted,
+                    isEdited: msg.is_edited || false,
+                    isDeleted: msg.is_deleted || false
                 };
             }));
 
@@ -1503,6 +1848,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         markRequestStart('edit_message');
 
+        // Store original content for rollback
+        const originalMessage = messages.find(m => m.id === messageId);
+        const originalContent = originalMessage?.content;
+
+        // Optimistic update
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId
+                ? { ...msg, content: newContent, isEdited: true }
+                : msg
+        ));
+
         try {
             const response = await fetch(`${apiEndpoint}/messages/${messageId}`, {
                 method: 'PUT',
@@ -1515,17 +1871,31 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             if (response.status === 404) {
                 markEndpointAvailability('messages', false);
+                // Revert optimistic update
+                if (originalContent !== undefined) {
+                    setMessages(prev => prev.map(msg =>
+                        msg.id === messageId
+                            ? { ...msg, content: originalContent, isEdited: originalMessage?.isEdited }
+                            : msg
+                    ));
+                }
                 throw new Error('Message editing not available');
             }
 
             if (!response.ok) {
+                // Revert optimistic update
+                if (originalContent !== undefined) {
+                    setMessages(prev => prev.map(msg =>
+                        msg.id === messageId
+                            ? { ...msg, content: originalContent, isEdited: originalMessage?.isEdited }
+                            : msg
+                    ));
+                }
                 throw new Error('Failed to edit message');
             }
 
             markEndpointAvailability('messages', true);
-            if (friendId) {
-                await getMessages(friendId, 20);
-            }
+            toast.success('Message edited');
         } catch (error) {
             console.error("Error editing message:", error);
             toast.error("Failed to edit message");
@@ -1542,6 +1912,13 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
         markRequestStart('delete_message');
 
+        // Optimistic update - mark message as deleted in UI immediately
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId
+                ? { ...msg, isDeleted: true, content: '' }
+                : msg
+        ));
+
         try {
             const response = await fetch(`${apiEndpoint}/messages/${messageId}`, {
                 method: 'DELETE',
@@ -1552,17 +1929,27 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             if (response.status === 404) {
                 markEndpointAvailability('messages', false);
+                // Revert optimistic update
+                setMessages(prev => prev.map(msg =>
+                    msg.id === messageId
+                        ? { ...msg, isDeleted: false }
+                        : msg
+                ));
                 throw new Error('Message deletion not available');
             }
 
             if (!response.ok) {
+                // Revert optimistic update
+                setMessages(prev => prev.map(msg =>
+                    msg.id === messageId
+                        ? { ...msg, isDeleted: false }
+                        : msg
+                ));
                 throw new Error('Failed to delete message');
             }
 
             markEndpointAvailability('messages', true);
-            if (friendId) {
-                await getMessages(friendId, 20);
-            }
+            toast.success('Message deleted');
         } catch (error) {
             console.error("Error deleting message:", error);
             toast.error("Failed to delete message");
@@ -1771,6 +2158,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             setPublicKey(keyPair.publicKey);
             setKeyPassword(keyPwd);  // Cache for session
             setKeyStatus('available');
+            setKeysReady(true);  // FIX: Signal that keys are now available for decryption
 
             // Upload public key to server with retry - CRITICAL for E2EE
             const uploadResult = await uploadPublicKey(keyPair.publicKey, 3);
@@ -1790,6 +2178,20 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         await uploadPublicKey(publicKeyRef.current, 3);
                     }
                 }, 30000); // Retry after 30 seconds
+            }
+
+            // Multi-device E2EE: Register this device with its public key
+            if (authToken && apiEndpoint) {
+                try {
+                    const deviceInfo = await registerDevice(keyPair.publicKey, apiEndpoint, authToken);
+                    if (deviceInfo) {
+                        currentDeviceIdRef.current = deviceInfo.id;
+                        setDeviceRegistered(true);
+                        console.log('[E2EE Multi-Device] Device registered:', deviceInfo.name);
+                    }
+                } catch (err) {
+                    console.warn('[E2EE Multi-Device] Device registration failed (non-critical):', err);
+                }
             }
 
             // Return the keypair for immediate use (avoids React state timing issues)
@@ -1848,6 +2250,21 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     setPublicKey(keyPair.publicKey);
                     setKeyPassword(pwd);  // Cache for session
                     setKeyStatus('available');
+                    setKeysReady(true);  // FIX: Signal that keys are now available for decryption
+
+                    // Multi-device E2EE: Register this device
+                    if (authToken && apiEndpoint) {
+                        try {
+                            const deviceInfo = await registerDevice(keyPair.publicKey, apiEndpoint, authToken);
+                            if (deviceInfo) {
+                                currentDeviceIdRef.current = deviceInfo.id;
+                                setDeviceRegistered(true);
+                                console.log('[E2EE Multi-Device] Device registered on key load:', deviceInfo.name);
+                            }
+                        } catch (err) {
+                            console.warn('[E2EE Multi-Device] Device registration failed (non-critical):', err);
+                        }
+                    }
                 } else {
                     // Wrong password or corrupted keys
                     setKeyStatus('locked');
@@ -1873,6 +2290,22 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 setPublicKey(keyPair.publicKey);
                 setKeyPassword(password);
                 setKeyStatus('available');
+                setKeysReady(true);  // FIX: Signal that keys are now available for decryption
+
+                // Multi-device E2EE: Register this device
+                if (authToken && apiEndpoint) {
+                    try {
+                        const deviceInfo = await registerDevice(keyPair.publicKey, apiEndpoint, authToken);
+                        if (deviceInfo) {
+                            currentDeviceIdRef.current = deviceInfo.id;
+                            setDeviceRegistered(true);
+                            console.log('[E2EE Multi-Device] Device registered on unlock:', deviceInfo.name);
+                        }
+                    } catch (err) {
+                        console.warn('[E2EE Multi-Device] Device registration failed (non-critical):', err);
+                    }
+                }
+
                 return true;
             }
             toast.error("Invalid password");

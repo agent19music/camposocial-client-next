@@ -402,3 +402,332 @@ export async function importEncryptedBackup(
   }
 }
 
+
+// ============================================================================
+// Server-Side Key Backup for Multi-Device E2EE
+// ============================================================================
+
+/**
+ * Interface for server backup response
+ */
+interface ServerBackupData {
+  encrypted_private_key: string;
+  key_salt: string;
+  key_iv: string;
+  has_backup: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Encrypt the secret key with a recovery passphrase for server backup.
+ * Uses a separate passphrase from the main key password for recovery scenarios.
+ */
+async function encryptForServerBackup(
+  secretKey: string,
+  recoveryPassphrase: string
+): Promise<{
+  encryptedData: string;
+  salt: string;
+  iv: string;
+}> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  
+  const encoder = new TextEncoder();
+  const passphraseKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(recoveryPassphrase),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  
+  // Use more iterations for recovery passphrase (extra security)
+  const derivedKey = await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer,
+      iterations: 150000,  // More iterations for recovery
+      hash: 'SHA-256',
+    },
+    passphraseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  );
+  
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    derivedKey,
+    encoder.encode(secretKey)
+  );
+  
+  return {
+    encryptedData: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+    salt: btoa(String.fromCharCode(...salt)),
+    iv: btoa(String.fromCharCode(...iv)),
+  };
+}
+
+/**
+ * Decrypt the secret key from server backup using recovery passphrase.
+ */
+async function decryptFromServerBackup(
+  encryptedData: string,
+  salt: string,
+  iv: string,
+  recoveryPassphrase: string
+): Promise<string> {
+  const saltBytes = Uint8Array.from(atob(salt), c => c.charCodeAt(0));
+  const ivBytes = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+  const encryptedBytes = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+  
+  const encoder = new TextEncoder();
+  const passphraseKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(recoveryPassphrase),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  
+  const derivedKey = await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: saltBytes.buffer.slice(saltBytes.byteOffset, saltBytes.byteOffset + saltBytes.byteLength) as ArrayBuffer,
+      iterations: 150000,
+      hash: 'SHA-256',
+    },
+    passphraseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+  
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: ivBytes },
+    derivedKey,
+    encryptedBytes
+  );
+  
+  return new TextDecoder().decode(decrypted);
+}
+
+/**
+ * Backup the private key to the server, encrypted with a recovery passphrase.
+ * The server never sees the plaintext key - only the encrypted blob.
+ * 
+ * @param secretKey - The NaCl secret key (base64 encoded)
+ * @param recoveryPassphrase - User-chosen passphrase for recovery
+ * @param apiEndpoint - Base API endpoint URL
+ * @param authToken - JWT authentication token
+ * @returns true if backup was successful
+ */
+export async function backupKeyToServer(
+  secretKey: string,
+  recoveryPassphrase: string,
+  apiEndpoint: string,
+  authToken: string
+): Promise<boolean> {
+  try {
+    const { encryptedData, salt, iv } = await encryptForServerBackup(secretKey, recoveryPassphrase);
+    
+    const response = await fetch(`${apiEndpoint}/keys/backup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        encrypted_private_key: encryptedData,
+        key_salt: salt,
+        key_iv: iv,
+      }),
+    });
+    
+    if (!response.ok) {
+      console.error('[E2EE] Failed to upload key backup:', response.statusText);
+      return false;
+    }
+    
+    console.log('[E2EE] Key backup uploaded successfully');
+    return true;
+  } catch (error) {
+    console.error('[E2EE] Error backing up key:', error);
+    return false;
+  }
+}
+
+/**
+ * Restore the private key from server backup using the recovery passphrase.
+ * 
+ * @param recoveryPassphrase - The passphrase used when backing up
+ * @param publicKey - The user's public key (to reconstruct the keypair)
+ * @param apiEndpoint - Base API endpoint URL
+ * @param authToken - JWT authentication token
+ * @returns The restored keypair or null if restore failed
+ */
+export async function restoreKeyFromServer(
+  recoveryPassphrase: string,
+  publicKey: string,
+  apiEndpoint: string,
+  authToken: string
+): Promise<KeyPair | null> {
+  try {
+    const response = await fetch(`${apiEndpoint}/keys/backup`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('[E2EE] No key backup found on server');
+        return null;
+      }
+      console.error('[E2EE] Failed to fetch key backup:', response.statusText);
+      return null;
+    }
+    
+    const data: ServerBackupData = await response.json();
+    
+    if (!data.has_backup) {
+      console.log('[E2EE] No key backup available');
+      return null;
+    }
+    
+    // Decrypt the private key with recovery passphrase
+    const secretKey = await decryptFromServerBackup(
+      data.encrypted_private_key,
+      data.key_salt,
+      data.key_iv,
+      recoveryPassphrase
+    );
+    
+    // Validate the decrypted key
+    if (!isValidSecretKey(secretKey)) {
+      console.error('[E2EE] Restored key is invalid (wrong passphrase?)');
+      return null;
+    }
+    
+    console.log('[E2EE] Key restored from server backup successfully');
+    
+    return {
+      publicKey,
+      secretKey,
+    };
+  } catch (error) {
+    console.error('[E2EE] Error restoring key from server:', error);
+    return null;
+  }
+}
+
+/**
+ * Check if the user has a key backup on the server.
+ * 
+ * @param apiEndpoint - Base API endpoint URL
+ * @param authToken - JWT authentication token
+ * @returns Backup status info or null if check failed
+ */
+export async function checkServerBackupStatus(
+  apiEndpoint: string,
+  authToken: string
+): Promise<{ hasBackup: boolean; createdAt?: string; updatedAt?: string } | null> {
+  try {
+    const response = await fetch(`${apiEndpoint}/keys/backup/status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+    
+    if (!response.ok) {
+      console.error('[E2EE] Failed to check backup status:', response.statusText);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    return {
+      hasBackup: data.has_backup,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  } catch (error) {
+    console.error('[E2EE] Error checking backup status:', error);
+    return null;
+  }
+}
+
+/**
+ * Delete the key backup from server.
+ * Warning: This is irreversible!
+ * 
+ * @param apiEndpoint - Base API endpoint URL
+ * @param authToken - JWT authentication token
+ * @returns true if deletion was successful
+ */
+export async function deleteServerKeyBackup(
+  apiEndpoint: string,
+  authToken: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${apiEndpoint}/keys/backup`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+    
+    if (!response.ok) {
+      console.error('[E2EE] Failed to delete key backup:', response.statusText);
+      return false;
+    }
+    
+    console.log('[E2EE] Key backup deleted from server');
+    return true;
+  } catch (error) {
+    console.error('[E2EE] Error deleting key backup:', error);
+    return false;
+  }
+}
+
+/**
+ * Store keypair locally and optionally backup to server.
+ * This is the recommended way to set up keys on a new device after recovery.
+ * 
+ * @param keyPair - The keypair to store
+ * @param localPassword - Password for local IndexedDB encryption
+ * @param recoveryPassphrase - Optional passphrase for server backup
+ * @param apiEndpoint - API endpoint for server backup
+ * @param authToken - Auth token for server backup
+ */
+export async function storeKeyPairWithBackup(
+  keyPair: KeyPair,
+  localPassword: string,
+  recoveryPassphrase?: string,
+  apiEndpoint?: string,
+  authToken?: string
+): Promise<{ localStored: boolean; serverBackedUp: boolean }> {
+  // Store locally first
+  await storeKeyPair(keyPair, localPassword);
+  
+  // If recovery passphrase and auth provided, backup to server
+  let serverBackedUp = false;
+  if (recoveryPassphrase && apiEndpoint && authToken) {
+    serverBackedUp = await backupKeyToServer(
+      keyPair.secretKey,
+      recoveryPassphrase,
+      apiEndpoint,
+      authToken
+    );
+  }
+  
+  return {
+    localStored: true,
+    serverBackedUp,
+  };
+}
+

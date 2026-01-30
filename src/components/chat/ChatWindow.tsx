@@ -187,18 +187,20 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friendId]);
 
+  // FIX: WebSocket handler for side effects ONLY (sound, vibration, caching)
+  // IMPORTANT: Do NOT modify React state here - all state updates are handled by ChatContext
+  // This separation prevents duplicate state updates and race conditions
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const handleNewMessage = async (data: any) => {
-
+    const handleNewMessageSideEffects = async (data: any) => {
       // Only process if it's for the current conversation
       if (conversationId && String(data.conversation_id) !== String(conversationId)) {
         return;
       }
 
-      // State update is handled by ChatContext - only cache and play sounds here
-      // Cache the message with proper conversation ID check
+      // Cache the message for offline access (stores encrypted content for later decryption)
+      // NOTE: This is IndexedDB storage, NOT React state modification
       if (conversationId) {
         try {
           await secureDB.cacheMessage({
@@ -222,10 +224,8 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
       }
     };
 
-    // Register event listeners using the proper on() method
-    // We only listen for new_message for side effects (sound, cache)
-    // State updates for messages, typing, reactions, etc. are handled by ChatContext
-    const cleanupNewMessage = on('new_message', handleNewMessage);
+    // Register for side effects only - ChatContext handles all state updates
+    const cleanupNewMessage = on('new_message', handleNewMessageSideEffects);
 
     return () => {
       cleanupNewMessage();
@@ -587,10 +587,7 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
                   userName={displayFriend?.username}
                   userAvatar={displayFriend?.avatar}
                   onReply={() => setReplyingTo(message)}
-                  onEdit={() => {
-                    setEditingMessage(message);
-                    setInput(message.content);
-                  }}
+                  onEdit={(newContent) => editMessage(message.id, newContent)}
                   onDelete={() => deleteMessage(message.id)}
                   onReact={(emoji) => addReaction(message.id, emoji)}
                 />
