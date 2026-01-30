@@ -71,10 +71,12 @@ export interface ChatMessage {
   timestamp: Date;
   media: ChatMedia[] | null;
   reactions: { userId: string; reactionType: string }[];
-  replyTo?: number;
+  replyTo?: { id: string | number; content: string; senderName: string } | number;
   isSent: boolean;
   isRead: boolean;
   encrypted: boolean;
+  isEdited?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface ChatUser {

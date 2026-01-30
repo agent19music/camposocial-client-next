@@ -92,10 +92,15 @@ export default function Home() {
       {/* Dreamy floating orbs background */}
       <DreamyOrbs orbCount={10} />
 
-      {/* Navigation - Clean header with unified dark mode */}
-      <nav className="fixed top-0 w-full z-50  backdrop-blur-2xl ">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-          <div className="flex justify-between items-center h-16">
+      {/* Navigation - Floating header with solid background */}
+      <nav className="fixed top-0 w-full z-50 pt-4 px-6 sm:px-8 lg:px-10">
+        <motion.div
+          className="max-w-7xl mx-auto bg-white dark:bg-stone-950 border-l border-r border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <div className="flex justify-between items-center h-16 px-6">
             <div className="flex items-center space-x-3">
               <Image
                 src={theme !== 'dark'
@@ -122,10 +127,9 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle
-                className="w-11 h-11 rounded-xl bg-white/90 hover:bg-white border border-white/60 shadow-sm"
+                className="w-11 h-11 rounded-xl  shadow-sm"
                 iconClassName="h-6 w-6"
               />
-              {/* <ThemeToggle /> */}
               {currentUser && (
                 <Link href="/yaps">
                   <Avatar>
@@ -134,11 +138,9 @@ export default function Home() {
                   </Avatar>
                 </Link>
               )}
-
-
             </div>
           </div>
-        </div>
+        </motion.div>
       </nav>
 
       {/* ========================================================
@@ -173,11 +175,11 @@ export default function Home() {
             >
               {/* Main H1 - Duna-inspired typography */}
               <h1
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal leading-[1.1] mb-6"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal leading-[1.1] font-bold mb-6"
                 style={{
                   letterSpacing: '-0.04em',
                   color: '#222221',
-                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                  fontFamily: 'Helvetica',
                 }}
               >
                 Build networks that last a lifetime
