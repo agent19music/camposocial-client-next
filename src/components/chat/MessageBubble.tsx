@@ -115,7 +115,7 @@ export default function MessageBubble({
       editTextareaRef.current.focus();
       editTextareaRef.current.setSelectionRange(editContent.length, editContent.length);
     }
-  }, [showEditDialog]);
+  }, [showEditDialog, editContent.length]);
 
   // Handle menu visibility with auto-close timeout
   const handleMenuShow = () => {
