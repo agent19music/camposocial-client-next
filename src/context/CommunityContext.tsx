@@ -58,6 +58,15 @@ interface CommunityPost {
     liked_by_user?: boolean
 }
 
+export interface CommunityInvite {
+    id: string
+    token: string
+    created_at: string
+    expires_at: string | null
+    creator_id: number
+    url: string
+}
+
 interface CommunityContextType {
     // State
     communities: Community[]
@@ -84,6 +93,9 @@ interface CommunityContextType {
     deletePost: (postId: string) => Promise<void>
     fetchPosts: (slug: string, page?: number) => Promise<void>
     setCurrentCommunity: (community: Community | null) => void
+    createInvite: (slug: string, expiryOption: string) => Promise<any>
+    getInvites: (slug: string) => Promise<CommunityInvite[]>
+    revokeInvite: (token: string) => Promise<boolean>
 }
 
 
@@ -124,6 +136,8 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 const data = await res.json()
                 setRecommendedCommunities(data.recommended || [])
                 setTrendingCommunities(data.trending || [])
+                console.log("Recommended communities:", data.recommended)
+                console.log("Trending communities:", data.trending)
             }
         } catch (error) {
             console.error("Failed to fetch communities", error)
@@ -570,6 +584,87 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
         },
         [authToken, communityPosts]
     )
+    // Create Invite
+    const createInvite = useCallback(
+        async (slug: string, expiryOption: string = 'none') => {
+            if (!authToken) return null
+
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/invites`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ expiry_option: expiryOption }),
+                })
+
+                if (res.ok) {
+                    const data = await res.json()
+                    toast.success("Invite link created!")
+                    return data.invite
+                } else {
+                    const err = await res.json()
+                    toast.error(err.error || "Failed to create invite")
+                }
+            } catch (error) {
+                console.error("Failed to create invite", error)
+                toast.error("Something went wrong")
+            }
+            return null
+        },
+        [authToken]
+    )
+
+    // Get Invites
+    const getInvites = useCallback(
+        async (slug: string): Promise<CommunityInvite[]> => {
+            if (!authToken) return []
+
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/invites`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                })
+
+                if (res.ok) {
+                    const data = await res.json()
+                    return data.invites || []
+                }
+            } catch (error) {
+                console.error("Failed to fetch invites", error)
+            }
+            return []
+        },
+        [authToken]
+    )
+
+    // Revoke Invite
+    const revokeInvite = useCallback(
+        async (token: string): Promise<boolean> => {
+            if (!authToken) return false
+
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/invites/${token}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${authToken}` },
+                })
+
+                if (res.ok) {
+                    toast.success("Invite link revoked")
+                    return true
+                } else {
+                    const err = await res.json()
+                    toast.error(err.error || "Failed to revoke invite")
+                }
+            } catch (error) {
+                console.error("Failed to revoke invite", error)
+                toast.error("Something went wrong")
+            }
+            return false
+        },
+        [authToken]
+    )
+
     const value: CommunityContextType = {
         communities,
         myCommunities,
@@ -593,6 +688,9 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
         deletePost,
         fetchPosts,
         setCurrentCommunity,
+        createInvite,
+        getInvites,
+        revokeInvite,
     }
 
     return <CommunityContext.Provider value={value}>{children}</CommunityContext.Provider>

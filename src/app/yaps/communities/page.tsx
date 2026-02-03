@@ -19,9 +19,7 @@ import {
     MagnifyingGlass,
     Plus,
     Users,
-    GraduationCap,
     Lock,
-    Globe,
     Spinner,
     Funnel
 } from "@phosphor-icons/react"
@@ -104,7 +102,6 @@ export default function GroupsPage() {
                 )}
                 {group.university_restriction && (
                     <Badge className="absolute top-2 right-2 bg-yellow-500/80 hover:bg-yellow-500 text-white border-0 backdrop-blur-md">
-                        <GraduationCap className="w-3 h-3 mr-1" weight="regular" />
                         {group.university_restriction} Only
                     </Badge>
                 )}
@@ -192,7 +189,7 @@ export default function GroupsPage() {
                             <Button
                                 onClick={() => setIsCreateModalOpen(true)}
                                 className="rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0"
-                                style={{ backgroundColor: Colors.primary }}
+                                style={{ backgroundColor: "#4A90E2" }}
                             >
                                 <Plus className="w-4 h-4 mr-2" weight="regular" />
                                 Create Community
@@ -230,9 +227,6 @@ export default function GroupsPage() {
                                         {trendingCommunities.length > 0 && !searchQuery && (
                                             <div className="space-y-4">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="p-1.5 rounded-lg bg-orange-500/10">
-                                                        <Globe className="w-5 h-5 text-orange-500" weight="regular" />
-                                                    </div>
                                                     <h2 className="text-xl font-semibold">Trending Now</h2>
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -245,9 +239,6 @@ export default function GroupsPage() {
                                         {recommendedCommunities.length > 0 && !searchQuery && (
                                             <div className="space-y-4">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="p-1.5 rounded-lg bg-purple-500/10">
-                                                        <GraduationCap className="w-5 h-5 text-purple-500" weight="regular" />
-                                                    </div>
                                                     <h2 className="text-xl font-semibold">Recommended for You</h2>
                                                 </div>
                                                 {loading ? (

@@ -27,6 +27,7 @@ import { toast } from "react-hot-toast"
 import { AuthContext } from "@/context/authcontext"
 import { useCommunity } from "@/context/CommunityContext"
 import CreateCommunityPostModal from "@/components/communities/CreateCommunityPostModal"
+import InviteModal from "@/components/communities/InviteModal"
 import Header from "@/components/header"
 
 import CommunityCropModal from "@/components/communities/CommunityCropModal"
@@ -60,6 +61,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
     const [isLoading, setIsLoading] = useState(true)
     const [activeTab, setActiveTab] = useState("feed")
     const [isPostModalOpen, setIsPostModalOpen] = useState(false)
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
 
     // Cropping state
     const [cropModal, setCropModal] = useState<{
@@ -282,7 +284,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                             <div className="flex items-center gap-2">
                                 {group.is_member ? (
                                     <>
-                                        <Button variant="outline" className="rounded-full">
+                                        <Button variant="outline" className="rounded-full" onClick={() => setIsInviteModalOpen(true)}>
                                             <ShareNetwork className="w-4 h-4 mr-2 text-muted-foreground" weight="regular" />
                                             Invite
                                         </Button>
@@ -495,6 +497,11 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                     title={cropModal.type === 'cover' ? 'Crop Cover Image' : 'Crop Icon Image'}
                 />
             )}
+            <InviteModal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                communitySlug={groupSlug}
+            />
         </div>
     )
 }

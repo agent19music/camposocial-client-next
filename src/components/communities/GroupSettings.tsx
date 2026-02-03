@@ -31,7 +31,8 @@ import {
     Shield,
     UserX,
     Ban,
-    School
+    School,
+    Copy,
 } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { AuthContext } from "@/context/authcontext"
@@ -152,7 +153,7 @@ export default function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="public">Public</SelectItem>
-                                    <SelectItem value="private">Invite Only</SelectItem>
+                                    <SelectItem value="secret">Secret (Invite Only)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -161,40 +162,30 @@ export default function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
                             <div className="flex items-center gap-2 p-3 bg-yellow-500/10 text-yellow-600 rounded-lg text-sm">
                                 <School className="w-4 h-4" />
                                 Restricted to: <span className="font-semibold">{group.university_restriction}</span>
-                                {/* Note: Changing this might be complex, so keeping it read-only for now */}
                             </div>
                         )}
 
                         <div className="grid gap-2">
                             <Label>Invite Link</Label>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    readOnly
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/yaps/communities/${group.id}`}
-                                    className="bg-muted text-muted-foreground"
-                                />
-                                <Button variant="outline" size="icon" onClick={() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/yaps/communities/${group.id}`);
-                                    toast.success("Invite link copied!");
-                                }}>
-                                    <span className="sr-only">Copy</span>
-                                    <svg
-                                        width="15"
-                                        height="15"
-                                        viewBox="0 0 15 15"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-4 w-4"
-                                    >
-                                        <path
-                                            d="M1 9.50006C1 10.3285 1.67157 11.0001 2.5 11.0001H4L4 10.0001H2.5C2.22386 10.0001 2 9.7762 2 9.50006L2 2.50006C2 2.22392 2.22386 2.00006 2.5 2.00006L9.5 2.00006C9.77614 2.00006 10 2.22392 10 2.50006V4.00006H11V2.50006C11 1.67163 10.3284 1.00006 9.5 1.00006L2.5 1.00006C1.67157 1.00006 1 1.67163 1 2.50006V9.50006ZM5 5.50006C5 4.67163 5.67157 4.00006 6.5 4.00006H13.5C14.3284 4.00006 15 4.67163 15 5.50006V12.5001C15 13.3285 14.3284 14.0001 13.5 14.0001H6.5C5.67157 14.0001 5 13.3285 5 12.5001V5.50006ZM6.5 5.00006H13.5C13.7761 5.00006 14 5.22392 14 5.50006V12.5001C14 12.7762 13.7761 13.0001 13.5 13.0001H6.5C6.22386 13.0001 6 12.7762 6 12.5001V5.50006C6 5.22392 6.22386 5.00006 6.5 5.00006Z"
-                                            fill="currentColor"
-                                            fillRule="evenodd"
-                                            clipRule="evenodd"
-                                        ></path>
-                                    </svg>
-                                </Button>
-                            </div>
+                            {formData.privacy_type === 'public' ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        readOnly
+                                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/yaps/communities/${group.id}`}
+                                        className="bg-muted text-muted-foreground"
+                                    />
+                                    <Button variant="outline" size="icon" onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/yaps/communities/${group.id}`);
+                                        toast.success("Link copied!");
+                                    }}>
+                                        <Copy className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                                    Secret communities require unique invite links. Use the "Invite" button on the main page to generate them.
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-4 flex justify-between">
