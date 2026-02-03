@@ -6,6 +6,7 @@ import { Icons } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { SmileyNervous, SmileySadIcon } from '@phosphor-icons/react';
 
 // Utility function for Twitter OAuth 2.0 PKCE
 async function generateCodeChallenge() {
@@ -39,6 +40,7 @@ function generateCodeVerifier() {
 export function SocialLoginModal() {
   const { socialLogin, showSocialModal, setShowSocialModal } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const loadingMessages = [
@@ -52,26 +54,34 @@ export function SocialLoginModal() {
 
   // Rotate through loading messages
   useEffect(() => {
-    if (!isLoading) return;
+    if (!isLoading || hasError) return;
 
     const interval = setInterval(() => {
       setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isLoading, loadingMessages.length]);
+  }, [isLoading, hasError, loadingMessages.length]);
+
+  const resetState = () => {
+    setIsLoading(false);
+    setHasError(false);
+    setLoadingMessageIndex(0);
+  };
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (credentialResponse) => {
       setIsLoading(true);
+      setHasError(false);
       setLoadingMessageIndex(0);
-      
+
       try {
 
         // Check if we have the expected response structure
         if (!credentialResponse.access_token) {
           console.error('Invalid Google OAuth response:', credentialResponse);
           toast.error('Invalid Google OAuth response');
+          setHasError(true);
           setIsLoading(false);
           return;
         }
@@ -85,27 +95,25 @@ export function SocialLoginModal() {
           scope: credentialResponse.scope
         };
 
-        
-        // Add timeout as safety net (30 seconds) - will clear loading if something goes wrong
-        const timeoutId = setTimeout(() => {
+        const result = await socialLogin('google', transformedData);
+
+        // Check if login failed
+        if (!result.success) {
+          setHasError(true);
           setIsLoading(false);
-        }, 30000);
-        
-        await socialLogin('google', transformedData);
-        
-        // Clear timeout if socialLogin completes
-        clearTimeout(timeoutId);
+        }
         // Note: On success, navigation happens so component unmounts
-        // On error, socialLogin shows toast but doesn't throw, so timeout will clear loading after 30s
       } catch (error) {
         console.error('Google login error:', error);
         toast.error(`Google login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setHasError(true);
         setIsLoading(false);
       }
     },
     onError: (error) => {
       console.error('Google login error:', error);
       toast.error(`Google login failed: ${error?.error_description || 'Unknown error'}`);
+      setHasError(true);
       setIsLoading(false);
     },
     scope: 'email profile',
@@ -121,6 +129,7 @@ export function SocialLoginModal() {
     }
 
     setIsLoading(true);
+    setHasError(false);
     setLoadingMessageIndex(0);
 
     const redirectUri = encodeURIComponent(`${window.location.origin}/api/oauth/github/callback`);
@@ -191,6 +200,42 @@ export function SocialLoginModal() {
           </div>
         </Button>
       </div>
+    );
+  }
+
+  // Error state UI
+  if (hasError) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center py-12 space-y-6"
+      >
+        <motion.div
+          initial={{ rotate: -10 }}
+          animate={{ rotate: [0, -5, 5, -5, 0] }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <SmileySadIcon
+            className="h-16 w-16"
+          />
+        </motion.div>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+            sorry that didn&apos;t work
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            let&apos;s try again
+          </p>
+        </div>
+        <Button
+          onClick={resetState}
+          className="text-white font-semibold transition-all duration-200 hover:scale-[1.02]"
+          style={{ backgroundColor: 'var(--color-fun)' }}
+        >
+          Try Again
+        </Button>
+      </motion.div>
     );
   }
 

@@ -12,7 +12,7 @@ import { deriveKeyPassword } from "../lib/keyStorage";
 // Create the AuthContext with a default value (null user initially)
 export const AuthContext = createContext<AuthContextType>({
   login: () => { },
-  socialLogin: async () => { },
+  socialLogin: async () => ({ success: false }),
   completeProfile: async () => { },
   logout: () => { },
   currentUser: null,
@@ -28,8 +28,8 @@ export const AuthContext = createContext<AuthContextType>({
   register: async () => ({ success: false }),
   sendOTP: async () => ({ success: false }),
   verifyOTP: async () => ({ success: false }),
-  oauthLogin: async () => { },
-  oauthSignup: async () => { },
+  oauthLogin: async () => ({ success: false }),
+  oauthSignup: async () => ({ success: false }),
 });
 
 export default function AuthProvider({ children }: AuthProviderProps) {
@@ -156,7 +156,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  async function socialLogin(provider: string, data: any) {
+  async function socialLogin(provider: string, data: any): Promise<{ success: boolean }> {
     try {
 
       if (!apiEndpoint) {
@@ -219,15 +219,18 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           toast.success('Welcome back!');
           router.push('/yaps');
         }
+        return { success: true };
       } else {
         const errorMessage = result.error || `${provider} authentication failed`;
         console.error(`${provider} OAuth error:`, result);
         toast.error(errorMessage);
+        return { success: false };
       }
     } catch (error) {
       console.error('Social login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       toast.error(`${provider} login failed: ${errorMessage}`);
+      return { success: false };
     }
   }
 
@@ -246,8 +249,14 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         setIsProfileComplete(true);
+        // Update user context to get fresh data
         updateUserContext();
-        router.push('/yaps');
+
+        // Use the username from the server response as the authoritative source
+        // This ensures we navigate to the correct profile with the username confirmed by the server
+        // Fallback to form data or current user for backward compatibility
+        const updatedUsername = result.username || profileData.username || currentUser?.username;
+        router.push(`/yaps/profile/${updatedUsername}`);
         toast.success('Profile completed successfully');
       } else {
         toast.error(result.message || 'Failed to complete profile');
@@ -483,7 +492,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  async function oauthLogin(provider: string, data: any) {
+  async function oauthLogin(provider: string, data: any): Promise<{ success: boolean }> {
     try {
       const response = await fetch(`${apiEndpoint}/oauth/${provider}/login`, {
         method: 'POST',
@@ -497,7 +506,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         // User doesn't have an account - redirect to signup
         toast.error('No account found. Please sign up first.');
         router.push('/signup');
-        return;
+        return { success: false };
       }
 
       if (result.access_token) {
@@ -532,13 +541,16 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           toast.success('Welcome back!');
           router.push('/yaps');
         }
+        return { success: true };
       } else {
         const errorMessage = result.error || `${provider} login failed`;
         toast.error(errorMessage);
+        return { success: false };
       }
     } catch (error) {
       console.error('OAuth login error:', error);
       toast.error(`${provider} login failed`);
+      return { success: false };
     }
   }
 

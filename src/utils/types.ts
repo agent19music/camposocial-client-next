@@ -28,11 +28,15 @@ export type CurrentUser = {
   username: string;
   display_name: string;
   yap_header_img?: string;
+  university?: string;
+  faculty?: string;
+  course?: string;
 } | null;
+
 
 export interface AuthContextType {
   login: (username: string, password: string, apiEndpoint: string) => void;
-  socialLogin: (provider: string, data: any) => Promise<void>;
+  socialLogin: (provider: string, data: any) => Promise<{ success: boolean }>;
   completeProfile: (profileData: any) => Promise<void>;
   logout: () => void;
   currentUser: CurrentUser | null;
@@ -49,8 +53,8 @@ export interface AuthContextType {
   register: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean }>;
   sendOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
   verifyOTP: (email: string, code: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  oauthLogin: (provider: string, data: any) => Promise<void>;  // OAuth for existing users only
-  oauthSignup: (provider: string, data: any) => Promise<void>; // OAuth for new users
+  oauthLogin: (provider: string, data: any) => Promise<{ success: boolean }>;  // OAuth for existing users only
+  oauthSignup: (provider: string, data: any) => Promise<{ success: boolean }>; // OAuth for new users
 }
 
 export interface AuthProviderProps { children: ReactNode }
@@ -427,6 +431,12 @@ export interface Yap {
   optimisticLikesCount?: number;
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
+  // Community attribution (for posts from public communities)
+  community?: {
+    slug: string;
+    name: string;
+    icon_image: string;
+  } | null;
 }
 
 export interface HashtagSuggestion { name: string; usage_count: number }
@@ -466,6 +476,11 @@ export interface YapContextProps {
   setYapReplies: (replies: Reply[]) => void;
   whotofollow: () => Promise<WhoToFollowSuggestion[]>;
   whotofollowSuggestions: WhoToFollowSuggestion[];
+
+  // Yap moderation
+  deleteYap: (yapId: string) => Promise<boolean>;
+  muteUser: (username: string) => Promise<boolean>;
+  blockUser: (username: string) => Promise<boolean>;
 }
 
 export interface YapPayload {

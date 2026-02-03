@@ -45,7 +45,12 @@ const defaultValue: YapContextProps = {
 
   // Who to follow
   whotofollow: async () => [],
-  whotofollowSuggestions: []
+  whotofollowSuggestions: [],
+  
+  // Yap moderation
+  deleteYap: async () => false,
+  muteUser: async () => false,
+  blockUser: async () => false,
 };
 
 // Create the YapContext with default values
@@ -200,6 +205,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
       const data = await response.json();
       setYaps(data.yaps || []);
+      console.log(data.yaps);
       setFilteredYaps(data.yaps || []);
 
     } catch (error: any) {
@@ -922,6 +928,156 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
   };
 
+  // Delete yap (soft delete)
+  const deleteYap = useCallback(async (yapId: string): Promise<boolean> => {
+    if (!isAuthenticated || !authToken || !apiEndpoint) {
+      toast.error('Please log in to delete a yap');
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${apiEndpoint}/yaps/${yapId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Session expired. Please log in again.');
+          return false;
+        }
+        if (response.status === 403) {
+          toast.error('You can only delete your own yaps');
+          return false;
+        }
+        if (response.status === 404) {
+          toast.error('Yap not found');
+          return false;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Remove the yap from local state
+      setYaps(prevYaps => prevYaps.filter(yap => yap.id !== yapId));
+      setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.id !== yapId));
+
+      toast.success('Yap deleted');
+      return true;
+
+    } catch (error: any) {
+      console.error('Error deleting yap:', error);
+      toast.error(error.message || 'Failed to delete yap');
+      return false;
+    }
+  }, [isAuthenticated, authToken, apiEndpoint]);
+
+  // Mute user
+  const muteUser = useCallback(async (username: string): Promise<boolean> => {
+    if (!isAuthenticated || !authToken || !apiEndpoint) {
+      toast.error('Please log in to mute users');
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${apiEndpoint}/users/${username}/mute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Session expired. Please log in again.');
+          return false;
+        }
+        if (response.status === 404) {
+          toast.error('User not found');
+          return false;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.muted) {
+        // Filter out yaps from the muted user
+        setYaps(prevYaps => prevYaps.filter(yap => yap.username !== username));
+        setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.username !== username));
+        toast.success(`@${username} has been muted`);
+      } else {
+        toast.success(`@${username} has been unmuted`);
+        // Refresh feed to show their yaps again
+        setTimeout(() => {
+          setOnchange(!onchange);
+        }, 500);
+      }
+
+      return true;
+
+    } catch (error: any) {
+      console.error('Error muting user:', error);
+      toast.error(error.message || 'Failed to mute user');
+      return false;
+    }
+  }, [isAuthenticated, authToken, apiEndpoint, onchange, setOnchange]);
+
+  // Block user
+  const blockUser = useCallback(async (username: string): Promise<boolean> => {
+    if (!isAuthenticated || !authToken || !apiEndpoint) {
+      toast.error('Please log in to block users');
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${apiEndpoint}/users/${username}/block`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Session expired. Please log in again.');
+          return false;
+        }
+        if (response.status === 404) {
+          toast.error('User not found');
+          return false;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.blocked) {
+        // Filter out yaps from the blocked user
+        setYaps(prevYaps => prevYaps.filter(yap => yap.username !== username));
+        setFilteredYaps(prevYaps => prevYaps.filter(yap => yap.username !== username));
+        toast.success(`@${username} has been blocked`);
+      } else {
+        toast.success(`@${username} has been unblocked`);
+        // Refresh feed to show their yaps again
+        setTimeout(() => {
+          setOnchange(!onchange);
+        }, 500);
+      }
+
+      return true;
+
+    } catch (error: any) {
+      console.error('Error blocking user:', error);
+      toast.error(error.message || 'Failed to block user');
+      return false;
+    }
+  }, [isAuthenticated, authToken, apiEndpoint, onchange, setOnchange]);
+
   // The context data that will be passed down to components
   const contextData = {
     yaps: filteredYaps,
@@ -957,7 +1113,12 @@ export default function YapProvider({ children }: YapProviderProps) {
 
     // Who to follow
     whotofollow,
-    whotofollowSuggestions
+    whotofollowSuggestions,
+
+    // Yap moderation
+    deleteYap,
+    muteUser,
+    blockUser,
   };
 
   // Render the provider and pass the context data

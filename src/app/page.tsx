@@ -84,6 +84,7 @@ export default function Home() {
                         priority
                       />
                       <Image
+                      unoptimized
                         src={theme !== 'dark'
                           ? "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-light-flicker.gif"
                           : "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/ezgif-camposocial-dark-flicker.gif"

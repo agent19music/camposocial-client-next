@@ -104,7 +104,7 @@ const Header: FC<HeaderProps> = ({
   }
 
   function takeMeToProfile() {
-    router.push('/userprofile');
+    router.push(`/yaps/profile/${currentUser?.username}`);
   }
 
   // Get filters based on current page

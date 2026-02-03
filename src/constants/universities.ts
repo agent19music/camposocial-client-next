@@ -1,0 +1,41 @@
+export const UNIVERSITIES = [
+    "University of Nairobi",
+    "Kenyatta University",
+    "Moi University",
+    "Egerton University",
+    "Jomo Kenyatta University of Agriculture and Technology",
+    "Maseno University",
+    "Strathmore University",
+    "United States International University Africa",
+    "Mount Kenya University",
+    "Daystar University",
+    "Catholic University of Eastern Africa",
+    "Technical University of Kenya",
+    "Technical University of Mombasa",
+    "Multimedia University of Kenya",
+    "Kabarak University",
+    "Riara University",
+    "KCA University",
+    "Africa Nazarene University",
+    "Zetech University",
+    "Dedan Kimathi University of Technology"
+];
+
+export const FACULTIES = [
+    "Faculty of Arts",
+    "Faculty of Science",
+    "Faculty of Engineering",
+    "Faculty of Medicine",
+    "Faculty of Law",
+    "Faculty of Business & Economics",
+    "Faculty of Education",
+    "Faculty of Agriculture",
+    "Faculty of Computing/IT",
+    "Faculty of Built Environment",
+    "Faculty of Social Sciences",
+    "School of Nursing",
+    "School of Pharmacy",
+    "School of Architecture",
+    "School of Journalism",
+    "Other"
+];

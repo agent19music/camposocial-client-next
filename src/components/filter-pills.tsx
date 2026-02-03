@@ -45,7 +45,7 @@ export default function FilterPills({
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Show pills if scrolling up or at top
       if (currentScrollY < lastScrollY || currentScrollY < 10) {
         setIsVisible(true);
@@ -53,7 +53,7 @@ export default function FilterPills({
         // Hide pills if scrolling down and past threshold
         setIsVisible(false);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
@@ -76,7 +76,7 @@ export default function FilterPills({
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b transition-all duration-300",
         isVisible ? "translate-y-0" : "-translate-y-full",
@@ -97,14 +97,14 @@ export default function FilterPills({
                   className={cn(
                     "relative rounded-full px-4 py-2 whitespace-nowrap text-sm transition-all",
                     isSearchActive
-                      ? "text-white border-0 shadow-sm bg-fun/80"
-                      : "bg-background border-muted hover:bg-fun/80 dark:hover:bg-fun/80 text-black dark:text-white"
+                      ? "text-white border-0 shadow-md bg-[#ff9013] hover:bg-[#ff9013]/90"
+                      : "bg-background border-muted hover:bg-[#ff9013] hover:text-white hover:border-[#ff9013] text-foreground"
                   )}
                 >
                   <SearchIcon className="h-4 w-4 mr-2" />
                   <span>{filter.label}</span>
                   {filter.badge && filter.badge > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                    <span className="absolute -top-2 -right-2 bg-[#ff9013] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
                       {filter.badge > 99 ? '99+' : filter.badge}
                     </span>
                   )}
@@ -120,13 +120,13 @@ export default function FilterPills({
                 className={cn(
                   "relative rounded-full px-4 py-2 whitespace-nowrap text-sm transition-all",
                   filter.active
-                    ? "text-white border-0 shadow-sm bg-fun/80"
-                    : "bg-background border-muted hover:bg-fun/80 dark:hover:bg-fun/80 text-black dark:text-white"
+                    ? "text-white border-0 shadow-md bg-[#ff9013] hover:bg-[#ff9013]/90"
+                    : "bg-background border-muted hover:bg-[#ff9013] hover:text-white hover:border-[#ff9013] text-foreground"
                 )}
               >
                 {filter.label}
                 {filter.badge && filter.badge > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                  <span className="absolute -top-2 -right-2 bg-[#ff9013] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
                     {filter.badge > 99 ? '99+' : filter.badge}
                   </span>
                 )}

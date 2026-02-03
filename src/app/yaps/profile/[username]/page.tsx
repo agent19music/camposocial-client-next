@@ -115,6 +115,12 @@ interface Yap {
   optimisticLikesCount?: number;
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
+  // Community attribution (for posts from public communities)
+  community?: {
+    slug: string;
+    name: string;
+    icon_image: string;
+  } | null;
 }
 interface MediaItem {
   id: number;

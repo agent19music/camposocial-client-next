@@ -37,7 +37,12 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
   const { currentUser, logout } = useContext(AuthContext);
 
   const getPageSpecificItems = () => {
-    if (pathname?.includes('/yaps')) {
+    if (pathname?.includes('/yaps/communities')) {
+      return [
+        { icon: TrendingUp, label: "Discover", href: "/yaps/communities" },
+        { icon: Users, label: "My Communities", href: "/yaps/communities" },
+      ];
+    } else if (pathname?.includes('/yaps')) {
       return [
         { icon: TrendingUp, label: "Trending", href: "/yaps" },
         { icon: Users, label: "Following", href: "/yaps" },
@@ -63,6 +68,7 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
   const mainNavItems = [
     { icon: Calendar, label: "Events", href: "/events" },
     { icon: MessageSquare, label: "Yaps", href: "/yaps" },
+    { icon: Users, label: "Communities", href: "/yaps/communities" },
     { icon: ShoppingBag, label: "Marketplace", href: "/marketplace" },
     { icon: UserPlus, label: "Friends", href: "/friends" },
   ];
@@ -86,7 +92,8 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
       {pageSpecificItems.length > 0 && (
         <div className="space-y-1">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            {pathname?.includes('/yaps') && 'Yaps'}
+            {pathname?.includes('/yaps/communities') && 'Communities'}
+            {pathname?.includes('/yaps') && !pathname?.includes('/yaps/communities') && 'Yaps'}
             {pathname?.includes('/marketplace') && 'Shopping'}
             {pathname?.includes('/events') && 'Events'}
             {pathname?.includes('/friends') && 'Social'}

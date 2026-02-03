@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { MarketplaceContext } from "@/context/marketplacecontext";
 import AddYap from "@/components/addyap";
 import AddEvent from "@/components/addevent";
+import AddCommunity from "@/components/addcommunity";
 
 export default function SmartFAB() {
   const [isVisible, setIsVisible] = useState(true);
@@ -69,10 +70,17 @@ export default function SmartFAB() {
     } else if (pathname?.includes('/friends')) {
       // No FAB on friends page
       return null;
-    } else {
+    } else if (pathname?.includes('/yaps/communities')) {
       return {
         icon: Plus,
-        action: 'add',
+        action: 'add-community',
+        badgeCount: 0,
+        label: 'Add'
+      };
+    } else if (pathname?.includes('/events')) {
+      return {
+        icon: Plus,
+        action: 'add-event',
         badgeCount: 0,
         label: 'Add'
       };
@@ -123,7 +131,35 @@ export default function SmartFAB() {
     );
   }
 
-  if (fabConfig.action === 'add') {
+  // Add action for communities page
+  if (fabConfig.action === 'add-community') {
+    return (
+      <div
+        className={cn(
+          "lg:hidden fixed bottom-20 right-4 z-40 transition-all duration-300 ease-in-out",
+          isVisible ? "translate-y-0 scale-100" : "translate-y-2 scale-95 opacity-0"
+        )}
+      >
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              size="lg"
+              className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
+            >
+              <IconComponent className="h-6 w-6" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-3 mb-2 mr-2 w-auto" side="top" align="end">
+            <div className="flex flex-col gap-2 min-w-[160px]">
+              <AddCommunity />
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  }
+
+  if (fabConfig.action === 'add-event') {
     return (
       <div
         className={cn(
@@ -142,7 +178,7 @@ export default function SmartFAB() {
           </PopoverTrigger>
           <PopoverContent className="p-3 mb-2 mr-2 w-auto" side="top" align="end">
             <div className="flex flex-col gap-2 min-w-[120px]">
-              <AddYap />
+       
               <AddEvent />
             </div>
           </PopoverContent>
