@@ -255,11 +255,24 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         // Use the username from the server response as the authoritative source
         // This ensures we navigate to the correct profile with the username confirmed by the server
         // Fallback to form data or current user for backward compatibility
-        const updatedUsername = result.username || profileData.username || currentUser?.username;
+        const updatedUsername = result.user?.username || profileData.username || currentUser?.username;
         router.push(`/yaps/profile/${updatedUsername}`);
-        toast.success('Profile completed successfully');
+        
+        // Show success message
+        toast.success('Profile completed successfully!');
+        
+        // Show badge award notification if a badge was awarded
+        if (result.badge_awarded && result.badge_info?.badge_name) {
+          // Slight delay to avoid toast overlap
+          setTimeout(() => {
+            toast.success(`🎓 ${result.badge_info.badge_name} badge awarded!`, {
+              duration: 5000,
+              icon: '🏆'
+            });
+          }, 1000);
+        }
       } else {
-        toast.error(result.message || 'Failed to complete profile');
+        toast.error(result.error || result.message || 'Failed to complete profile');
       }
     } catch (error) {
       console.error('Profile completion error:', error);

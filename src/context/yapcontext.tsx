@@ -4,6 +4,7 @@ import { createContext, ReactNode, useState, useEffect, useContext, useRef, useC
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
+import { useAuthModal } from "./AuthModalContext";
 import { toast } from 'react-hot-toast'
 import { Yap, MediaItem, Reply, HashtagSuggestion, LocationSuggestion, YapContextProps, YapPayload, WhoToFollowSuggestion } from "../utils/types";
 
@@ -65,6 +66,7 @@ interface YapProviderProps {
 export default function YapProvider({ children }: YapProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // API endpoint from environment variables
   const { authToken, isAuthenticated, isLoading: authLoading, currentUser } = useContext(AuthContext);
+  const { openAuthModal } = useAuthModal();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -139,7 +141,7 @@ export default function YapProvider({ children }: YapProviderProps) {
 
   // Enhanced fetch yaps function with feed algorithm support
   const fetchYaps = useCallback(async (feedTypeOverride?: string, forceRefresh: boolean = false) => {
-    if (authLoading || !isAuthenticated || !authToken || !apiEndpoint) {
+    if (authLoading || !apiEndpoint) {
       setYaps([]);
       setFilteredYaps([]);
       setIsLoading(false);
@@ -149,7 +151,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     // Skip rate limiting check if force refresh
     if (!forceRefresh) {
       if (fetchingRef.current) return;
-      if (!canMakeRequest('fetch_yaps')) return;
+      if (isAuthenticated && !canMakeRequest('fetch_yaps')) return;
     }
 
     markRequestStart('fetch_yaps');
@@ -164,24 +166,30 @@ export default function YapProvider({ children }: YapProviderProps) {
     abortControllerRef.current = controller;
 
     try {
-      const currentFeedType = feedTypeOverride || feedType;
-      let endpoint = `${apiEndpoint}/yaps`;
+      let endpoint: string;
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
 
-      // Use different endpoints based on feed type
-      if (currentFeedType === 'trending') {
-        endpoint = `${apiEndpoint}/yaps/trending`;
-      } else if (currentFeedType === 'following') {
-        endpoint = `${apiEndpoint}/yaps/feed?type=following`;
+      // Use public endpoint if not authenticated
+      if (!isAuthenticated || !authToken) {
+        endpoint = `${apiEndpoint}/public/yaps/top?limit=15`;
       } else {
-        endpoint = `${apiEndpoint}/yaps/feed?type=mixed`; // Chronological with some algorithmic boost
+        const currentFeedType = feedTypeOverride || feedType;
+        // Use different endpoints based on feed type for authenticated users
+        if (currentFeedType === 'trending') {
+          endpoint = `${apiEndpoint}/yaps/trending`;
+        } else if (currentFeedType === 'following') {
+          endpoint = `${apiEndpoint}/yaps/feed?type=following`;
+        } else {
+          endpoint = `${apiEndpoint}/yaps/feed?type=mixed`; // Chronological with some algorithmic boost
+        }
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
 
       const response = await fetch(endpoint, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+        headers,
         signal: controller.signal,
       });
 
@@ -205,7 +213,6 @@ export default function YapProvider({ children }: YapProviderProps) {
 
       const data = await response.json();
       setYaps(data.yaps || []);
-      console.log(data.yaps);
       setFilteredYaps(data.yaps || []);
 
     } catch (error: any) {
@@ -333,7 +340,7 @@ export default function YapProvider({ children }: YapProviderProps) {
   // Optimistic toggle like function
   const toggleLike = useCallback(async (yapId: string) => {
     if (!isAuthenticated || !authToken) {
-      toast.error('Please log in to like yaps');
+      openAuthModal('Sign in to like this yap');
       return;
     }
 
@@ -450,7 +457,7 @@ export default function YapProvider({ children }: YapProviderProps) {
   // Optimistic add reply function
   const addReply = useCallback(async (yapId: string, content: string, parentReplyId?: number) => {
     if (!isAuthenticated || !authToken || !currentUser) {
-      toast.error('Please log in to reply');
+      openAuthModal('Sign in to reply to this yap');
       return;
     }
 
@@ -556,7 +563,7 @@ export default function YapProvider({ children }: YapProviderProps) {
   // Optimistic pure retweet function (no content)
   const retweet = useCallback(async (yapId: string) => {
     if (!isAuthenticated || !authToken || !currentUser) {
-      toast.error('Please log in to retweet');
+      openAuthModal('Sign in to retweet this yap');
       return;
     }
 
@@ -632,7 +639,7 @@ export default function YapProvider({ children }: YapProviderProps) {
   // Optimistic quote retweet function (with content)
   const quoteRetweet = useCallback(async (yapId: string, content: string) => {
     if (!isAuthenticated || !authToken || !currentUser) {
-      toast.error('Please log in to quote tweet');
+      openAuthModal('Sign in to quote this yap');
       return;
     }
 
@@ -764,9 +771,9 @@ export default function YapProvider({ children }: YapProviderProps) {
   }, [authToken, apiEndpoint]);
 
   // Fetch single yap by ID
-  const fetchYapById = useCallback(async (yapId: string): Promise<Yap | null> => {
-    if (!authToken || !apiEndpoint) {
-      console.warn('No auth token or API endpoint available');
+  const fetchYapById = useCallback(async (yapId: string, slug?: string): Promise<Yap | null> => {
+    if (!apiEndpoint) {
+      console.warn('No API endpoint available');
       return null;
     }
 
@@ -777,12 +784,24 @@ export default function YapProvider({ children }: YapProviderProps) {
     markRequestStart('fetch_yap_by_id');
 
     try {
-      const response = await fetch(`${apiEndpoint}/yaps/${yapId}`, {
+      let endpoint: string;
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      // Use public endpoint if not authenticated, otherwise use authenticated endpoint
+      if (!isAuthenticated || !authToken) {
+        // Use slug if provided, otherwise use yapId
+        const identifier = slug || yapId;
+        endpoint = `${apiEndpoint}/public/yaps/${identifier}`;
+      } else {
+        endpoint = `${apiEndpoint}/yaps/${yapId}`;
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -825,7 +844,7 @@ export default function YapProvider({ children }: YapProviderProps) {
   // Enhanced post yap with optimistic update
   const postYap = async (yapPayload: YapPayload): Promise<void> => {
     if (!isAuthenticated || !authToken || !currentUser) {
-      toast.error('Please log in to post a yap');
+      openAuthModal('Sign in to post a yap');
       return;
     }
 

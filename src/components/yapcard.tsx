@@ -66,12 +66,6 @@ interface Yap {
   optimisticLikesCount?: number;
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
-  // Community attribution (for posts from public communities)
-  community?: {
-    slug: string;
-    name: string;
-    icon_image: string;
-  } | null;
 }
 
 interface Reply {
@@ -252,7 +246,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   // Handle delete yap
   const handleDeleteYap = async () => {
     if (!deleteYap) return;
-
+    
     setIsDeleting(true);
     try {
       await deleteYap(yap.id);
@@ -268,7 +262,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const handleMuteUser = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!muteUser) return;
-
+    
     setIsMuting(true);
     try {
       await muteUser(yap.username);
@@ -283,7 +277,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const handleBlockUser = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!blockUser) return;
-
+    
     setIsBlocking(true);
     try {
       await blockUser(yap.username);
@@ -346,26 +340,6 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
       >
         {renderRetweetHeader()}
 
-        {/* Community attribution badge */}
-        {yap.community && (
-          <div
-            className="flex items-center gap-1.5 px-4 pt-2 pb-0 text-xs text-muted-foreground cursor-pointer hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/yaps/communities/${yap.community?.slug}`);
-            }}
-          >
-            <Image
-              src={yap.community.icon_image}
-              alt={yap.community.name}
-              width={16}
-              height={16}
-              className="rounded-full object-cover"
-            />
-            <span className="font-medium text-foreground/80">{yap.community.name}</span>
-          </div>
-        )}
-
         <CardHeader className="flex flex-row items-start space-y-0 pb-2 px-4 pt-3">
           <Avatar
             className="w-10 h-10 mr-3 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
@@ -403,7 +377,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               {yap.isOptimistic && (
                 <span className="text-xs text-blue-500 ml-2">Posting...</span>
               )}
-
+              
               {/* Three-dot menu for yap options */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -70,7 +70,9 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
 
       if (response.ok) {
         const data = await response.json()
-        setBadges(data.badges)
+        // Filter out free badges (University badges) as they are exclusive
+        const purchasableBadges = data.badges.filter((b: BadgeItem) => b.price_ksh > 0)
+        setBadges(purchasableBadges)
       } else {
         toast.error('Failed to load badges')
       }
@@ -262,16 +264,11 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
                   unoptimized={badge.is_animated}
                 />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold">{badge.name}</h3>
-                  {badge.is_animated && (
-                    <Badge variant="secondary" className="text-xs">
-                      Animated
-                    </Badge>
-                  )}
+                  <h3 className="font-semibold truncate">{badge.name}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">{badge.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{badge.description}</p>
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-green-600">
@@ -550,7 +547,7 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-w-[90vw] max-h-[80vh] overflow-y-auto fixed top-[8%] left-1/2 -translate-x-1/2 translate-y-0 sm:top-1/2 sm:-translate-y-1/2">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-md max-h-[85vh] overflow-y-auto">
         {paymentStep === 'selection' && renderSelectionStep()}
         {paymentStep === 'payment' && renderSelectionStep()}
         {paymentStep === 'processing' && renderProcessingStep()}

@@ -8,9 +8,9 @@ import { YapActions } from './yapactions'
 import { YapStats } from './yapstats'
 import { MediaGrid } from '../yapmediagrid'
 import { Separator } from '../ui/separator'
-import { formatDate } from '@/lib/utils'
 import { YapContext } from '@/context/yapcontext'
 import Image from 'next/image'
+import BadgeDisplay from '../badgedisplay'
 
 export const MainYap = () => {
   const { selectedYap } = useContext(YapContext)
@@ -59,10 +59,13 @@ export const MainYap = () => {
         <div className="flex-1 min-w-0">
           <div className="flex flex-col">
             <span
-              className="font-bold text-[15px] leading-5 cursor-pointer hover:underline"
+              className="font-bold text-[15px] leading-5 cursor-pointer hover:underline inline-flex items-center gap-2"
               onClick={handleUserClick}
             >
               {selectedYap?.display_name}
+              {selectedYap?.badges && selectedYap.badges.length > 0 && (
+                <BadgeDisplay badges={selectedYap.badges} size="sm" />
+              )}
             </span>
             <span
               className="text-muted-foreground text-[15px] leading-5 cursor-pointer hover:underline"
@@ -111,6 +114,9 @@ export const MainYap = () => {
               </AvatarFallback>
             </Avatar>
             <span className="font-bold text-sm">{selectedYap.original_yap.display_name}</span>
+            {selectedYap.original_yap.badges && selectedYap.original_yap.badges.length > 0 && (
+              <BadgeDisplay badges={selectedYap.original_yap.badges} size="sm" />
+            )}
             <span className="text-muted-foreground text-sm">@{selectedYap.original_yap.username}</span>
           </div>
           <p className="mt-2 text-sm whitespace-pre-wrap break-words">

@@ -156,7 +156,7 @@ export default function CommunityPostCard({
 
     const handleUserClick = (e: React.MouseEvent) => {
         e.stopPropagation()
-        router.push(`/profile/${user.username}`)
+        router.push(`/yaps/profile/${user.username}`)
     }
 
     const handlePostClick = () => {

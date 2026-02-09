@@ -41,7 +41,7 @@ interface BlockedUser {
 }
 
 export default function ProfileSettings() {
-  const { currentUser, logout } = useContext(AuthContext)
+  const { currentUser, logout,authToken } = useContext(AuthContext)
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const [activeTab, setActiveTab] = useState("notifications")
@@ -180,6 +180,9 @@ export default function ProfileSettings() {
     try {
       const response = await fetch(`${apiEndpoint}/deleteuser`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
         credentials: 'include'
       })
       if (response.ok) {

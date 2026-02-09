@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, ReactNode } from 'react';
+import { AuthContext } from '@/context/authcontext';
 import { CommunityProvider } from '@/context/CommunityContext';
 import YapProvider from "@/context/yapcontext";
 import EventProvider from "@/context/eventcontext";
@@ -13,23 +14,28 @@ interface AuthenticatedWrapperProps {
 }
 
 export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperProps) {
+  const { isAuthenticated } = useContext(AuthContext);
 
-
-
-  // If authenticated, wrap with all the authenticated contexts
-  return (
+  // Wrap with contexts - ChatProvider only loads when authenticated
+  const content = (
     <UserProvider>
       <MarketplaceProvider>
         <EventProvider>
           <YapProvider>
             <CommunityProvider>
-              <ChatProvider>
-                {children}
-              </ChatProvider>
+              {isAuthenticated ? (
+                <ChatProvider>
+                  {children}
+                </ChatProvider>
+              ) : (
+                children
+              )}
             </CommunityProvider>
           </YapProvider>
         </EventProvider>
       </MarketplaceProvider>
     </UserProvider>
   );
+
+  return content;
 } 

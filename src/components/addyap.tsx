@@ -182,34 +182,34 @@ export default function AddYap() {
   // Handle media file selection - opens crop/trim modals
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-
+    
     if (files.length === 0) return
-
+    
     // Check if we have room for more files
     if (mediaFiles.length >= 4) {
       toast.error('Maximum 4 media files allowed')
       return
     }
-
+    
     const file = files[0] // Process one file at a time
-
+    
     // Validate file type and size
     const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/')
     const isValidSize = file.size <= 50 * 1024 * 1024 // 50MB limit for videos
-
+    
     if (!isValidType) {
       toast.error('Only images and videos are allowed')
       return
     }
-
+    
     if (!isValidSize) {
       toast.error('File size must be under 50MB')
       return
     }
-
+    
     // Create object URL for the file
     const fileUrl = URL.createObjectURL(file)
-
+    
     if (file.type.startsWith('image/')) {
       // Open crop modal for images
       setImageFileToCrop(file)
@@ -219,7 +219,7 @@ export default function AddYap() {
       setVideoFileToTrim(file)
       setVideoToTrim(fileUrl)
     }
-
+    
     // Reset input so same file can be selected again
     if (e.target) {
       e.target.value = ''
@@ -234,9 +234,9 @@ export default function AddYap() {
       imageFileToCrop?.name || 'cropped-image.jpg',
       { type: croppedBlob.type }
     )
-
+    
     setMediaFiles(prev => [...prev, croppedFile].slice(0, 4))
-
+    
     // Clean up
     if (imageToCrop) {
       URL.revokeObjectURL(imageToCrop)
@@ -262,9 +262,9 @@ export default function AddYap() {
       videoFileToTrim?.name || 'trimmed-video.mp4',
       { type: trimmedBlob.type }
     )
-
+    
     setMediaFiles(prev => [...prev, trimmedFile].slice(0, 4))
-
+    
     // Clean up
     if (videoToTrim) {
       URL.revokeObjectURL(videoToTrim)
@@ -649,7 +649,7 @@ export default function AddYap() {
       {imageToCrop && (
         <ImageCropModal
           isOpen={!!imageToCrop}
-          imageSrc={imageToCrop}
+          imageUrl={imageToCrop}
           onClose={handleCropCancel}
           onCropComplete={handleCropComplete}
         />
@@ -659,7 +659,7 @@ export default function AddYap() {
       {videoToTrim && (
         <VideoTrimmerModal
           isOpen={!!videoToTrim}
-          videoFile={videoFileToTrim!}
+          videoUrl={videoToTrim}
           onClose={handleTrimCancel}
           onTrimComplete={handleTrimComplete}
           maxDuration={60}

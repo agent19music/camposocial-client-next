@@ -22,6 +22,16 @@ import {
     UsersThreeIcon
 } from "@phosphor-icons/react"
 import { Card } from "@/components/ui/card"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Colors } from "@/constants/Colors"
 import { toast } from "react-hot-toast"
 import { AuthContext } from "@/context/authcontext"
@@ -32,6 +42,7 @@ import Header from "@/components/header"
 
 import CommunityCropModal from "@/components/communities/CommunityCropModal"
 import CommunityPostCard from "@/components/communities/CommunityPostCard"
+import CommunitySettingsModal from "@/components/communities/CommunitySettingsModal"
 import { UsersIcon } from "lucide-react"
 
 interface GroupDetails {
@@ -47,6 +58,7 @@ interface GroupDetails {
     is_verified: boolean
     is_member: boolean
     user_role: string | null
+    created_at: string
     creator: any
     recent_members: any[]
     rules?: string
@@ -62,6 +74,9 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
     const [activeTab, setActiveTab] = useState("feed")
     const [isPostModalOpen, setIsPostModalOpen] = useState(false)
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+    const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+    const [isLeaving, setIsLeaving] = useState(false)
 
     // Cropping state
     const [cropModal, setCropModal] = useState<{
@@ -106,9 +121,13 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
     }
 
     const handleLeave = async () => {
-        if (!confirm("Are you sure you want to leave this community?")) return
+        setIsLeaving(true)
         const success = await leaveCommunity(groupSlug)
-        if (success) loadGroupDetails()
+        if (success) {
+            loadGroupDetails()
+        }
+        setIsLeaving(false)
+        setIsLeaveDialogOpen(false)
     }
 
     // Handle cover image selection
@@ -191,7 +210,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
         <div className="min-h-screen bg-background pb-20 md:pb-0 md:pl-64">
             <Header />
             {/* Cover Image */}
-            <div className="relative w-full bg-muted" style={{ aspectRatio: '851/315' }}>
+            <div className="relative w-full bg-muted aspect-[851/315] md:aspect-[851/158]">
                 {group.cover_image ? (
                     <Image
                         src={group.cover_image}
@@ -230,7 +249,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                 {/* Header Content */}
                 <div className="flex flex-col md:flex-row items-start md:items-end gap-6 mb-6">
                     {/* Icon */}
-                    <div className="w-32 h-32 rounded-3xl border-4 border-background bg-card shadow-xl overflow-hidden flex-shrink-0 relative z-10">
+                    <div className="w-20 h-20 md:w-32 md:h-32 rounded-2xl md:rounded-3xl border-4 border-background bg-card shadow-xl overflow-hidden flex-shrink-0 relative z-10">
                         {group.icon_image ? (
                             <Image src={group.icon_image} alt="Icon" fill className="object-cover" />
                         ) : (
@@ -289,7 +308,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                                             Invite
                                         </Button>
                                         {isAdmin && (
-                                            <Button variant="secondary" className="rounded-full">
+                                            <Button variant="secondary" className="rounded-full" onClick={() => setIsSettingsModalOpen(true)}>
                                                 <Gear className="w-4 h-4 mr-2 text-muted-foreground" weight="regular" />
                                                 Settings
                                             </Button>
@@ -297,7 +316,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                                         <Button
                                             variant="ghost"
                                             className="rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
-                                            onClick={handleLeave}
+                                            onClick={() => setIsLeaveDialogOpen(true)}
                                         >
                                             Leave
                                         </Button>
@@ -502,6 +521,35 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                 onClose={() => setIsInviteModalOpen(false)}
                 communitySlug={groupSlug}
             />
+
+            {/* Settings Modal */}
+            <CommunitySettingsModal
+                isOpen={isSettingsModalOpen}
+                onClose={() => setIsSettingsModalOpen(false)}
+                community={group}
+            />
+
+            {/* Leave Community Confirmation Dialog */}
+            <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Leave this community?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to leave {group.name}? You can always rejoin later.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isLeaving}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleLeave}
+                            disabled={isLeaving}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        >
+                            {isLeaving ? 'Leaving...' : 'Leave'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

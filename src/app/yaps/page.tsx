@@ -42,6 +42,8 @@ import AddYap from '@/components/addyap'
 import { useTheme } from '@/context/themecontext'
 import WhoToFollow from '@/components/whotofollow'
 import TrendingHashtags from '@/components/trending-hashtags'
+import CommunitiesWidget from '@/components/communities/CommunitiesWidget'
+import { AuthFadeWall } from '@/components/AuthFadeWall'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
@@ -181,10 +183,10 @@ export default function Component() {
 
   // Force refresh yaps when page mounts and yaps are empty (handles navigation back)
   useEffect(() => {
-    if (isAuthenticated && !authLoading && yaps.length === 0 && !isLoading) {
+    if (!authLoading && yaps.length === 0 && !isLoading) {
       refreshFeed();
     }
-  }, [isAuthenticated, authLoading, yaps.length, isLoading, refreshFeed]);
+  }, [authLoading, yaps.length, isLoading, refreshFeed]);
 
   // Check if user is new (no yaps, no friends, etc.)
   const isNewUser = !authLoading && currentUser && (
@@ -231,92 +233,133 @@ export default function Component() {
     <div className="w-screen h-screen lg:container mx-auto p-4">
       <Header />
       <main className="mobile-content-padding lg:pb-4">
-        {/* Filter Pills - Always visible on mobile and desktop, includes Search pill */}
-        <FilterPills
-          filters={filterPills}
-          onFilterSelect={handleFeedTypeChange}
-          className="lg:hidden"
-        />
+        {/* Filter Pills - Only show when authenticated */}
+        {isAuthenticated && (
+          <FilterPills
+            filters={filterPills}
+            onFilterSelect={handleFeedTypeChange}
+            className="lg:hidden"
+          />
+        )}
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
 
           {/* Center content */}
           <div className="flex-1 flex flex-col gap-4 lg:gap-6">
-            {/* Desktop Filter Pills (with Search pill) */}
-            <div className="hidden lg:block">
-              <FilterPills
-                filters={filterPills}
-                onFilterSelect={handleFeedTypeChange}
-              />
-            </div>
+            {/* Desktop Filter Pills (with Search pill) - Only show when authenticated */}
+            {isAuthenticated && (
+              <div className="hidden lg:block">
+                <FilterPills
+                  filters={filterPills}
+                  onFilterSelect={handleFeedTypeChange}
+                />
+              </div>
+            )}
 
-            {/* Add Yap Button only */}
-            <div className="w-full max-w-2xl mx-auto">
-              <AddYap />
-            </div>
+            {/* Add Yap Button - Only show when authenticated */}
+            {isAuthenticated && (
+              <div className="w-full max-w-2xl mx-auto">
+                <AddYap />
+              </div>
+            )}
 
             {/* Feed Container */}
             <div className="w-full max-w-2xl mx-auto">
-              {isNewUser ? (
+              {isAuthenticated && isNewUser ? (
                 <NewUserWelcome />
               ) : (
                 <div className="w-full space-y-4">
                   {/* Feed Content */}
-                  <div>
-                    {isLoading ? (
-                      // Display Skeletons while loading
-                      <>
-                        {Array.from({ length: 4 }).map((_, index) => (
-                          <YapCardSkeleton key={index} />
-                        ))}
-                      </>
-                    ) : yaps.length > 0 ? (
-                      // Display yaps
-                      <div className="space-y-4">
-                        {yaps.map((yap) => (
-                          <YapCard
-                            key={yap.id}
-                            display_name={yap.display_name}
-                            username={yap.username}
-                            content={yap.content}
-                            avatar={yap.avatar}
-                            media={yap.media}
-                            yap={yap}
-                            likes_count={yap.likes_count}
-                            replies_count={yap.replies_count}
-                            retweets_count={yap.retweets_count}
-                            badges={yap.badges}
-                          />
-                        ))}
-                      </div>
+                  {isAuthenticated ? (
+                    <div>
+                      {isLoading ? (
+                        // Display Skeletons while loading
+                        <>
+                          {Array.from({ length: 4 }).map((_, index) => (
+                            <YapCardSkeleton key={index} />
+                          ))}
+                        </>
+                      ) : yaps.length > 0 ? (
+                        // Display yaps for authenticated users
+                        <div className="space-y-4">
+                          {yaps.map((yap) => (
+                            <YapCard
+                              key={yap.id}
+                              display_name={yap.display_name}
+                              username={yap.username}
+                              content={yap.content}
+                              avatar={yap.avatar}
+                              media={yap.media}
+                              yap={yap}
+                              likes_count={yap.likes_count}
+                              replies_count={yap.replies_count}
+                              retweets_count={yap.retweets_count}
+                              badges={yap.badges}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        // Empty state for authenticated users
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                            <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
+                          <p className="text-muted-foreground mb-4 max-w-sm">
+                            {feedType === 'following'
+                              ? "Follow some people to see their yaps here, or switch to trending to discover new content."
+                              : "Be the first to share what's happening!"}
+                          </p>
+                          {feedType === 'following' && (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleFeedTypeChange('trending')}
+                            >
+                              <TrendingUp className="h-4 w-4 mr-2" />
+                              View Trending
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Unauthenticated users - show AuthFadeWall or empty state
+                    yaps.length > 0 ? (
+                      <AuthFadeWall visibleItems={5} contentType="yaps">
+                        <div className="space-y-4">
+                          {yaps.slice(0, 8).map((yap) => (
+                            <YapCard
+                              key={yap.id}
+                              display_name={yap.display_name}
+                              username={yap.username}
+                              content={yap.content}
+                              avatar={yap.avatar}
+                              media={yap.media}
+                              yap={yap}
+                              likes_count={yap.likes_count}
+                              replies_count={yap.replies_count}
+                              retweets_count={yap.retweets_count}
+                              badges={yap.badges}
+                            />
+                          ))}
+                        </div>
+                      </AuthFadeWall>
                     ) : (
-                      // Empty state
+                      // Empty state for unauthenticated users
                       <div className="flex flex-col items-center justify-center py-12 text-center">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                           <MessageCircle className="h-8 w-8 text-muted-foreground" />
                         </div>
                         <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
                         <p className="text-muted-foreground mb-4 max-w-sm">
-                          {feedType === 'following'
-                            ? "Follow some people to see their yaps here, or switch to trending to discover new content."
-                            : "Be the first to share what's happening!"
-                          }
+                          Sign up to see more yaps from your campus community!
                         </p>
-                        {feedType === 'following' && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleFeedTypeChange('trending')}
-                          >
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            View Trending
-                          </Button>
-                        )}
                       </div>
-                    )}
-                  </div>
+                    )
+                  )}
 
-                  {/* Load more button */}
-                  {yaps.length > 0 && (
+                  {/* Load more button - Only show when authenticated */}
+                  {isAuthenticated && yaps.length > 0 && (
                     <div className="py-4">
                       <Button
                         variant="ghost"
@@ -333,16 +376,21 @@ export default function Component() {
             </div>
           </div>
 
-          {/* Right sidebar - Trending/Suggestions - Properly positioned */}
-          <div className="hidden lg:block lg:w-80 flex-shrink-0">
-            <div className="sticky top-4 space-y-4">
-              {/* Trending hashtags */}
-              <TrendingHashtags />
+          {/* Right sidebar - Trending/Suggestions - Only show when authenticated */}
+          {isAuthenticated && (
+            <div className="hidden lg:block lg:w-80 flex-shrink-0">
+              <div className="sticky top-4 space-y-4">
+                {/* Trending hashtags */}
+                <TrendingHashtags />
 
-              {/* Who to follow */}
-              <WhoToFollow />
+                {/* Who to follow */}
+                <WhoToFollow />
+
+                {/* Communities */}
+                <CommunitiesWidget />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

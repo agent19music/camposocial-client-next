@@ -96,6 +96,7 @@ interface CommunityContextType {
     createInvite: (slug: string, expiryOption: string) => Promise<any>
     getInvites: (slug: string) => Promise<CommunityInvite[]>
     revokeInvite: (token: string) => Promise<boolean>
+    transferOwnership: (communityId: string, newOwnerId: number) => Promise<boolean>
 }
 
 
@@ -269,12 +270,17 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return false
 
             try {
-                // Get group ID from slug first
-                const community = await fetchCommunityBySlug(slug)
-                if (!community) return false
+                // Get group ID from slug first if not current
+                let communityId = currentCommunity?.slug === slug ? currentCommunity.id : null
+
+                if (!communityId) {
+                    const community = await fetchCommunityBySlug(slug)
+                    if (!community) return false
+                    communityId = community.id
+                }
 
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${community.id}/join`,
+                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${communityId}/join`,
                     {
                         method: "POST",
                         headers: { Authorization: `Bearer ${authToken}` },
@@ -665,6 +671,43 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
         [authToken]
     )
 
+    // Transfer Ownership
+    const transferOwnership = useCallback(
+        async (communityId: string, newOwnerId: number): Promise<boolean> => {
+            if (!authToken) return false
+
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${communityId}/transfer-ownership`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({ new_owner_id: newOwnerId }),
+                })
+
+                if (res.ok) {
+                    toast.success("Community ownership transferred successfully")
+                    // If we need to navigate away or refresh, we should do it here or in the component
+                    // For now, refreshing the current community details is a safe bet
+                    if (currentCommunity && currentCommunity.id === communityId) {
+                        // We might need to refetch by slug since ID is internal usually but here we have it
+                        fetchCommunityBySlug(currentCommunity.slug)
+                    }
+                    return true
+                } else {
+                    const err = await res.json()
+                    toast.error(err.error || "Failed to transfer ownership")
+                }
+            } catch (error) {
+                console.error("Failed to transfer ownership", error)
+                toast.error("Something went wrong")
+            }
+            return false
+        },
+        [authToken, currentCommunity, fetchCommunityBySlug]
+    )
+
     const value: CommunityContextType = {
         communities,
         myCommunities,
@@ -691,6 +734,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
         createInvite,
         getInvites,
         revokeInvite,
+        transferOwnership,
     }
 
     return <CommunityContext.Provider value={value}>{children}</CommunityContext.Provider>

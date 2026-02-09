@@ -1,17 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Protected routes that require authentication
+// Protected routes that require authentication (inherently personal)
 const protectedRoutes = [
-  '/yaps',
-  '/events',
-  '/marketplace',
   '/friends',
   '/messages',
   '/userprofile',
   '/profilesettings',
   '/sellerdashboard',
-  '/addevent'
+  '/addevent',
+  '/chat'
+]
+
+// Browsable routes - accessible to everyone but may show different content based on auth status
+const browsableRoutes = [
+  '/yaps',
+  '/events',
+  '/marketplace'
 ]
 
 // Public routes that don't require authentication
@@ -40,14 +45,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if route is protected
+  // Check route types
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+  const isBrowsableRoute = browsableRoutes.some(route => pathname.startsWith(route))
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthRoute = authRoutes.includes(pathname)
 
-  // If it's a protected route and user is not authenticated
+  // If it's a protected route and user is not authenticated, redirect to login
   if (isProtectedRoute && !authToken) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Browsable routes pass through for everyone - add header to indicate auth status
+  if (isBrowsableRoute) {
+    const response = NextResponse.next()
+    response.headers.set('x-auth-status', authToken ? 'authenticated' : 'unauthenticated')
+    return response
   }
 
   // If user is authenticated and trying to access auth routes, redirect to yaps

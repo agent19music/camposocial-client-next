@@ -31,15 +31,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import toast from "react-hot-toast"
 
 export default function ProfileEditor() {
@@ -116,6 +107,9 @@ export default function ProfileEditor() {
       [e.target.name]: e.target.value
     })
   }
+
+  // Check if uni details are already locked (set during onboarding)
+  const isUniLocked = Boolean(currentUser?.university && currentUser?.faculty);
 
   // Handle image selection
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'header') => {
@@ -477,12 +471,12 @@ export default function ProfileEditor() {
                   role="combobox"
                   aria-expanded={openUni}
                   className="w-full justify-between"
-                  disabled={!isEditing}
+                  disabled={!isEditing || isUniLocked}
                 >
                   {profileData.university
                     ? profileData.university
                     : "Select University..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  {!isUniLocked && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0">
@@ -530,12 +524,12 @@ export default function ProfileEditor() {
                   role="combobox"
                   aria-expanded={openFaculty}
                   className="w-full justify-between"
-                  disabled={!isEditing}
+                  disabled={!isEditing || isUniLocked}
                 >
                   {profileData.faculty
                     ? profileData.faculty
                     : "Select Faculty..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  {!isUniLocked && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0">

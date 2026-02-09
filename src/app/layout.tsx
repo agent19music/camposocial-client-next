@@ -4,9 +4,11 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/context/themecontext";
 import AuthProvider from "@/context/authcontext";
+import { AuthModalProvider } from "@/context/AuthModalContext";
 import { WebSocketProvider } from "@/context/websocket-context";
 import { PollProvider } from "@/context/pollcontext";
 import AuthenticatedWrapper from "@/components/AuthenticatedWrapper";
+import { AuthModal } from "@/components/AuthModal";
 import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import StructuredData, { websiteSchema, organizationSchema } from "@/components/StructuredData";
@@ -163,33 +165,36 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${Helvetica.variable} ${inter.className}`}>
         <ThemeProvider>
           <AuthProvider>
-            <Toaster
-              position="top-center"
-              reverseOrder={false}
-              gutter={8}
-              containerClassName=""
-              containerStyle={{}}
-              toastOptions={{
-                className: '',
-                duration: 5000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                success: {
-                  duration: 3000,
-                },
-              }}
-            />
-            <GoogleOAuthProvider clientId={googleClientId || ''}>
-              <WebSocketProvider>
-                <PollProvider>
-                  <AuthenticatedWrapper>
-                    {children}
-                  </AuthenticatedWrapper>
-                </PollProvider>
-              </WebSocketProvider>
-            </GoogleOAuthProvider>
+            <AuthModalProvider>
+              <Toaster
+                position="top-center"
+                reverseOrder={false}
+                gutter={8}
+                containerClassName=""
+                containerStyle={{}}
+                toastOptions={{
+                  className: '',
+                  duration: 5000,
+                  style: {
+                    background: '#363636',
+                    color: '#fff',
+                  },
+                  success: {
+                    duration: 3000,
+                  },
+                }}
+              />
+              <GoogleOAuthProvider clientId={googleClientId || ''}>
+                <WebSocketProvider>
+                  <PollProvider>
+                    <AuthenticatedWrapper>
+                      {children}
+                      <AuthModal />
+                    </AuthenticatedWrapper>
+                  </PollProvider>
+                </WebSocketProvider>
+              </GoogleOAuthProvider>
+            </AuthModalProvider>
           </AuthProvider>
         </ThemeProvider>
         <Analytics />
