@@ -47,7 +47,7 @@ const defaultValue: YapContextProps = {
   // Who to follow
   whotofollow: async () => [],
   whotofollowSuggestions: [],
-  
+
   // Yap moderation
   deleteYap: async () => false,
   muteUser: async () => false,
@@ -228,7 +228,8 @@ export default function YapProvider({ children }: YapProviderProps) {
       fetchingRef.current = false;
       markRequestEnd('fetch_yaps');
     }
-  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType, canMakeRequest, markRequestStart, markRequestEnd, yaps.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, isAuthenticated, authToken, apiEndpoint, feedType, canMakeRequest, markRequestStart, markRequestEnd]);
 
   const whotofollow = useCallback(async (): Promise<WhoToFollowSuggestion[]> => {
     if (!isAuthenticated || !authToken || !apiEndpoint) {
@@ -272,12 +273,9 @@ export default function YapProvider({ children }: YapProviderProps) {
     }
   }, [isAuthenticated, authToken, whotofollow, setWhotofollowSuggestions]);
 
-  // Fetch yaps only when authenticated and not loading
+  // Fetch yaps when auth state is resolved
   useEffect(() => {
-    if (authLoading || !isAuthenticated || !authToken) {
-      setYaps([]);
-      setFilteredYaps([]);
-      setIsLoading(false);
+    if (authLoading) {
       return;
     }
 
@@ -289,7 +287,9 @@ export default function YapProvider({ children }: YapProviderProps) {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [onchange, isAuthenticated, authToken, authLoading, fetchYaps]);
+    // For unauthenticated users, only fetch once (no onchange dependency)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated ? onchange : null, isAuthenticated, authToken, authLoading, fetchYaps]);
 
   // Cleanup effect
   useEffect(() => {
@@ -354,7 +354,10 @@ export default function YapProvider({ children }: YapProviderProps) {
             optimisticLiked: !isCurrentlyLiked,
             optimisticLikesCount: isCurrentlyLiked
               ? (yap.optimisticLikesCount ?? yap.likes_count) - 1
-              : (yap.optimisticLikesCount ?? yap.likes_count) + 1
+              : (yap.optimisticLikesCount ?? yap.likes_count) + 1,
+            optimisticWeightedLikesCount: isCurrentlyLiked
+              ? (yap.optimisticWeightedLikesCount ?? yap.weighted_likes_count ?? yap.likes_count) - 1
+              : (yap.optimisticWeightedLikesCount ?? yap.weighted_likes_count ?? yap.likes_count) + 1
           };
         }
         return yap;
@@ -370,7 +373,10 @@ export default function YapProvider({ children }: YapProviderProps) {
             optimisticLiked: !isCurrentlyLiked,
             optimisticLikesCount: isCurrentlyLiked
               ? (yap.optimisticLikesCount ?? yap.likes_count) - 1
-              : (yap.optimisticLikesCount ?? yap.likes_count) + 1
+              : (yap.optimisticLikesCount ?? yap.likes_count) + 1,
+            optimisticWeightedLikesCount: isCurrentlyLiked
+              ? (yap.optimisticWeightedLikesCount ?? yap.weighted_likes_count ?? yap.likes_count) - 1
+              : (yap.optimisticWeightedLikesCount ?? yap.weighted_likes_count ?? yap.likes_count) + 1
           };
         }
         return yap;
@@ -399,8 +405,10 @@ export default function YapProvider({ children }: YapProviderProps) {
             return {
               ...yap,
               likes_count: data.likes_count,
+              weighted_likes_count: data.weighted_likes_count,
               optimisticLiked: data.liked,
-              optimisticLikesCount: data.likes_count
+              optimisticLikesCount: data.likes_count,
+              optimisticWeightedLikesCount: data.weighted_likes_count
             };
           }
           return yap;
@@ -413,8 +421,10 @@ export default function YapProvider({ children }: YapProviderProps) {
             return {
               ...yap,
               likes_count: data.likes_count,
+              weighted_likes_count: data.weighted_likes_count,
               optimisticLiked: data.liked,
-              optimisticLikesCount: data.likes_count
+              optimisticLikesCount: data.likes_count,
+              optimisticWeightedLikesCount: data.weighted_likes_count
             };
           }
           return yap;
@@ -429,7 +439,8 @@ export default function YapProvider({ children }: YapProviderProps) {
             return {
               ...yap,
               optimisticLiked: undefined,
-              optimisticLikesCount: undefined
+              optimisticLikesCount: undefined,
+              optimisticWeightedLikesCount: undefined
             };
           }
           return yap;
@@ -442,7 +453,8 @@ export default function YapProvider({ children }: YapProviderProps) {
             return {
               ...yap,
               optimisticLiked: undefined,
-              optimisticLikesCount: undefined
+              optimisticLikesCount: undefined,
+              optimisticWeightedLikesCount: undefined
             };
           }
           return yap;
@@ -1022,7 +1034,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       }
 
       const data = await response.json();
-      
+
       if (data.muted) {
         // Filter out yaps from the muted user
         setYaps(prevYaps => prevYaps.filter(yap => yap.username !== username));
@@ -1074,7 +1086,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       }
 
       const data = await response.json();
-      
+
       if (data.blocked) {
         // Filter out yaps from the blocked user
         setYaps(prevYaps => prevYaps.filter(yap => yap.username !== username));

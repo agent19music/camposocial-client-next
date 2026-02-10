@@ -2,6 +2,7 @@
 
 import { useState, useContext } from 'react';
 import { AuthContext } from '@/context/authcontext';
+import { useAuthModal } from '@/context/AuthModalContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ type Step = 'login' | 'verify';
 
 export function EmailLoginForm() {
     const { sendOTP, verifyOTP } = useContext(AuthContext);
+    const { closeAuthModal } = useAuthModal();
     const router = useRouter();
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
@@ -83,7 +85,9 @@ export function EmailLoginForm() {
                 }
 
                 toast.success('Welcome back!');
-                router.push('/yaps');
+                // Close the auth modal first, then navigate
+                closeAuthModal();
+                router.push(`/yaps/profile/${username}`);
             } else {
                 toast.error(result.error || result.message || 'Login failed');
             }

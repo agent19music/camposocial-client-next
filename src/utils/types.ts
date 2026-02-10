@@ -418,6 +418,9 @@ export interface Yap {
   likes_count: number;
   retweets_count: number;
   bookmarks_count: number;
+  weighted_likes_count?: number; // Optional field for engagement weighting
+  weighted_replies_count?: number; // Optional field for engagement weighting
+  weighted_retweets_count?: number; // Optional field for engagement weighting
   media: MediaItem[];
   hashtags: string[];
   replies: Reply[];
@@ -425,6 +428,7 @@ export interface Yap {
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
   optimisticLikesCount?: number;
+  optimisticWeightedLikesCount?: number; // Optimistic update for weighted likes
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
 }
@@ -466,7 +470,7 @@ export interface YapContextProps {
   setYapReplies: (replies: Reply[]) => void;
   whotofollow: () => Promise<WhoToFollowSuggestion[]>;
   whotofollowSuggestions: WhoToFollowSuggestion[];
-  
+
   // Yap moderation
   deleteYap: (yapId: string) => Promise<boolean>;
   muteUser: (username: string) => Promise<boolean>;

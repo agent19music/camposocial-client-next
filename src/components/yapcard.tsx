@@ -56,6 +56,9 @@ interface Yap {
   likes_count: number;
   retweets_count: number;
   bookmarks_count: number;
+  weighted_likes_count?: number;
+  weighted_replies_count?: number;
+  weighted_retweets_count?: number;
   media: MediaItem[];
   replies: Reply[];
   hashtags: string[];
@@ -64,6 +67,7 @@ interface Yap {
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
   optimisticLikesCount?: number;
+  optimisticWeightedLikesCount?: number;
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
 }
@@ -95,9 +99,9 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   avatar: string,
   media: MediaItem[],
   yap: Yap,
-  likes_count: number,
-  replies_count: number,
-  retweets_count: number,
+  likes_count: number | undefined,
+  replies_count: number | undefined,
+  retweets_count: number | undefined,
   badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>
 }) => {
   const { navigateToSingleYapView, toggleLike, addReply, retweet, quoteRetweet, deleteYap, muteUser, blockUser } = useContext(YapContext)
@@ -114,13 +118,15 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   // For retweets, we need to use the original yap data for interactions
   const targetYap = (isPureRetweet && yap.original_yap) ? yap.original_yap : yap;
-  const targetLikesCount = targetYap.likes_count || likes_count;
-  const targetRepliesCount = targetYap.replies_count || replies_count;
-  const targetRetweetsCount = targetYap.retweets_count || retweets_count;
+
+  // Prioritize weighted counts, fallback to raw counts
+  const targetLikesCount = targetYap.weighted_likes_count ?? targetYap.likes_count ?? likes_count ?? 0;
+  const targetRepliesCount = targetYap.weighted_replies_count ?? targetYap.replies_count ?? replies_count ?? 0;
+  const targetRetweetsCount = targetYap.weighted_retweets_count ?? targetYap.retweets_count ?? retweets_count ?? 0;
 
   // Local states for UI interactions
   const [isLiked, setIsLiked] = useState(targetYap.optimisticLiked ?? false);
-  const [currentLikesCount, setCurrentLikesCount] = useState(targetYap.optimisticLikesCount ?? targetLikesCount);
+  const [currentLikesCount, setCurrentLikesCount] = useState(targetYap.optimisticWeightedLikesCount ?? targetLikesCount);
   const [currentRepliesCount, setCurrentRepliesCount] = useState(targetYap.optimisticRepliesCount ?? targetRepliesCount);
   const [currentRetweetsCount, setCurrentRetweetsCount] = useState(targetYap.optimisticRetweetsCount ?? targetRetweetsCount);
 
@@ -246,7 +252,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   // Handle delete yap
   const handleDeleteYap = async () => {
     if (!deleteYap) return;
-    
+
     setIsDeleting(true);
     try {
       await deleteYap(yap.id);
@@ -262,7 +268,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const handleMuteUser = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!muteUser) return;
-    
+
     setIsMuting(true);
     try {
       await muteUser(yap.username);
@@ -277,7 +283,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const handleBlockUser = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!blockUser) return;
-    
+
     setIsBlocking(true);
     try {
       await blockUser(yap.username);
@@ -377,7 +383,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               {yap.isOptimistic && (
                 <span className="text-xs text-blue-500 ml-2">Posting...</span>
               )}
-              
+
               {/* Three-dot menu for yap options */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

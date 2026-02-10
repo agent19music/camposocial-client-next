@@ -1,5 +1,5 @@
 "use client"
-import React, { useContext, useEffect } from 'react'
+import React, { useContext, useEffect, useRef } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -181,12 +181,19 @@ export default function Component() {
   const { markYapsAsSeen, hasNewYaps } = useWebSocket()
   const router = useRouter();
 
-  // Force refresh yaps when page mounts and yaps are empty (handles navigation back)
+  const hasAttemptedRefresh = useRef(false);
+
+  // Force refresh yaps when authenticated user navigates back to an empty feed
   useEffect(() => {
-    if (!authLoading && yaps.length === 0 && !isLoading) {
+    if (!authLoading && isAuthenticated && yaps.length === 0 && !isLoading && !hasAttemptedRefresh.current) {
+      hasAttemptedRefresh.current = true;
       refreshFeed();
     }
-  }, [authLoading, yaps.length, isLoading, refreshFeed]);
+    // Reset ref when yaps load successfully
+    if (yaps.length > 0) {
+      hasAttemptedRefresh.current = false;
+    }
+  }, [authLoading, isAuthenticated, yaps.length, isLoading, refreshFeed]);
 
   // Check if user is new (no yaps, no friends, etc.)
   const isNewUser = !authLoading && currentUser && (
@@ -336,9 +343,9 @@ export default function Component() {
                               avatar={yap.avatar}
                               media={yap.media}
                               yap={yap}
-                              likes_count={yap.likes_count}
-                              replies_count={yap.replies_count}
-                              retweets_count={yap.retweets_count}
+                              likes_count={yap.weighted_likes_count}
+                              replies_count={yap.weighted_replies_count}
+                              retweets_count={yap.weighted_retweets_count}
                               badges={yap.badges}
                             />
                           ))}

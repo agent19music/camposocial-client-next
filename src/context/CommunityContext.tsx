@@ -112,6 +112,8 @@ export const useCommunity = () => {
 
 export const CommunityProvider = ({ children }: { children: ReactNode }) => {
     const { authToken } = useContext(AuthContext)
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; 
+
 
     // State
     const [communities, setCommunities] = useState<Community[]>([])
@@ -129,7 +131,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
 
         setLoading(true)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/discover`, {
+            const res = await fetch(`${apiEndpoint}/communities/discover`, {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
 
@@ -137,8 +139,10 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 const data = await res.json()
                 setRecommendedCommunities(data.recommended || [])
                 setTrendingCommunities(data.trending || [])
-                console.log("Recommended communities:", data.recommended)
-                console.log("Trending communities:", data.trending)
+            } else if (res.status === 404) {
+                // No communities found — this is fine, not an error
+                setRecommendedCommunities([])
+                setTrendingCommunities([])
             }
         } catch (error) {
             console.error("Failed to fetch communities", error)
@@ -153,13 +157,16 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
 
         setLoading(true)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/my-communities`, {
+            const res = await fetch(`${apiEndpoint}/my-communities`, {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
 
             if (res.ok) {
                 const data = await res.json()
                 setMyCommunities(data.groups || [])
+            } else if (res.status === 404) {
+                // User has no communities — totally fine
+                setMyCommunities([])
             }
         } catch (error) {
             console.error("Failed to fetch my communities", error)
@@ -175,7 +182,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
 
             setLoading(true)
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}`, {
+                const res = await fetch(`${apiEndpoint}/communities/${slug}`, {
                     headers: { Authorization: `Bearer ${authToken}` },
                 })
 
@@ -200,7 +207,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return null
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities`, {
+                const res = await fetch(`${apiEndpoint}/communities`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -234,7 +241,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return false
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}`, {
+                const res = await fetch(`${apiEndpoint}/communities/${slug}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -280,7 +287,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 }
 
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${communityId}/join`,
+                    `${apiEndpoint}/communities/${communityId}/join`,
                     {
                         method: "POST",
                         headers: { Authorization: `Bearer ${authToken}` },
@@ -317,7 +324,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 if (!community) return false
 
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${community.id}/leave`,
+                    `${apiEndpoint}/communities/${community.id}/leave`,
                     {
                         method: "POST",
                         headers: { Authorization: `Bearer ${authToken}` },
@@ -388,7 +395,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 }
 
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/posts`,
+                    `${apiEndpoint}/communities/${slug}/posts`,
                     {
                         method: "POST",
                         headers: {
@@ -430,7 +437,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
 
             try {
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/posts`,
+                    `${apiEndpoint}/communities/${slug}/posts`,
                     {
                         method: "POST",
                         headers: {
@@ -467,7 +474,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             setPostsLoading(true)
             try {
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/posts?page=${page}`,
+                    `${apiEndpoint}/communities/${slug}/posts?page=${page}`,
                     {
                         headers: { Authorization: `Bearer ${authToken}` },
                     }
@@ -494,7 +501,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
 
             try {
                 // Optimistic update handled by component or here if we want global sync
-                await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/yaps/${yapId}/like`, {
+                await fetch(`${apiEndpoint}/yaps/${yapId}/like`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
@@ -514,7 +521,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return
 
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/yaps/${yapId}/reply`, {
+                await fetch(`${apiEndpoint}/yaps/${yapId}/reply`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -575,7 +582,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
 
                 const post = communityPosts.find(p => p.id === postId)
                 if (post) {
-                    await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/yaps/${post.yap_id}`, {
+                    await fetch(`${apiEndpoint}/yaps/${post.yap_id}`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${authToken}`,
@@ -596,7 +603,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return null
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/invites`, {
+                const res = await fetch(`${apiEndpoint}/communities/${slug}/invites`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -628,7 +635,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return []
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${slug}/invites`, {
+                const res = await fetch(`${apiEndpoint}/communities/${slug}/invites`, {
                     headers: { Authorization: `Bearer ${authToken}` },
                 })
 
@@ -650,7 +657,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return false
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/invites/${token}`, {
+                const res = await fetch(`${apiEndpoint}/invites/${token}`, {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${authToken}` },
                 })
@@ -677,7 +684,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             if (!authToken) return false
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${communityId}/transfer-ownership`, {
+                const res = await fetch(`${apiEndpoint}/communities/${communityId}/transfer-ownership`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",

@@ -3,7 +3,7 @@
 import { useAuthModal } from '@/context/AuthModalContext';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Sparkles, Users, Calendar, ShoppingBag } from 'lucide-react';
+import {  Calendar, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from '@/context/themecontext';
 
@@ -107,13 +107,7 @@ export function AuthFadeWall({ children, visibleItems = 5, contentType = 'yaps' 
             </div>
           </div>
 
-          {/* Decorative icons */}
-          <div className="hidden lg:flex items-center gap-4 opacity-50">
-            {contentType === 'yaps' && <Sparkles className="h-6 w-6" style={{ color: 'var(--color-fun)' }} />}
-            {contentType === 'events' && <Calendar className="h-6 w-6" style={{ color: 'var(--color-fun)' }} />}
-            {contentType === 'products' && <ShoppingBag className="h-6 w-6" style={{ color: 'var(--color-fun)' }} />}
-            <Users className="h-6 w-6" style={{ color: 'var(--color-fun)' }} />
-          </div>
+       
         </div>
       </motion.div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useAuthModal } from '@/context/AuthModalContext';
 import { AuthContext } from '@/context/authcontext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -18,10 +18,12 @@ export function AuthModal() {
   const { isAuthenticated } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
 
-  // Close modal if user becomes authenticated
-  if (isAuthenticated && isOpen) {
-    closeAuthModal();
-  }
+  // Auto-close modal when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && isOpen) {
+      closeAuthModal();
+    }
+  }, [isAuthenticated, isOpen, closeAuthModal]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && closeAuthModal()}>
