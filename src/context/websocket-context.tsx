@@ -445,12 +445,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   // Cleanup on unmount
   useEffect(() => {
+    const timeoutRef = reconnectTimeout;
     return () => {
       if (socket) {
         socket.disconnect();
       }
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
+      const id = timeoutRef.current;
+      if (id) {
+        clearTimeout(id);
       }
     };
   }, [socket]);

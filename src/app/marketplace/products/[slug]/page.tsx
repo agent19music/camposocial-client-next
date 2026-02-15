@@ -2,12 +2,12 @@ import { Metadata } from 'next'
 import SingleProductPage from './ProductClient'
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const slug = params.slug;
+  const { slug } = await params;
 
   try {
     if (apiEndpoint) {
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           openGraph: {
             title: title,
             description: truncatedDescription || `${title} - KES ${price.toFixed(2)}`,
-            type: 'product',
+            type: 'website',
             url: `https://camposocial.app/marketplace/products/${slug}`,
             images: [
               {
@@ -63,6 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProductPage({ params }: Props) {
+export default async function ProductPage({ params }: Props) {
+  await params; // satisfy Next.js 15 params Promise
   return <SingleProductPage />
 }

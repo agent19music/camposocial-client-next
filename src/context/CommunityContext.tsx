@@ -149,7 +149,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setLoading(false)
         }
-    }, [authToken])
+    }, [authToken, apiEndpoint])
 
     // Fetch my communities
     const fetchMyCommunities = useCallback(async () => {
@@ -173,7 +173,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setLoading(false)
         }
-    }, [authToken])
+    }, [authToken, apiEndpoint])
 
     // Fetch community by slug
     const fetchCommunityBySlug = useCallback(
@@ -198,7 +198,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return null
         },
-        [authToken]
+        [authToken, apiEndpoint]
     )
 
     // Create community
@@ -232,7 +232,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return null
         },
-        [authToken, fetchMyCommunities]
+        [authToken, fetchMyCommunities, apiEndpoint]
     )
 
     // Update community
@@ -268,7 +268,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return false
         },
-        [authToken, currentCommunity]
+        [authToken, currentCommunity, apiEndpoint]
     )
 
     // Join community
@@ -310,7 +310,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return false
         },
-        [authToken, fetchCommunityBySlug, fetchMyCommunities]
+        [authToken, fetchCommunityBySlug, fetchMyCommunities, apiEndpoint, currentCommunity?.id, currentCommunity?.slug]
     )
 
     // Leave community
@@ -347,7 +347,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return false
         },
-        [authToken, fetchCommunityBySlug, fetchMyCommunities]
+        [authToken, fetchCommunityBySlug, fetchMyCommunities, apiEndpoint]
     )
 
     // Create post with optimistic update
@@ -427,7 +427,34 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 return false
             }
         },
-        [authToken]
+        [authToken, apiEndpoint]
+    )
+
+    // Fetch posts (defined before createPost so createPost can depend on it)
+    const fetchPosts = useCallback(
+        async (slug: string, page: number = 1) => {
+            if (!authToken) return
+
+            setPostsLoading(true)
+            try {
+                const res = await fetch(
+                    `${apiEndpoint}/communities/${slug}/posts?page=${page}`,
+                    {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                )
+
+                if (res.ok) {
+                    const data = await res.json()
+                    setCommunityPosts(data.posts || [])
+                }
+            } catch (error) {
+                console.error("Failed to fetch posts", error)
+            } finally {
+                setPostsLoading(false)
+            }
+        },
+        [authToken, apiEndpoint]
     )
 
     // Legacy createPost for backwards compatibility
@@ -463,37 +490,9 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return false
         },
-        [authToken]
+        [authToken, apiEndpoint, fetchPosts]
     )
 
-    // Fetch posts
-    const fetchPosts = useCallback(
-        async (slug: string, page: number = 1) => {
-            if (!authToken) return
-
-            setPostsLoading(true)
-            try {
-                const res = await fetch(
-                    `${apiEndpoint}/communities/${slug}/posts?page=${page}`,
-                    {
-                        headers: { Authorization: `Bearer ${authToken}` },
-                    }
-                )
-
-                if (res.ok) {
-                    const data = await res.json()
-                    console.log("[CommunityContext] fetchPosts response:", data)
-                    setCommunityPosts(data.posts || [])
-                    console.log("[CommunityContext] communityPosts:", communityPosts)
-                }
-            } catch (error) {
-                console.error("Failed to fetch posts", error)
-            } finally {
-                setPostsLoading(false)
-            }
-        },
-        [authToken]
-    )
     // Toggle like on a community post
     const toggleLike = useCallback(
         async (yapId: string): Promise<void> => {
@@ -512,7 +511,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 throw error
             }
         },
-        [authToken]
+        [authToken, apiEndpoint]
     )
 
     // Reply to a community post
@@ -542,7 +541,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 throw error
             }
         },
-        [authToken]
+        [authToken, apiEndpoint]
     )
 
     // Delete a community post
@@ -595,7 +594,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
                 // Revert fetch? (Complexity high)
             }
         },
-        [authToken, communityPosts]
+        [authToken, communityPosts, apiEndpoint]
     )
     // Create Invite
     const createInvite = useCallback(
@@ -626,7 +625,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return null
         },
-        [authToken]
+        [authToken, apiEndpoint]
     )
 
     // Get Invites
@@ -648,7 +647,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return []
         },
-        [authToken]
+        [authToken, apiEndpoint]
     )
 
     // Revoke Invite
@@ -675,7 +674,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return false
         },
-        [authToken]
+        [authToken, apiEndpoint]
     )
 
     // Transfer Ownership
@@ -712,7 +711,7 @@ export const CommunityProvider = ({ children }: { children: ReactNode }) => {
             }
             return false
         },
-        [authToken, currentCommunity, fetchCommunityBySlug]
+        [authToken, currentCommunity, fetchCommunityBySlug, apiEndpoint]
     )
 
     const value: CommunityContextType = {

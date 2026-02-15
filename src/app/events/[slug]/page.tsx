@@ -2,12 +2,13 @@ import { Metadata } from 'next'
 import SingleEventCard from './SingleEventClient'
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const eventId = params.slug;
+  const { slug } = await params;
+  const eventId = slug;
 
   try {
     if (apiEndpoint) {
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           openGraph: {
             title: title,
             description: truncatedDescription || `${title} on CampoSocial`,
-            type: 'event',
+            type: 'website',
             url: `https://camposocial.app/events/${eventId}`,
             images: [
               {
@@ -63,6 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function SingleEventPage({ params }: Props) {
+export default async function SingleEventPage({ params }: Props) {
+  await params; // satisfy Next.js 15 params Promise
   return <SingleEventCard />
 }

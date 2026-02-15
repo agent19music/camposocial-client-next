@@ -2,12 +2,12 @@ import { Metadata } from 'next'
 import SingleYapClient from './SingleYapClient'
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const slug = params.slug;
+  const { slug } = await params;
 
   try {
     if (apiEndpoint) {
@@ -60,6 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function SingleYapPage({ params }: Props) {
-  return <SingleYapClient slug={params.slug} />
+export default async function SingleYapPage({ params }: Props) {
+  const { slug } = await params;
+  return <SingleYapClient slug={slug} />
 }

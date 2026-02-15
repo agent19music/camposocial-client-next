@@ -28,6 +28,9 @@ export type CurrentUser = {
   username: string;
   display_name: string;
   yap_header_img?: string;
+  university?: string;
+  faculty?: string;
+  course?: string;
 } | null;
 
 export interface AuthContextType {
@@ -466,7 +469,7 @@ export interface YapContextProps {
   feedType: 'chronological' | 'trending' | 'following';
   setFeedType: (type: 'chronological' | 'trending' | 'following') => void;
   refreshFeed: () => Promise<void>;
-  fetchYapById: (yapId: string) => Promise<Yap | null>;
+  fetchYapById: (yapId: string, slug?: string) => Promise<Yap | null>;
   getHashtagSuggestions: (query?: string) => Promise<HashtagSuggestion[]>;
   getLocationSuggestions: (query?: string) => Promise<LocationSuggestion[]>;
   yapReplies: Reply[];

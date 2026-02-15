@@ -55,8 +55,8 @@ export default function GroupsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-    // Only access context if authenticated (but declare hooks first)
-    const communityContext = isAuthenticated && !isLoading ? useCommunity() : null
+    // Call hook unconditionally (rules of hooks); use values only when authenticated
+    const communityContext = useCommunity()
 
     const {
         recommendedCommunities = [],
@@ -65,7 +65,7 @@ export default function GroupsPage() {
         loading = false,
         fetchCommunities = () => { },
         fetchMyCommunities = () => { }
-    } = communityContext || {}
+    } = isAuthenticated && !isLoading ? communityContext : {}
 
     // Fetch data on mount
     useEffect(() => {
