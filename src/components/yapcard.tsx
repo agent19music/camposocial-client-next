@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react"
+import { MessageCircle, Repeat2, Heart, Share2, MoreHorizontal, Trash2, VolumeX, Ban } from "lucide-react"
 import { YapContext } from '@/context/yapcontext'
+import { AuthContext } from '@/context/authcontext'
 import { cn } from '@/lib/utils'
 import { MediaGrid } from './yapmediagrid'
 import BadgeDisplay from './badgedisplay'
@@ -17,6 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Textarea } from "@/components/ui/textarea"
 import Image from 'next/image'
 
@@ -38,6 +56,9 @@ interface Yap {
   likes_count: number;
   retweets_count: number;
   bookmarks_count: number;
+  weighted_likes_count?: number;
+  weighted_replies_count?: number;
+  weighted_retweets_count?: number;
   media: MediaItem[];
   replies: Reply[];
   hashtags: string[];
@@ -46,6 +67,7 @@ interface Yap {
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
   optimisticLikesCount?: number;
+  optimisticWeightedLikesCount?: number;
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
 }
@@ -77,12 +99,13 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   avatar: string,
   media: MediaItem[],
   yap: Yap,
-  likes_count: number,
-  replies_count: number,
-  retweets_count: number,
+  likes_count: number | undefined,
+  replies_count: number | undefined,
+  retweets_count: number | undefined,
   badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>
 }) => {
-  const { navigateToSingleYapView, toggleLike, addReply, retweet, quoteRetweet } = useContext(YapContext)
+  const { navigateToSingleYapView, toggleLike, addReply, retweet, quoteRetweet, deleteYap, muteUser, blockUser } = useContext(YapContext)
+  const { currentUser } = useContext(AuthContext)
   const router = useRouter();
 
   // Determine if this is a retweet or quote tweet
@@ -90,15 +113,20 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const isQuoteTweet = yap.is_quote || (yap.original_yap_id && yap.content.trim());
   const isPureRetweet = isRetweet && !isQuoteTweet;
 
+  // Check if the current user owns this yap
+  const isOwnYap = currentUser?.id === yap.user_id || currentUser?.id === String(yap.user_id);
+
   // For retweets, we need to use the original yap data for interactions
   const targetYap = (isPureRetweet && yap.original_yap) ? yap.original_yap : yap;
-  const targetLikesCount = targetYap.likes_count || likes_count;
-  const targetRepliesCount = targetYap.replies_count || replies_count;
-  const targetRetweetsCount = targetYap.retweets_count || retweets_count;
+
+  // Prioritize weighted counts, fallback to raw counts
+  const targetLikesCount = targetYap.weighted_likes_count ?? targetYap.likes_count ?? likes_count ?? 0;
+  const targetRepliesCount = targetYap.weighted_replies_count ?? targetYap.replies_count ?? replies_count ?? 0;
+  const targetRetweetsCount = targetYap.weighted_retweets_count ?? targetYap.retweets_count ?? retweets_count ?? 0;
 
   // Local states for UI interactions
   const [isLiked, setIsLiked] = useState(targetYap.optimisticLiked ?? false);
-  const [currentLikesCount, setCurrentLikesCount] = useState(targetYap.optimisticLikesCount ?? targetLikesCount);
+  const [currentLikesCount, setCurrentLikesCount] = useState(targetYap.optimisticWeightedLikesCount ?? targetLikesCount);
   const [currentRepliesCount, setCurrentRepliesCount] = useState(targetYap.optimisticRepliesCount ?? targetRepliesCount);
   const [currentRetweetsCount, setCurrentRetweetsCount] = useState(targetYap.optimisticRetweetsCount ?? targetRetweetsCount);
 
@@ -106,6 +134,10 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const [isReplyDialogOpen, setIsReplyDialogOpen] = useState(false);
   const [isRetweetDialogOpen, setIsRetweetDialogOpen] = useState(false);
   const [isQuoteRetweetDialogOpen, setIsQuoteRetweetDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMuting, setIsMuting] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [retweetContent, setRetweetContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
@@ -217,6 +249,51 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
     }
   };
 
+  // Handle delete yap
+  const handleDeleteYap = async () => {
+    if (!deleteYap) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteYap(yap.id);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to delete yap:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle mute user
+  const handleMuteUser = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!muteUser) return;
+
+    setIsMuting(true);
+    try {
+      await muteUser(yap.username);
+    } catch (error) {
+      console.error('Failed to mute user:', error);
+    } finally {
+      setIsMuting(false);
+    }
+  };
+
+  // Handle block user
+  const handleBlockUser = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!blockUser) return;
+
+    setIsBlocking(true);
+    try {
+      await blockUser(yap.username);
+    } catch (error) {
+      console.error('Failed to block user:', error);
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
   const handleUserClick = (e: React.MouseEvent, userToNavigate: string) => {
     e.stopPropagation();
     router.push(`/yaps/profile/${userToNavigate}`);
@@ -259,14 +336,14 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   return (
     <>
-      <Card
-        className={cn(
-          "border-b border-x-0 rounded-none first:border-t-0 transition-colors duration-200 hover:cursor-pointer",
-          "hover:bg-gray-50 dark:hover:bg-foreground/5",
-          yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
-        )}
-        onClick={handleYapClick}
-      >
+        <Card
+          className={cn(
+            "border-0 shadow-none rounded-none transition-colors duration-200 hover:cursor-pointer",
+            "hover:bg-gray-50 dark:hover:bg-foreground/5",
+            yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
+          )}
+          onClick={handleYapClick}
+        >
         {renderRetweetHeader()}
 
         <CardHeader className="flex flex-row items-start space-y-0 pb-2 px-4 pt-3">
@@ -306,6 +383,47 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               {yap.isOptimistic && (
                 <span className="text-xs text-blue-500 ml-2">Posting...</span>
               )}
+
+              {/* Three-dot menu for yap options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="ml-auto p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-foreground/10 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {isOwnYap ? (
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  ) : (
+                    <>
+                      <DropdownMenuItem
+                        onClick={handleMuteUser}
+                        disabled={isMuting}
+                      >
+                        <VolumeX className="w-4 h-4 mr-2" />
+                        {isMuting ? 'Muting...' : `Mute @${displayUsername}`}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                        onClick={handleBlockUser}
+                        disabled={isBlocking}
+                      >
+                        <Ban className="w-4 h-4 mr-2" />
+                        {isBlocking ? 'Blocking...' : `Block @${displayUsername}`}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Quote tweet content (if this is a quote tweet) */}
@@ -651,6 +769,28 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this yap?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This yap will be permanently deleted after 30 days.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteYap}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

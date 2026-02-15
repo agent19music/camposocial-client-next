@@ -1,23 +1,30 @@
 'use client'
 
-import React, { useState, useContext, useEffect } from 'react'
+import React, { useState, useContext, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown, ChevronRight, Eye, EyeOff, Star, Settings } from "lucide-react"
+import { ChevronDown, ChevronRight, Eye, EyeOff, Star, Settings, RefreshCw } from "lucide-react"
 import { AuthContext } from "@/context/authcontext"
 import toast from "react-hot-toast"
 import Image from 'next/image'
+
+// Badge types: 'uni' (university), 'free' (promotional), 'commercial' (paid)
+type BadgeType = 'uni' | 'free' | 'commercial'
+// Badge source: how the badge was obtained
+type BadgeSource = 'purchase' | 'auto_award' | 'admin_grant' | 'promotion'
 
 interface UserBadge {
   id: number
   name: string
   description: string
   image_url: string
+  badge_type?: BadgeType
   is_animated: boolean
   is_displayed: boolean
   display_order: number
   purchased_at: string
+  source?: BadgeSource
 }
 
 interface BadgeManagementProps {
@@ -34,8 +41,11 @@ export default function BadgeManagement({ userId, onUpdate }: BadgeManagementPro
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const fetchUserBadges = async () => {
+  const fetchUserBadges = useCallback(async (showToast = false) => {
+    if (!userId || !authToken) return
+    
     setIsLoading(true)
     try {
       const response = await fetch(`${apiEndpoint}/badges/user/${userId}`, {
@@ -46,9 +56,15 @@ export default function BadgeManagement({ userId, onUpdate }: BadgeManagementPro
       
       if (response.ok) {
         const data = await response.json()
-        setAllBadges(data.all_badges)
-        setDisplayedBadges(data.displayed_badges)
+        console.log('Fetched badges:', data) // Debug log
+        setAllBadges(data.all_badges || [])
+        setDisplayedBadges(data.displayed_badges || [])
+        if (showToast) {
+          toast.success('Badges refreshed')
+        }
       } else {
+        const error = await response.json().catch(() => ({}))
+        console.error('Failed to load badges:', error)
         toast.error('Failed to load badges')
       }
     } catch (error) {
@@ -56,15 +72,21 @@ export default function BadgeManagement({ userId, onUpdate }: BadgeManagementPro
       toast.error('Failed to load badges')
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
+  }, [userId, authToken, apiEndpoint])
+
+  // Refresh badges function for manual refresh
+  const refreshBadges = async () => {
+    setIsRefreshing(true)
+    await fetchUserBadges(true)
   }
 
   useEffect(() => {
-    if (userId) {
+    if (userId && authToken) {
       fetchUserBadges()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId])
+  }, [userId, authToken, fetchUserBadges])
 
   const toggleBadgeDisplay = (badgeId: number) => {
     const badge = allBadges.find(b => b.id === badgeId)
@@ -155,6 +177,27 @@ export default function BadgeManagement({ userId, onUpdate }: BadgeManagementPro
     })
   }
 
+  // Helper to get badge type label
+  const getBadgeTypeLabel = (type?: BadgeType) => {
+    switch (type) {
+      case 'uni': return 'University'
+      case 'free': return 'Free'
+      case 'commercial': return 'Premium'
+      default: return 'Badge'
+    }
+  }
+
+  // Helper to get source label  
+  const getSourceLabel = (source?: BadgeSource) => {
+    switch (source) {
+      case 'auto_award': return 'Auto-awarded'
+      case 'purchase': return 'Purchased'
+      case 'admin_grant': return 'Granted'
+      case 'promotion': return 'Promotional'
+      default: return ''
+    }
+  }
+
   if (allBadges.length === 0 && !isLoading) {
     return null // Don't show if user has no badges
   }
@@ -169,6 +212,18 @@ export default function BadgeManagement({ userId, onUpdate }: BadgeManagementPro
           <div className="flex items-center gap-2">
             <Settings className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-base">Manage Badges ({allBadges.length})</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                refreshBadges()
+              }}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground" />

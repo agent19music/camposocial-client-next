@@ -46,6 +46,7 @@ import AddYap from '@/components/addyap'
 import AddEvent from "@/components/addevent";
 import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { useWebSocket } from "@/context/websocket-context";
 import { NotificationDot, NotificationCounter, YapNotificationBanner } from "@/components/notification-indicators";
 import { toast } from "react-hot-toast";
@@ -74,7 +75,8 @@ const Header: FC<HeaderProps> = ({
   const [activePage, setActivePage] = useState<string>("");
   const router = useRouter();
 
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, logout, isAuthenticated } = useContext(AuthContext);
+  const { openAuthModal } = useAuthModal();
   const {
     notificationCounts,
     yapCounts,
@@ -104,7 +106,7 @@ const Header: FC<HeaderProps> = ({
   }
 
   function takeMeToProfile() {
-    router.push('/userprofile');
+    router.push(`/yaps/profile/${currentUser?.username}`);
   }
 
   // Get filters based on current page
@@ -202,8 +204,8 @@ const Header: FC<HeaderProps> = ({
         showFilters={false}
       />
 
-      {/* Smart FAB */}
-      <SmartFAB />
+      {/* Smart FAB - Only show when authenticated */}
+      {isAuthenticated && <SmartFAB />}
 
       {/* Desktop Header */}
       <header className="hidden lg:flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 mt-2.5 relative">
@@ -238,26 +240,28 @@ const Header: FC<HeaderProps> = ({
             />
           </Button>
 
-          {/* Plus Icon with Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-2 flex flex-col justify-center place-items-center max-w-32">
-              <span className="pb-3">
-                <AddYap />
-              </span>
-              <span>
-                <AddEvent />
-              </span>
-            </PopoverContent>
-          </Popover>
+          {/* Plus Icon with Popover - Only show when authenticated */}
+          {isAuthenticated && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2 flex flex-col justify-center place-items-center max-w-32">
+                <span className="pb-3">
+                  <AddYap />
+                </span>
+                <span>
+                  <AddEvent />
+                </span>
+              </PopoverContent>
+            </Popover>
+          )}
 
           <Link href="/marketplace">
             <Button
@@ -271,83 +275,95 @@ const Header: FC<HeaderProps> = ({
             </Button>
           </Link>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFriendsNavigation}
-            className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${activePage.includes("/friends") ? "text-[#ff9013]" : ""
-              }`}
-          >
-            <UserPlus className="h-5 w-5 mr-2" />
-            Friends
-            {/* Purple notification dot for friend requests */}
-            <NotificationDot
-              show={notificationCounts.friend_requests > 0}
+          {/* Friends link - only show when authenticated */}
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
               size="sm"
-              position="top-right"
-              className="ml-2"
-            />
-          </Button>
+              onClick={handleFriendsNavigation}
+              className={`relative text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 ${activePage.includes("/friends") ? "text-[#ff9013]" : ""
+                }`}
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Friends
+              {/* Purple notification dot for friend requests */}
+              <NotificationDot
+                show={notificationCounts.friend_requests > 0}
+                size="sm"
+                position="top-right"
+                className="ml-2"
+              />
+            </Button>
+          )}
         </div>
 
         <div className="mt-auto hidden lg:flex items-center space-x-4">
           <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="rounded-full hover:opacity-80 transition-opacity"
-                onClick={() => currentUser && router.push(`/yaps/profile/${currentUser.username}`)}
-              >
-                {currentUser ?
+          {isAuthenticated && currentUser ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full hover:opacity-80 transition-opacity"
+                  onClick={() => router.push(`/yaps/profile/${currentUser.username}`)}
+                >
                   <Avatar className="w-10 h-10 mb-2 flex-shrink-0">
                     <AvatarImage src={currentUser?.avatar} />
                     <AvatarFallback>{currentUser?.display_name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
-                  :
-                  <CircleUser className="h-5 w-5" />
-                }
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {currentUser ? (
+                  <span className="sr-only">Toggle user menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
                 <DropdownMenuLabel
                   className="hover:cursor-pointer"
                   onClick={() => router.push(`/yaps/profile/${currentUser.username}`)}
                 >
                   {currentUser.username}
                 </DropdownMenuLabel>
-              ) : (
-                <DropdownMenuLabel onClick={takeMeToLogin} className="hover:cursor-pointer">
-                  Login
-                </DropdownMenuLabel>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={takeMeToProfile}>Profile Info</DropdownMenuItem>
-              <DropdownMenuItem onClick={takeMeToSettings}>Settings</DropdownMenuItem>
-              {currentUser?.is_seller && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL || 'http://localhost:3001';
-                    window.location.href = sellerDashboardUrl + '/dashboard';
-                  }}
-                  className="text-[#ff9013] font-medium"
-                >
-                  Seller Dashboard
-                </DropdownMenuItem>
-              )}
-              {currentUser && !currentUser?.is_seller && (
-                <DropdownMenuItem onClick={() => router.push('/marketplace/sellersignup')}>
-                  Become a Seller
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem>Support</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={takeMeToProfile}>Profile Info</DropdownMenuItem>
+                <DropdownMenuItem onClick={takeMeToSettings}>Settings</DropdownMenuItem>
+                {currentUser?.is_seller && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL || 'http://localhost:3001';
+                      window.location.href = sellerDashboardUrl + '/dashboard';
+                    }}
+                    className="text-[#ff9013] font-medium"
+                  >
+                    Seller Dashboard
+                  </DropdownMenuItem>
+                )}
+                {currentUser && !currentUser?.is_seller && (
+                  <DropdownMenuItem onClick={() => router.push('/marketplace/sellersignup')}>
+                    Become a Seller
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => openAuthModal()}
+                className="font-semibold"
+              >
+                Log In
+              </Button>
+              <Button
+                onClick={() => openAuthModal()}
+                className="text-white font-semibold"
+                style={{ backgroundColor: 'var(--color-fun)' }}
+              >
+                Sign Up
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -416,24 +432,36 @@ const Header: FC<HeaderProps> = ({
           </Button>
         </Link>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleFriendsNavigation}
-          className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${activePage.includes("/friends") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
-            }`}
-        >
-          <div className="relative">
-            <UserPlus className="h-5 w-5 mb-1" />
-            {/* Purple notification dot for mobile */}
-            <NotificationDot
-              show={notificationCounts.friend_requests > 0}
-              size="sm"
-              position="top-right"
-            />
-          </div>
-          <span className="text-xs">Friends</span>
-        </Button>
+        {isAuthenticated ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleFriendsNavigation}
+            className={`relative flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors ${activePage.includes("/friends") ? "text-[#ff9013] bg-[#ff9013]/10 dark:bg-[#ff9013]/20" : ""
+              }`}
+          >
+            <div className="relative">
+              <UserPlus className="h-5 w-5 mb-1" />
+              {/* Purple notification dot for mobile */}
+              <NotificationDot
+                show={notificationCounts.friend_requests > 0}
+                size="sm"
+                position="top-right"
+              />
+            </div>
+            <span className="text-xs">Friends</span>
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openAuthModal()}
+            className="flex-col h-12 px-3 text-muted-foreground hover:bg-[#ff9013]/10 dark:hover:text-white dark:hover:bg-[#ff9013]/20 transition-colors"
+          >
+            <CircleUser className="h-5 w-5 mb-1" />
+            <span className="text-xs">Sign In</span>
+          </Button>
+        )}
       </nav>
     </>
   );

@@ -40,6 +40,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
+import ImageCropModal from "@/components/yaps/ImageCropModal"
+import VideoTrimmerModal from "@/components/yaps/VideoTrimmerModal"
 
 interface YapPayload {
   content: string;
@@ -71,6 +73,12 @@ export default function AddYap() {
   const [isPollMode, setIsPollMode] = useState(false)
   const [pollOptions, setPollOptions] = useState(["", ""])
   const [pollDuration, setPollDuration] = useState("1 day")
+
+  // Media editing modals
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [imageFileToCrop, setImageFileToCrop] = useState<File | null>(null)
+  const [videoToTrim, setVideoToTrim] = useState<string | null>(null)
+  const [videoFileToTrim, setVideoFileToTrim] = useState<File | null>(null)
 
   const { postYap, getHashtagSuggestions, getLocationSuggestions } = useContext(YapContext)
   const { currentUser } = useContext(AuthContext)
@@ -171,16 +179,107 @@ export default function AddYap() {
     setShowLocationSuggestions(false)
   }
 
-  // Handle media file selection
+  // Handle media file selection - opens crop/trim modals
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    const validFiles = files.filter(file => {
-      const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/')
-      const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
-      return isValidType && isValidSize
-    })
 
-    setMediaFiles(prev => [...prev, ...validFiles].slice(0, 4)) // Max 4 files
+    if (files.length === 0) return
+
+    // Check if we have room for more files
+    if (mediaFiles.length >= 4) {
+      toast.error('Maximum 4 media files allowed')
+      return
+    }
+
+    const file = files[0] // Process one file at a time
+
+    // Validate file type and size
+    const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/')
+    const isValidSize = file.size <= 50 * 1024 * 1024 // 50MB limit for videos
+
+    if (!isValidType) {
+      toast.error('Only images and videos are allowed')
+      return
+    }
+
+    if (!isValidSize) {
+      toast.error('File size must be under 50MB')
+      return
+    }
+
+    // Create object URL for the file
+    const fileUrl = URL.createObjectURL(file)
+
+    if (file.type.startsWith('image/')) {
+      // Open crop modal for images
+      setImageFileToCrop(file)
+      setImageToCrop(fileUrl)
+    } else if (file.type.startsWith('video/')) {
+      // Open trim modal for videos
+      setVideoFileToTrim(file)
+      setVideoToTrim(fileUrl)
+    }
+
+    // Reset input so same file can be selected again
+    if (e.target) {
+      e.target.value = ''
+    }
+  }
+
+  // Handle cropped image
+  const handleCropComplete = (croppedBlob: Blob) => {
+    // Create a new file from the cropped blob
+    const croppedFile = new File(
+      [croppedBlob],
+      imageFileToCrop?.name || 'cropped-image.jpg',
+      { type: croppedBlob.type }
+    )
+
+    setMediaFiles(prev => [...prev, croppedFile].slice(0, 4))
+
+    // Clean up
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop)
+    }
+    setImageToCrop(null)
+    setImageFileToCrop(null)
+  }
+
+  // Handle crop cancel
+  const handleCropCancel = () => {
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop)
+    }
+    setImageToCrop(null)
+    setImageFileToCrop(null)
+  }
+
+  // Handle trimmed video
+  const handleTrimComplete = (trimmedBlob: Blob) => {
+    // Create a new file from the trimmed blob
+    const trimmedFile = new File(
+      [trimmedBlob],
+      videoFileToTrim?.name || 'trimmed-video.mp4',
+      { type: trimmedBlob.type }
+    )
+
+    setMediaFiles(prev => [...prev, trimmedFile].slice(0, 4))
+
+    // Clean up
+    if (videoToTrim) {
+      URL.revokeObjectURL(videoToTrim)
+    }
+    setVideoToTrim(null)
+    setVideoFileToTrim(null)
+  }
+
+  // Handle trim cancel
+  const handleTrimCancel = () => {
+    if (videoToTrim) {
+      URL.revokeObjectURL(videoToTrim)
+    }
+    setVideoToTrim(null)
+    setVideoFileToTrim(null)
   }
 
   // Remove media file
@@ -540,12 +639,32 @@ export default function AddYap() {
         <input
           ref={fileInputRef}
           type="file"
-          multiple
           accept="image/*,video/*"
           onChange={handleMediaUpload}
           className="hidden"
         />
       </DialogContent>
+
+      {/* Image Crop Modal */}
+      {imageToCrop && (
+        <ImageCropModal
+          isOpen={!!imageToCrop}
+          imageSrc={imageToCrop}
+          onClose={handleCropCancel}
+          onCropComplete={handleCropComplete}
+        />
+      )}
+
+      {/* Video Trim Modal */}
+      {videoToTrim && (
+        <VideoTrimmerModal
+          isOpen={!!videoToTrim}
+          videoFile={videoFileToTrim!}
+          onClose={handleTrimCancel}
+          onTrimComplete={handleTrimComplete}
+          maxDuration={60}
+        />
+      )}
     </Dialog>
   )
 } 

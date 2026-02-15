@@ -12,7 +12,7 @@ import { deriveKeyPassword } from "../lib/keyStorage";
 // Create the AuthContext with a default value (null user initially)
 export const AuthContext = createContext<AuthContextType>({
   login: () => { },
-  socialLogin: async () => { },
+  socialLogin: async () => ({ success: false }),
   completeProfile: async () => { },
   logout: () => { },
   currentUser: null,
@@ -28,20 +28,20 @@ export const AuthContext = createContext<AuthContextType>({
   register: async () => ({ success: false }),
   sendOTP: async () => ({ success: false }),
   verifyOTP: async () => ({ success: false }),
-  oauthLogin: async () => { },
-  oauthSignup: async () => { },
+  oauthLogin: async () => ({ success: false }),
+  oauthSignup: async () => ({ success: false }),
 });
 
-export default function AuthProvider({ children }: AuthProviderProps) {
+export default function AuthProvider({ children, initialAuthToken }: AuthProviderProps) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onAuthChange, setOnAuthChange] = useState(false);
   const { sellerStatusChange } = useContext(MarketplaceContext)
-  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(initialAuthToken || null);
   const router = useRouter();
   const [isProfileComplete, setIsProfileComplete] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!initialAuthToken);
   const [showSocialModal, setShowSocialModal] = useState(false);
 
   // Add refs to prevent duplicate requests
@@ -145,8 +145,26 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         toast.success('Welcome back');
         setOnAuthChange(!onAuthChange)
 
-        // Check if user is new (no friends, yaps, etc.) and redirect accordingly
-        setTimeout(() => router.push('/yaps'), 100);
+        // Fetch user data before redirecting to avoid auth race condition
+        // This ensures the profile page sees the user as authenticated
+        try {
+          const userResponse = await fetch(`${apiEndpoint}/authenticated_user`, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${data.access_token}`,
+            },
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            setCurrentUser(userData);
+            router.push(`/yaps/profile/${userData.username}`);
+          } else {
+            router.push('/yaps');
+          }
+        } catch {
+          router.push('/yaps');
+        }
       } else {
         toast.error('Invalid username or password');
       }
@@ -156,7 +174,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  async function socialLogin(provider: string, data: any) {
+  async function socialLogin(provider: string, data: any): Promise<{ success: boolean }> {
     try {
 
       if (!apiEndpoint) {
@@ -219,15 +237,18 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           toast.success('Welcome back!');
           router.push('/yaps');
         }
+        return { success: true };
       } else {
         const errorMessage = result.error || `${provider} authentication failed`;
         console.error(`${provider} OAuth error:`, result);
         toast.error(errorMessage);
+        return { success: false };
       }
     } catch (error) {
       console.error('Social login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       toast.error(`${provider} login failed: ${errorMessage}`);
+      return { success: false };
     }
   }
 
@@ -246,11 +267,30 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         setIsProfileComplete(true);
+        // Update user context to get fresh data
         updateUserContext();
-        router.push('/yaps');
-        toast.success('Profile completed successfully');
+
+        // Use the username from the server response as the authoritative source
+        // This ensures we navigate to the correct profile with the username confirmed by the server
+        // Fallback to form data or current user for backward compatibility
+        const updatedUsername = result.user?.username || profileData.username || currentUser?.username;
+        router.push(`/yaps/profile/${updatedUsername}`);
+
+        // Show success message
+        toast.success('Profile completed successfully!');
+
+        // Show badge award notification if a badge was awarded
+        if (result.badge_awarded && result.badge_info?.badge_name) {
+          // Slight delay to avoid toast overlap
+          setTimeout(() => {
+            toast.success(`🎓 ${result.badge_info.badge_name} badge awarded!`, {
+              duration: 5000,
+              icon: '🏆'
+            });
+          }, 1000);
+        }
       } else {
-        toast.error(result.message || 'Failed to complete profile');
+        toast.error(result.error || result.message || 'Failed to complete profile');
       }
     } catch (error) {
       console.error('Profile completion error:', error);
@@ -313,46 +353,48 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     abortControllerRef.current = controller;
 
     try {
-      const response = await fetch(`${apiEndpoint}/authenticated_user`, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        signal: controller.signal,
-      });
+        const response = await fetch(`${apiEndpoint}/authenticated_user`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token is invalid, clear auth state
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 422 || response.status === 403) {
+            // Token is invalid/unprocessable/forbidden — clear auth state AND the HTTP-only cookie
+            console.warn(`Auth token rejected by server (${response.status}), clearing session`);
+            setCurrentUser(null);
+            setAuthToken(null);
+            setIsAuthenticated(false);
+            try { await fetch('/api/auth/clear-token', { method: 'POST' }); } catch { }
+            return;
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const userData = await response.json();
+
+        if (userData && (userData.email || userData.username)) {
+          setCurrentUser(userData);
+        } else {
+          console.warn('Invalid user data received');
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('Error fetching authenticated user:', error.message);
+          // Any failure to validate the user should clear auth state
+          // to prevent redirect loops with stale/invalid tokens
           setCurrentUser(null);
           setAuthToken(null);
           setIsAuthenticated(false);
-          return;
+          try { await fetch('/api/auth/clear-token', { method: 'POST' }); } catch { }
         }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const userData = await response.json();
-
-      if (userData && (userData.email || userData.username)) {
-        setCurrentUser(userData);
-      } else {
-        console.warn('Invalid user data received');
-        setCurrentUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching authenticated user:', error.message);
-
-        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-          setCurrentUser(null);
-          setAuthToken(null);
-          setIsAuthenticated(false);
-        }
-      }
-    } finally {
+      } finally {
       fetchingUserRef.current = false;
       setIsLoading(false);
     }
@@ -483,7 +525,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  async function oauthLogin(provider: string, data: any) {
+  async function oauthLogin(provider: string, data: any): Promise<{ success: boolean }> {
     try {
       const response = await fetch(`${apiEndpoint}/oauth/${provider}/login`, {
         method: 'POST',
@@ -497,7 +539,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         // User doesn't have an account - redirect to signup
         toast.error('No account found. Please sign up first.');
         router.push('/signup');
-        return;
+        return { success: false };
       }
 
       if (result.access_token) {
@@ -532,13 +574,16 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           toast.success('Welcome back!');
           router.push('/yaps');
         }
+        return { success: true };
       } else {
         const errorMessage = result.error || `${provider} login failed`;
         toast.error(errorMessage);
+        return { success: false };
       }
     } catch (error) {
       console.error('OAuth login error:', error);
       toast.error(`${provider} login failed`);
+      return { success: false };
     }
   }
 

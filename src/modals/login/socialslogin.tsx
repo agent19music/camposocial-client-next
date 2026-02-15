@@ -8,6 +8,7 @@ import { Icons } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { SmileyNervous, SmileySadIcon } from '@phosphor-icons/react';
 
 /**
  * SocialLoginButtons - OAuth buttons for LOGIN page (existing users only)
@@ -16,6 +17,7 @@ import { Loader2 } from 'lucide-react';
 export function SocialLoginButtons() {
     const { oauthLogin, showSocialModal, setShowSocialModal } = useContext(AuthContext);
     const [isLoading, setIsLoading] = useState(false);
+    const [hasError, setHasError] = useState(false);
     const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
     const loadingMessages = [
@@ -29,23 +31,31 @@ export function SocialLoginButtons() {
 
     // Rotate through loading messages
     useEffect(() => {
-        if (!isLoading) return;
+        if (!isLoading || hasError) return;
 
         const interval = setInterval(() => {
             setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
         }, 2000);
 
         return () => clearInterval(interval);
-    }, [isLoading, loadingMessages.length]);
+    }, [isLoading, hasError, loadingMessages.length]);
+
+    const resetState = () => {
+        setIsLoading(false);
+        setHasError(false);
+        setLoadingMessageIndex(0);
+    };
 
     const googleLogin = useGoogleLogin({
         onSuccess: async (credentialResponse) => {
             setIsLoading(true);
+            setHasError(false);
             setLoadingMessageIndex(0);
-            
+
             try {
                 if (!credentialResponse.access_token) {
                     toast.error('Invalid Google OAuth response');
+                    setHasError(true);
                     setIsLoading(false);
                     return;
                 }
@@ -58,27 +68,26 @@ export function SocialLoginButtons() {
                     scope: credentialResponse.scope
                 };
 
-                // Add timeout as safety net (30 seconds) - will clear loading if something goes wrong
-                const timeoutId = setTimeout(() => {
-                    setIsLoading(false);
-                }, 30000);
-
                 // Use oauthLogin which only allows existing users
-                await oauthLogin('google', transformedData);
-                
-                // Clear timeout if oauthLogin completes
-                clearTimeout(timeoutId);
+                const result = await oauthLogin('google', transformedData);
+
+                // Check if login failed
+                if (!result.success) {
+                    setHasError(true);
+                    setIsLoading(false);
+                }
                 // Note: On success, navigation happens so component unmounts
-                // On error, oauthLogin shows toast but doesn't throw, so timeout will clear loading after 30s
             } catch (error) {
                 console.error('Google login error:', error);
                 toast.error(`Google login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                setHasError(true);
                 setIsLoading(false);
             }
         },
         onError: (error) => {
             console.error('Google login error:', error);
             toast.error(`Google login failed: ${error?.error_description || 'Unknown error'}`);
+            setHasError(true);
             setIsLoading(false);
         },
         scope: 'email profile',
@@ -94,6 +103,7 @@ export function SocialLoginButtons() {
         }
 
         setIsLoading(true);
+        setHasError(false);
         setLoadingMessageIndex(0);
 
         // Store login mode in session storage so callback knows it's login
@@ -131,6 +141,44 @@ export function SocialLoginButtons() {
                     </div>
                 </Button>
             </div>
+        );
+    }
+
+    // Error state UI
+    if (hasError) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-12 space-y-6"
+            >
+                <motion.div
+                    initial={{ rotate: -10 }}
+                    animate={{ rotate: [0, -5, 5, -5, 0] }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <SmileySadIcon
+                        className="h-16 w-16"
+                        weight="duotone"
+                        style={{ color: 'var(--color-fun)' }}
+                    />
+                </motion.div>
+                <div className="text-center space-y-2">
+                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                        sorry that didn&apos;t work
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        let&apos;s try again
+                    </p>
+                </div>
+                <Button
+                    onClick={resetState}
+                    className="text-white font-semibold transition-all duration-200 hover:scale-[1.02]"
+                    style={{ backgroundColor: 'var(--color-fun)' }}
+                >
+                    Try Again
+                </Button>
+            </motion.div>
         );
     }
 

@@ -9,13 +9,21 @@ import 'react-advanced-cropper/dist/themes/corners.css'
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Colors as Palette } from "@/constants/Colors"
+import { UNIVERSITIES, FACULTIES } from '@/constants/universities';
 
 const C = Palette;
+
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Pencil, Camera, X } from "lucide-react"
+import { Pencil, Camera, X, Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Dialog,
   DialogContent,
@@ -23,15 +31,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import toast from "react-hot-toast"
 
 export default function ProfileEditor() {
@@ -48,9 +47,12 @@ export default function ProfileEditor() {
     email: "",
     bio: "",
     phone_no: "",
-    category: "",
+    university: "",
+    faculty: "",
+    course: "", // specific course, optional
     yap_header_img: "",
   })
+
 
   // Image cropping state
   const [cropModal, setCropModal] = useState({
@@ -65,6 +67,12 @@ export default function ProfileEditor() {
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null)
   const headerFileInputRef = useRef<HTMLInputElement | null>(null)
 
+  // Searchable Select State
+  const [openUni, setOpenUni] = useState(false)
+  const [searchUni, setSearchUni] = useState("")
+  const [openFaculty, setOpenFaculty] = useState(false)
+  const [searchFaculty, setSearchFaculty] = useState("")
+
   // Initialize profile data from auth context
   useEffect(() => {
     if (currentUser) {
@@ -76,9 +84,12 @@ export default function ProfileEditor() {
         email: currentUser.email || "",
         bio: currentUser.bio || "",
         phone_no: currentUser.phone_no || "",
-        category: currentUser.category || "",
+        university: currentUser.university || "",
+        faculty: currentUser.faculty || "",
+        course: currentUser.course || "",
         yap_header_img: (currentUser as any).yap_header_img || "",
       })
+
 
       if (currentUser.avatar) {
         setAvatarSrc(currentUser.avatar)
@@ -96,6 +107,9 @@ export default function ProfileEditor() {
       [e.target.name]: e.target.value
     })
   }
+
+  // Check if uni details are already locked (set during onboarding)
+  const isUniLocked = Boolean(currentUser?.university && currentUser?.faculty);
 
   // Handle image selection
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'header') => {
@@ -238,8 +252,11 @@ export default function ProfileEditor() {
         email: currentUser.email || "",
         bio: currentUser.bio || "",
         phone_no: currentUser.phone_no || "",
-        category: currentUser.category || "",
+        university: currentUser.university || "",
+        faculty: currentUser.faculty || "",
+        course: currentUser.course || "",
         yap_header_img: (currentUser as any).yap_header_img || "",
+
       })
 
       // Reset avatar to original
@@ -259,16 +276,13 @@ export default function ProfileEditor() {
     return `${profileData.first_name.charAt(0) || ''}${profileData.last_name.charAt(0) || ''}` || 'U'
   }
 
-  // Map category code to display text
-  const getCategoryDisplay = (code: string) => {
-    const categories = {
-      "sw": "Software Development",
-      "ui/ux": "UI/UX Design",
-      "ds": "Data Science",
-      "cybersec": "Cyber Security"
-    }
-    return categories[code as keyof typeof categories] || "Select Course"
+
+
+  // Handle select changes
+  const handleSelectChange = (field: string, value: string) => {
+    setProfileData(prev => ({ ...prev, [field]: value }))
   }
+
 
   // Get cropper configuration based on type
   const getCropperConfig = () => {
@@ -339,12 +353,13 @@ export default function ProfileEditor() {
               </Avatar>
               {isEditing && (
                 <Button
-                  variant="secondary"
+                  variant="default"
                   size="icon"
-                  className="absolute bottom-0 right-0 rounded-full"
+                  className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 shadow-md hover:scale-110 transition-transform"
+                  style={{ backgroundColor: C.primary }}
                   onClick={triggerAvatarUpload}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-4 w-4 text-white" />
                 </Button>
               )}
             </div>
@@ -448,25 +463,123 @@ export default function ProfileEditor() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="category">Course</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={!isEditing}>
-                  {getCategoryDisplay(profileData.category)}
+            <Label>University</Label>
+            <Popover open={openUni} onOpenChange={setOpenUni}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openUni}
+                  className="w-full justify-between"
+                  disabled={!isEditing || isUniLocked}
+                >
+                  {profileData.university
+                    ? profileData.university
+                    : "Select University..."}
+                  {!isUniLocked && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>Enrolled Course</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup value={profileData.category} onValueChange={(value) => setProfileData({ ...profileData, category: value })}>
-                  <DropdownMenuRadioItem value="sw">Software Development</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="ui/ux">UI/UX Design</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="ds">Data Science</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="cybersec">Cyber Security</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search university..."
+                    value={searchUni}
+                    onChange={(e) => setSearchUni(e.target.value)}
+                    className="mb-2"
+                  />
+                  <div className="max-h-[200px] overflow-y-auto">
+                    {UNIVERSITIES.filter(u => u.toLowerCase().includes(searchUni.toLowerCase())).map((uni) => (
+                      <div
+                        key={uni}
+                        className="flex items-center p-2 hover:bg-muted cursor-pointer rounded-sm"
+                        onClick={() => {
+                          setProfileData(prev => ({ ...prev, university: uni }));
+                          setOpenUni(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            profileData.university === uni ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {uni}
+                      </div>
+                    ))}
+                    {UNIVERSITIES.filter(u => u.toLowerCase().includes(searchUni.toLowerCase())).length === 0 && (
+                      <div className="p-2 text-sm text-muted-foreground">No university found.</div>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
+
+          <div className="grid gap-2">
+            <Label>Faculty</Label>
+            <Popover open={openFaculty} onOpenChange={setOpenFaculty}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openFaculty}
+                  className="w-full justify-between"
+                  disabled={!isEditing || isUniLocked}
+                >
+                  {profileData.faculty
+                    ? profileData.faculty
+                    : "Select Faculty..."}
+                  {!isUniLocked && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search faculty..."
+                    value={searchFaculty}
+                    onChange={(e) => setSearchFaculty(e.target.value)}
+                    className="mb-2"
+                  />
+                  <div className="max-h-[200px] overflow-y-auto">
+                    {FACULTIES.filter(f => f.toLowerCase().includes(searchFaculty.toLowerCase())).map((fac) => (
+                      <div
+                        key={fac}
+                        className="flex items-center p-2 hover:bg-muted cursor-pointer rounded-sm"
+                        onClick={() => {
+                          setProfileData(prev => ({ ...prev, faculty: fac }));
+                          setOpenFaculty(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            profileData.faculty === fac ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {fac}
+                      </div>
+                    ))}
+                    {FACULTIES.filter(f => f.toLowerCase().includes(searchFaculty.toLowerCase())).length === 0 && (
+                      <div className="p-2 text-sm text-muted-foreground">No faculty found.</div>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="course">Course (Optional)</Label>
+            <Input
+              id="course"
+              name="course"
+              value={profileData.course}
+              disabled={!isEditing}
+              onChange={handleChange}
+              placeholder="e.g. BSc Computer Science"
+            />
+          </div>
+
           <div className="flex justify-end gap-2">
             {isEditing && (
               <Button variant="outline" onClick={handleCancel} disabled={isLoading}>

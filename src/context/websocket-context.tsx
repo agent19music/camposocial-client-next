@@ -157,10 +157,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const maxReconnectAttempts = 5;
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
   const conversationRoomsRef = useRef<Set<string>>(new Set());
+  const authRejectedRef = useRef(false);
 
   // Initialize socket connection
   const initializeSocket = useCallback(() => {
     if (!authToken || !isAuthenticated || !currentUser) return;
+
+    // Reset auth rejection flag on new connection attempt
+    authRejectedRef.current = false;
 
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
     if (!apiEndpoint) {
@@ -234,21 +238,33 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     newSocket.on('disconnect', (reason: any) => {
       setIsConnected(false);
 
-      // Attempt to reconnect if it wasn't a manual disconnect
-      if (reason !== 'io client disconnect' && reconnectAttempts.current < maxReconnectAttempts) {
-        reconnectAttempts.current++;
-
-        if (reconnectTimeout.current) {
-          clearTimeout(reconnectTimeout.current);
-        }
-
-        reconnectTimeout.current = setTimeout(() => {
-          newSocket.connect();
-        }, 2000 * reconnectAttempts.current);
+      // Don't reconnect if the server rejected our auth token
+      if (authRejectedRef.current) {
+        console.warn('Socket disconnected due to auth rejection — not reconnecting');
+        return;
       }
+
+      // Let socket.io's built-in reconnection handle network drops
+      // (reconnection: true is set in the config)
     });
 
     newSocket.on('connect_error', (error: any) => {
+      const errorMsg = error?.message || error?.toString() || '';
+      const isAuthError = errorMsg.includes('rejected')
+        || errorMsg.includes('Signature')
+        || errorMsg.includes('Token')
+        || errorMsg.includes('Unauthorized');
+
+      if (isAuthError) {
+        console.warn('Socket auth rejected — stopping reconnection and clearing token');
+        authRejectedRef.current = true;
+        newSocket.io.opts.reconnection = false;
+        newSocket.disconnect();
+        // Clear the stale cookie so the middleware sees unauthenticated
+        fetch('/api/auth/clear-token', { method: 'POST' }).catch(() => { });
+        return;
+      }
+
       console.error('WebSocket connection error:', error);
       setIsConnected(false);
     });

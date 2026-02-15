@@ -116,61 +116,46 @@ export const MediaGrid = ({
   if (!media || media.length === 0) return null
 
   const getGridLayout = () => {
-    if (shouldShowOriginalAspect) return 'grid-cols-1'
+    if (isSingleMedia) return '' // No grid for single media
     
     switch (mediaCount) {
-      case 1:
-        return 'grid-cols-1'
       case 2:
-        return 'grid-cols-2'
+        return 'grid grid-cols-2'
       case 3:
-        return 'grid-cols-2'
+        return 'grid grid-cols-2'
       case 4:
-        return 'grid-cols-2'
+        return 'grid grid-cols-2'
       default:
-        return 'grid-cols-2'
+        return 'grid grid-cols-2'
     }
   }
 
   const getItemClasses = (index: number, item: MediaItem) => {
-    if (shouldShowOriginalAspect && item.type === 'image') {
-      const dimensions = imageDimensions[item.url]
-      if (dimensions) {
-        const aspectRatio = dimensions.width / dimensions.height
-        
-        // Define some common aspect ratios
-        if (Math.abs(aspectRatio - 1) < 0.1) {
-          // Square (1:1)
-          return 'aspect-square max-h-[400px]'
-        } else if (Math.abs(aspectRatio - (16/9)) < 0.1) {
-          // Widescreen (16:9)
-          return 'aspect-[16/9] max-h-[400px]'
-        } else if (Math.abs(aspectRatio - (9/16)) < 0.1) {
-          // Portrait (9:16)
-          return 'aspect-[9/16] max-h-[600px]'
-        } else if (aspectRatio > 1.5) {
-          // Wide images
-          return 'aspect-[16/9] max-h-[400px]'
-        } else if (aspectRatio < 0.7) {
-          // Tall images
-          return 'aspect-[9/16] max-h-[600px]'
+    // Single media: use natural aspect ratio, constrained
+    if (isSingleMedia) {
+      if (item.type === 'video') return 'w-full max-h-[500px]'
+      
+      if (shouldShowOriginalAspect) {
+        const dimensions = imageDimensions[item.url]
+        if (dimensions) {
+          const aspectRatio = dimensions.width / dimensions.height
+          if (aspectRatio > 1.8) return 'w-full aspect-[16/9] max-h-[350px]'
+          if (aspectRatio > 1.2) return 'w-full aspect-[3/2] max-h-[400px]'
+          if (aspectRatio > 0.8) return 'w-full aspect-square max-h-[450px]'
+          if (aspectRatio > 0.55) return 'w-full aspect-[3/4] max-h-[500px]'
+          return 'w-full aspect-[9/16] max-h-[500px]'
         }
       }
-      // Default for single media
-      return 'aspect-[4/3] max-h-[400px]'
+      // Default single media - a nice contained rectangle
+      return 'w-full aspect-[16/10] max-h-[400px]'
     }
     
     // Grid layout (multiple media items)
-    if (mediaCount === 1) {
-      return 'col-span-2 aspect-[16/9] max-h-[400px]'
-    }
     if (mediaCount === 2) {
-      return 'aspect-square'
+      return 'aspect-[4/5]'
     }
     if (mediaCount === 3) {
-      if (index === 0) {
-        return 'row-span-2 aspect-[4/5]'
-      }
+      if (index === 0) return 'row-span-2 aspect-auto h-full'
       return 'aspect-square'
     }
     if (mediaCount === 4) {
@@ -289,23 +274,24 @@ export const MediaGrid = ({
     )
   }
 
-  return (
-    <>
-      <div className={cn(
-        "grid gap-[2px] rounded-2xl overflow-hidden border border-border",
-        getGridLayout(),
-        shouldShowOriginalAspect ? "max-w-full" : "max-w-[520px]",
-        className
-      )}>
-        {media.map((item, index) => (
-          <div 
-            key={`${item.type}-${item.id}-${index}`} 
-            className={cn(
-              "relative bg-muted cursor-pointer group overflow-hidden",
-              getItemClasses(index, item)
-            )}
-            onClick={(e) => openFocusView(index, e)}
-          >
+    return (
+      <>
+        <div className={cn(
+          "rounded-2xl overflow-hidden border border-border",
+          !isSingleMedia && "grid gap-[2px]",
+          getGridLayout(),
+          isSingleMedia ? "max-w-full" : "max-w-[520px]",
+          className
+        )}>
+          {media.map((item, index) => (
+            <div 
+              key={`${item.type}-${item.id}-${index}`} 
+              className={cn(
+                "relative bg-muted cursor-pointer group overflow-hidden",
+                getItemClasses(index, item)
+              )}
+              onClick={(e) => openFocusView(index, e)}
+            >
             {item.type === 'image' ? (
               <>
                 <Image 

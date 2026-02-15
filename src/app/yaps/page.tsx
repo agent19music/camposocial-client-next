@@ -1,5 +1,5 @@
 "use client"
-import React, { useContext, useEffect } from 'react'
+import React, { useContext, useEffect, useRef, useState, useMemo } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -42,6 +42,8 @@ import AddYap from '@/components/addyap'
 import { useTheme } from '@/context/themecontext'
 import WhoToFollow from '@/components/whotofollow'
 import TrendingHashtags from '@/components/trending-hashtags'
+import CommunitiesWidget from '@/components/communities/CommunitiesWidget'
+import { AuthFadeWall } from '@/components/AuthFadeWall'
 
 const NewUserWelcome = () => {
   const { currentUser } = useContext(AuthContext);
@@ -179,12 +181,37 @@ export default function Component() {
   const { markYapsAsSeen, hasNewYaps } = useWebSocket()
   const router = useRouter();
 
-  // Force refresh yaps when page mounts and yaps are empty (handles navigation back)
+  const hasAttemptedRefresh = useRef(false);
+
+  // Search state
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Client-side search filter
+  const searchResults = useMemo(() => {
+    if (!searchActive || !searchQuery.trim()) return yaps;
+    const q = searchQuery.toLowerCase().trim();
+    return yaps.filter((yap) =>
+      yap.content?.toLowerCase().includes(q) ||
+      yap.display_name?.toLowerCase().includes(q) ||
+      yap.username?.toLowerCase().includes(q)
+    );
+  }, [yaps, searchActive, searchQuery]);
+
+  // Determine which yaps to display (search results or regular feed)
+  const displayYaps = searchActive && searchQuery.trim() ? searchResults : yaps;
+
+  // Force refresh yaps when authenticated user navigates back to an empty feed
   useEffect(() => {
-    if (isAuthenticated && !authLoading && yaps.length === 0 && !isLoading) {
+    if (!authLoading && isAuthenticated && yaps.length === 0 && !isLoading && !hasAttemptedRefresh.current) {
+      hasAttemptedRefresh.current = true;
       refreshFeed();
     }
-  }, [isAuthenticated, authLoading, yaps.length, isLoading, refreshFeed]);
+    // Reset ref when yaps load successfully
+    if (yaps.length > 0) {
+      hasAttemptedRefresh.current = false;
+    }
+  }, [authLoading, isAuthenticated, yaps.length, isLoading, refreshFeed]);
 
   // Check if user is new (no yaps, no friends, etc.)
   const isNewUser = !authLoading && currentUser && (
@@ -227,124 +254,192 @@ export default function Component() {
     { id: 'search', label: 'Search', isSearch: true },
   ];
 
-  return (
-    <div className="w-screen h-screen lg:container mx-auto p-4">
-      <Header />
-      <main className="mobile-content-padding lg:pb-4">
-        {/* Filter Pills - Always visible on mobile and desktop, includes Search pill */}
-        <FilterPills
-          filters={filterPills}
-          onFilterSelect={handleFeedTypeChange}
-          className="lg:hidden"
-        />
+    return (
+      <div className="w-screen h-screen lg:container mx-auto p-4">
+        <Header />
+        <main className="mobile-content-padding lg:pb-4">
+          {/* Filter Pills - Only show when authenticated (mobile) */}
+          {isAuthenticated && (
+            <FilterPills
+              filters={filterPills}
+              onFilterSelect={handleFeedTypeChange}
+              className="lg:hidden"
+              searchActive={searchActive}
+              onSearchToggle={setSearchActive}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          )}
 
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Desktop: Autosend-style 3-column grid with dashed dividers */}
+          <div className="flex flex-col lg:flex-row lg:min-h-[calc(100vh-6rem)]">
 
-          {/* Center content */}
-          <div className="flex-1 flex flex-col gap-4 lg:gap-6">
-            {/* Desktop Filter Pills (with Search pill) */}
-            <div className="hidden lg:block">
-              <FilterPills
-                filters={filterPills}
-                onFilterSelect={handleFeedTypeChange}
-              />
-            </div>
+            {/* Center content */}
+            <div className="flex-1 flex flex-col min-w-0 lg:border-x lg:border-dashed lg:border-border/[0.12]">
+              {/* Desktop Filter Pills - sticky with dashed bottom divider */}
+              {isAuthenticated && (
+                <div className="hidden lg:block sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-dashed border-border/[0.12] px-4 py-3">
+                  <FilterPills
+                    filters={filterPills}
+                    onFilterSelect={handleFeedTypeChange}
+                    searchActive={searchActive}
+                    onSearchToggle={setSearchActive}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                  />
+                </div>
+              )}
 
-            {/* Add Yap Button only */}
-            <div className="w-full max-w-2xl mx-auto">
-              <AddYap />
-            </div>
+              {/* Add Yap - with dashed bottom divider */}
+              {isAuthenticated && (
+                <div className="w-full max-w-2xl mx-auto border-b border-dashed border-border/[0.12] lg:px-4 py-3">
+                  <AddYap />
+                </div>
+              )}
 
-            {/* Feed Container */}
-            <div className="w-full max-w-2xl mx-auto">
-              {isNewUser ? (
-                <NewUserWelcome />
-              ) : (
-                <div className="w-full space-y-4">
-                  {/* Feed Content */}
-                  <div>
-                    {isLoading ? (
-                      // Display Skeletons while loading
-                      <>
-                        {Array.from({ length: 4 }).map((_, index) => (
-                          <YapCardSkeleton key={index} />
-                        ))}
-                      </>
-                    ) : yaps.length > 0 ? (
-                      // Display yaps
-                      <div className="space-y-4">
-                        {yaps.map((yap) => (
-                          <YapCard
-                            key={yap.id}
-                            display_name={yap.display_name}
-                            username={yap.username}
-                            content={yap.content}
-                            avatar={yap.avatar}
-                            media={yap.media}
-                            yap={yap}
-                            likes_count={yap.likes_count}
-                            replies_count={yap.replies_count}
-                            retweets_count={yap.retweets_count}
-                            badges={yap.badges}
-                          />
-                        ))}
+              {/* Feed Container */}
+              <div className="w-full max-w-2xl mx-auto flex-1">
+                {isAuthenticated && isNewUser ? (
+                  <NewUserWelcome />
+                ) : (
+                  <div className="w-full">
+                    {/* Feed Content */}
+                    {isAuthenticated ? (
+                      <div>
+                        {isLoading ? (
+                          <>
+                            {Array.from({ length: 4 }).map((_, index) => (
+                              <div key={index} className="border-b border-dashed border-border/[0.12]">
+                                <YapCardSkeleton />
+                              </div>
+                            ))}
+                          </>
+                        ) : displayYaps.length > 0 ? (
+                          <div>
+                            {displayYaps.map((yap, index) => (
+                              <div key={yap.id} className={index < displayYaps.length - 1 ? "border-b border-dashed border-border/[0.12]" : ""}>
+                                <YapCard
+                                  display_name={yap.display_name}
+                                  username={yap.username}
+                                  content={yap.content}
+                                  avatar={yap.avatar}
+                                  media={yap.media}
+                                  yap={yap}
+                                  likes_count={yap.likes_count}
+                                  replies_count={yap.replies_count}
+                                  retweets_count={yap.retweets_count}
+                                  badges={yap.badges}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                              {searchActive ? (
+                                <Search className="h-8 w-8 text-muted-foreground" />
+                              ) : (
+                                <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                              )}
+                            </div>
+                            <h3 className="text-lg font-medium mb-2">
+                              {searchActive && searchQuery.trim() ? 'No results found' : 'No yaps yet'}
+                            </h3>
+                            <p className="text-muted-foreground mb-4 max-w-sm">
+                              {searchActive && searchQuery.trim()
+                                ? `No yaps matching "${searchQuery.trim()}" were found. Try a different search term.`
+                                : feedType === 'following'
+                                  ? "Follow some people to see their yaps here, or switch to trending to discover new content."
+                                  : "Be the first to share what's happening!"}
+                            </p>
+                            {feedType === 'following' && !searchActive && (
+                              <Button
+                                variant="outline"
+                                onClick={() => handleFeedTypeChange('trending')}
+                              >
+                                <TrendingUp className="h-4 w-4 mr-2" />
+                                View Trending
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      // Empty state
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                          <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                      yaps.length > 0 ? (
+                        <AuthFadeWall visibleItems={5} contentType="yaps">
+                          <div>
+                            {yaps.slice(0, 8).map((yap, index) => (
+                              <div key={yap.id} className={index < 7 ? "border-b border-dashed border-border/[0.12]" : ""}>
+                                <YapCard
+                                  display_name={yap.display_name}
+                                  username={yap.username}
+                                  content={yap.content}
+                                  avatar={yap.avatar}
+                                  media={yap.media}
+                                  yap={yap}
+                                  likes_count={yap.weighted_likes_count}
+                                  replies_count={yap.weighted_replies_count}
+                                  retweets_count={yap.weighted_retweets_count}
+                                  badges={yap.badges}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </AuthFadeWall>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                            <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
+                          <p className="text-muted-foreground mb-4 max-w-sm">
+                            Sign up to see more yaps from your campus community!
+                          </p>
                         </div>
-                        <h3 className="text-lg font-medium mb-2">No yaps yet</h3>
-                        <p className="text-muted-foreground mb-4 max-w-sm">
-                          {feedType === 'following'
-                            ? "Follow some people to see their yaps here, or switch to trending to discover new content."
-                            : "Be the first to share what's happening!"
-                          }
-                        </p>
-                        {feedType === 'following' && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleFeedTypeChange('trending')}
-                          >
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            View Trending
-                          </Button>
-                        )}
+                      )
+                    )}
+
+                    {/* Load more */}
+                    {isAuthenticated && displayYaps.length > 0 && !searchActive && (
+                      <div className="py-4 border-t border-dashed border-border/[0.12]">
+                        <Button
+                          variant="ghost"
+                          className="w-full"
+                          onClick={refreshFeed}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'Loading...' : 'Load more yaps'}
+                        </Button>
                       </div>
                     )}
                   </div>
+                )}
+              </div>
+            </div>
 
-                  {/* Load more button */}
-                  {yaps.length > 0 && (
-                    <div className="py-4">
-                      <Button
-                        variant="ghost"
-                        className="w-full"
-                        onClick={refreshFeed}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'Loading...' : 'Load more yaps'}
-                      </Button>
-                    </div>
-                  )}
+            {/* Right sidebar - dashed left border column divider */}
+            {isAuthenticated && (
+              <div className="hidden lg:block lg:w-80 flex-shrink-0 lg:pl-5">
+                <div className="sticky top-4 space-y-0">
+                  {/* Trending hashtags */}
+                  <div className="pb-4 border-b border-dashed border-border/[0.12]">
+                    <TrendingHashtags />
+                  </div>
+
+                  {/* Who to follow */}
+                  <div className="py-4 border-b border-dashed border-border/[0.12]">
+                    <WhoToFollow />
+                  </div>
+
+                  {/* Communities */}
+                  <div className="pt-4">
+                    <CommunitiesWidget />
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-
-          {/* Right sidebar - Trending/Suggestions - Properly positioned */}
-          <div className="hidden lg:block lg:w-80 flex-shrink-0">
-            <div className="sticky top-4 space-y-4">
-              {/* Trending hashtags */}
-              <TrendingHashtags />
-
-              {/* Who to follow */}
-              <WhoToFollow />
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  )
+        </main>
+      </div>
+    )
 }

@@ -32,7 +32,7 @@ export type CurrentUser = {
 
 export interface AuthContextType {
   login: (username: string, password: string, apiEndpoint: string) => void;
-  socialLogin: (provider: string, data: any) => Promise<void>;
+  socialLogin: (provider: string, data: any) => Promise<{ success: boolean }>;
   completeProfile: (profileData: any) => Promise<void>;
   logout: () => void;
   currentUser: CurrentUser | null;
@@ -49,11 +49,14 @@ export interface AuthContextType {
   register: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean }>;
   sendOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
   verifyOTP: (email: string, code: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  oauthLogin: (provider: string, data: any) => Promise<void>;  // OAuth for existing users only
-  oauthSignup: (provider: string, data: any) => Promise<void>; // OAuth for new users
+  oauthLogin: (provider: string, data: any) => Promise<{ success: boolean }>;  // OAuth for existing users only
+  oauthSignup: (provider: string, data: any) => Promise<{ success: boolean }>; // OAuth for new users
 }
 
-export interface AuthProviderProps { children: ReactNode }
+export interface AuthProviderProps {
+  children: ReactNode;
+  initialAuthToken?: string | null;
+}
 
 // ===================== Chat =====================
 export interface ChatMedia {
@@ -418,6 +421,9 @@ export interface Yap {
   likes_count: number;
   retweets_count: number;
   bookmarks_count: number;
+  weighted_likes_count?: number; // Optional field for engagement weighting
+  weighted_replies_count?: number; // Optional field for engagement weighting
+  weighted_retweets_count?: number; // Optional field for engagement weighting
   media: MediaItem[];
   hashtags: string[];
   replies: Reply[];
@@ -425,6 +431,7 @@ export interface Yap {
   isOptimistic?: boolean;
   optimisticLiked?: boolean;
   optimisticLikesCount?: number;
+  optimisticWeightedLikesCount?: number; // Optimistic update for weighted likes
   optimisticRepliesCount?: number;
   optimisticRetweetsCount?: number;
 }
@@ -466,6 +473,11 @@ export interface YapContextProps {
   setYapReplies: (replies: Reply[]) => void;
   whotofollow: () => Promise<WhoToFollowSuggestion[]>;
   whotofollowSuggestions: WhoToFollowSuggestion[];
+
+  // Yap moderation
+  deleteYap: (yapId: string) => Promise<boolean>;
+  muteUser: (username: string) => Promise<boolean>;
+  blockUser: (username: string) => Promise<boolean>;
 }
 
 export interface YapPayload {
