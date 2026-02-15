@@ -464,7 +464,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       console.error('Error toggling like:', error);
       toast.error('Failed to update like. Please try again.');
     }
-  }, [authToken, isAuthenticated, apiEndpoint]);
+  }, [authToken, isAuthenticated, apiEndpoint, openAuthModal]);
 
   // Optimistic add reply function
   const addReply = useCallback(async (yapId: string, content: string, parentReplyId?: number) => {
@@ -570,7 +570,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       console.error('Error adding reply:', error);
       toast.error('Failed to add reply. Please try again.');
     }
-  }, [authToken, isAuthenticated, apiEndpoint, currentUser]);
+  }, [authToken, isAuthenticated, apiEndpoint, currentUser, openAuthModal]);
 
   // Optimistic pure retweet function (no content)
   const retweet = useCallback(async (yapId: string) => {
@@ -646,7 +646,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       console.error('Error retweeting:', error);
       toast.error(error.message || 'Failed to retweet. Please try again.');
     }
-  }, [authToken, isAuthenticated, apiEndpoint, currentUser, onchange]);
+  }, [authToken, isAuthenticated, apiEndpoint, currentUser, onchange, openAuthModal]);
 
   // Optimistic quote retweet function (with content)
   const quoteRetweet = useCallback(async (yapId: string, content: string) => {
@@ -730,7 +730,7 @@ export default function YapProvider({ children }: YapProviderProps) {
       console.error('Quote retweet error:', error);
       toast.error(error.message || 'Failed to quote tweet');
     }
-  }, [isAuthenticated, authToken, currentUser, apiEndpoint, onchange, setOnchange]);
+  }, [isAuthenticated, authToken, currentUser, apiEndpoint, onchange, setOnchange, openAuthModal]);
 
   // Get hashtag suggestions
   const getHashtagSuggestions = useCallback(async (query?: string): Promise<HashtagSuggestion[]> => {
@@ -846,7 +846,7 @@ export default function YapProvider({ children }: YapProviderProps) {
     } finally {
       markRequestEnd('fetch_yap_by_id');
     }
-  }, [authToken, apiEndpoint, markRequestStart, markRequestEnd]);
+  }, [authToken, apiEndpoint, markRequestStart, markRequestEnd, isAuthenticated]);
 
   // Refresh feed - force refresh to bypass rate limiting
   const refreshFeed = useCallback(async () => {

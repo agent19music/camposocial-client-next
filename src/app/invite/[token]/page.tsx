@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useContext, use } from "react"
+import { useEffect, useState, useContext, use, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { AuthContext } from "@/context/authcontext"
 import { CommunityContext } from "@/context/CommunityContext"
@@ -28,13 +28,7 @@ export default function InvitePage(props: { params: Promise<{ token: string }> }
         inviter?: any
     } | null>(null)
 
-    useEffect(() => {
-        if (token) {
-            validateInvite()
-        }
-    }, [token])
-
-    const validateInvite = async () => {
+    const validateInvite = useCallback(async () => {
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/invites/${token}`)
             const data = await res.json()
@@ -49,7 +43,13 @@ export default function InvitePage(props: { params: Promise<{ token: string }> }
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [token])
+
+    useEffect(() => {
+        if (token) {
+            validateInvite()
+        }
+    }, [token, validateInvite])
 
     const handleAccept = async () => {
         if (!currentUser) {
@@ -185,7 +185,7 @@ export default function InvitePage(props: { params: Promise<{ token: string }> }
                         <div className="space-y-3">
                             <div className="p-3 bg-green-500/10 text-green-600 rounded-lg text-sm text-center font-medium flex items-center justify-center gap-2">
                                 <CheckCircle className="w-4 h-4" />
-                                You're already a member of this community
+                                You&apos;re already a member of this community
                             </div>
                             <Button
                                 className="w-full text-lg h-12 rounded-xl"

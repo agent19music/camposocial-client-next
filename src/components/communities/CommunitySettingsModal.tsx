@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useContext, useEffect } from "react"
+import { useState, useContext, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -64,25 +64,7 @@ export default function CommunitySettingsModal({ isOpen, onClose, community }: C
 
     const isOwner = currentUser?.id === community?.creator?.id || String(currentUser?.id) === String(community?.creator?.id)
 
-    useEffect(() => {
-        if (isOpen && community) {
-            setFormData({
-                name: community.name,
-                description: community.description,
-                privacy_type: community.privacy_type,
-                category: community.category
-            })
-            if (activeTab === "danger") {
-                if (isOwner) {
-                    fetchMembers()
-                } else {
-                    setActiveTab("general")
-                }
-            }
-        }
-    }, [isOpen, community, activeTab, isOwner])
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         setIsMembersLoading(true)
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/communities/${community.id}/members?per_page=100`, {
@@ -102,7 +84,25 @@ export default function CommunitySettingsModal({ isOpen, onClose, community }: C
         } finally {
             setIsMembersLoading(false)
         }
-    }
+    }, [community?.id, authToken, currentUser?.id])
+
+    useEffect(() => {
+        if (isOpen && community) {
+            setFormData({
+                name: community.name,
+                description: community.description,
+                privacy_type: community.privacy_type,
+                category: community.category
+            })
+            if (activeTab === "danger") {
+                if (isOwner) {
+                    fetchMembers()
+                } else {
+                    setActiveTab("general")
+                }
+            }
+        }
+    }, [isOpen, community, activeTab, isOwner, fetchMembers])
 
     const handleUpdate = async () => {
         setIsLoading(true)

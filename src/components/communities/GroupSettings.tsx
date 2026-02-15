@@ -183,7 +183,7 @@ export default function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
                                 </div>
                             ) : (
                                 <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
-                                    Secret communities require unique invite links. Use the "Invite" button on the main page to generate them.
+                                    Secret communities require unique invite links. Use the &quot;Invite&quot; button on the main page to generate them.
                                 </div>
                             )}
                         </div>

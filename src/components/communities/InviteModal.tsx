@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect, useContext, useCallback } from "react"
 import {
     Dialog,
     DialogContent,
@@ -36,16 +36,16 @@ export default function InviteModal({ isOpen, onClose, communitySlug }: InviteMo
     const [expiryOption, setExpiryOption] = useState("none")
     const [copyingId, setCopyingId] = useState<string | null>(null)
 
-    const fetchInvites = async () => {
+    const fetchInvites = useCallback(async () => {
         const data = await getInvites(communitySlug)
         setInvites(data)
-    }
+    }, [getInvites, communitySlug])
 
     useEffect(() => {
         if (isOpen) {
             fetchInvites()
         }
-    }, [isOpen, communitySlug])
+    }, [isOpen, fetchInvites])
 
     const handleCreate = async () => {
         setIsLoading(true)
