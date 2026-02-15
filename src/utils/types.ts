@@ -32,7 +32,7 @@ export type CurrentUser = {
 
 export interface AuthContextType {
   login: (username: string, password: string, apiEndpoint: string) => void;
-  socialLogin: (provider: string, data: any) => Promise<void>;
+  socialLogin: (provider: string, data: any) => Promise<{ success: boolean }>;
   completeProfile: (profileData: any) => Promise<void>;
   logout: () => void;
   currentUser: CurrentUser | null;
@@ -49,11 +49,14 @@ export interface AuthContextType {
   register: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean }>;
   sendOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
   verifyOTP: (email: string, code: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  oauthLogin: (provider: string, data: any) => Promise<void>;  // OAuth for existing users only
-  oauthSignup: (provider: string, data: any) => Promise<void>; // OAuth for new users
+  oauthLogin: (provider: string, data: any) => Promise<{ success: boolean }>;  // OAuth for existing users only
+  oauthSignup: (provider: string, data: any) => Promise<{ success: boolean }>; // OAuth for new users
 }
 
-export interface AuthProviderProps { children: ReactNode }
+export interface AuthProviderProps {
+  children: ReactNode;
+  initialAuthToken?: string | null;
+}
 
 // ===================== Chat =====================
 export interface ChatMedia {

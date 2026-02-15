@@ -210,7 +210,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
         <div className="min-h-screen bg-background pb-20 md:pb-0 md:pl-64">
             <Header />
             {/* Cover Image */}
-            <div className="relative w-full bg-muted aspect-[851/315] md:aspect-[851/158]">
+            <div className="relative w-full bg-muted aspect-[3/1] md:aspect-[5/1]">
                 {group.cover_image ? (
                     <Image
                         src={group.cover_image}
@@ -512,7 +512,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                     onClose={() => setCropModal({ isOpen: false, type: null, imageSrc: null })}
                     imageSrc={cropModal.imageSrc}
                     onCropComplete={handleCropComplete}
-                    aspectRatio={cropModal.type === 'cover' ? 851 / 315 : 1}
+                    aspectRatio={cropModal.type === 'cover' ? 3 / 1 : 1}
                     title={cropModal.type === 'cover' ? 'Crop Cover Image' : 'Crop Icon Image'}
                 />
             )}

@@ -336,14 +336,14 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
   return (
     <>
-      <Card
-        className={cn(
-          "border-b border-x-0 rounded-none first:border-t-0 transition-colors duration-200 hover:cursor-pointer",
-          "hover:bg-gray-50 dark:hover:bg-foreground/5",
-          yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
-        )}
-        onClick={handleYapClick}
-      >
+        <Card
+          className={cn(
+            "border-0 shadow-none rounded-none transition-colors duration-200 hover:cursor-pointer",
+            "hover:bg-gray-50 dark:hover:bg-foreground/5",
+            yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
+          )}
+          onClick={handleYapClick}
+        >
         {renderRetweetHeader()}
 
         <CardHeader className="flex flex-row items-start space-y-0 pb-2 px-4 pt-3">

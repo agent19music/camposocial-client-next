@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Inter, Playfair_Display } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -147,11 +148,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const authToken = cookieStore.get('authToken')?.value;
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   return (
@@ -164,7 +167,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${playfair.variable} ${timesCondensed.variable} ${Helvetica.variable} ${inter.className}`}>
         <ThemeProvider>
-          <AuthProvider>
+          <AuthProvider initialAuthToken={authToken}>
             <AuthModalProvider>
               <Toaster
                 position="top-center"

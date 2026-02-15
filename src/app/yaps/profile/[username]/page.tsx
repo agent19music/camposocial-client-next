@@ -2,12 +2,12 @@ import { Metadata } from 'next'
 import ProfilePageClient from './ProfilePageClient'
 
 type Props = {
-  params: { username: string }
+  params: Promise<{ username: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
-  const username = params.username;
+  const { username } = await params;
 
   try {
     if (apiEndpoint) {
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
       if (response.ok) {
         const profile = await response.json();
-        
+
         if (profile.is_private) {
           return {
             title: `${profile.display_name || profile.username} | CampoSocial`,

@@ -21,6 +21,7 @@ export function useWebSocket(): WebSocketHook {
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
   const joinedRoomsRef = useRef<Set<string>>(new Set());
+  const authRejectedRef = useRef(false);
 
   useEffect(() => {
     if (!authToken) {
@@ -33,9 +34,12 @@ export function useWebSocket(): WebSocketHook {
       return;
     }
 
-    const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT || 
+    // Reset auth rejection flag on new connection attempt
+    authRejectedRef.current = false;
+
+    const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT ||
       process.env.NEXT_PUBLIC_API_ENDPOINT?.replace('/camposocial/api', '');
-    
+
     if (!wsEndpoint) {
       console.error('WebSocket endpoint not configured. Set NEXT_PUBLIC_WS_ENDPOINT or NEXT_PUBLIC_API_ENDPOINT');
       return;
@@ -83,12 +87,33 @@ export function useWebSocket(): WebSocketHook {
     socket.on('disconnect', (reason: any) => {
       setIsConnected(false);
       joinedRoomsRef.current.clear();
-      if (reason === 'io server disconnect') {
-        socket.connect();
+
+      // Don't reconnect if the server rejected our auth token
+      if (authRejectedRef.current) {
+        console.warn('Socket disconnected due to auth rejection — not reconnecting');
+        return;
       }
+
+      // For non-auth server disconnects, let socket.io's built-in reconnection handle it
     });
 
     socket.on('connect_error', (error: any) => {
+      const errorMsg = error?.message || error?.toString() || '';
+      const isAuthError = errorMsg.includes('rejected')
+        || errorMsg.includes('Signature')
+        || errorMsg.includes('Token')
+        || errorMsg.includes('Unauthorized');
+
+      if (isAuthError) {
+        console.warn('Socket auth rejected — stopping reconnection and clearing token');
+        authRejectedRef.current = true;
+        socket.io.opts.reconnection = false;
+        socket.disconnect();
+        // Clear the stale cookie
+        fetch('/api/auth/clear-token', { method: 'POST' }).catch(() => { });
+        return;
+      }
+
       reconnectAttemptsRef.current++;
       if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
         setIsConnected(false);
@@ -118,7 +143,7 @@ export function useWebSocket(): WebSocketHook {
       console.warn(`⚠️ Cannot emit ${event}: Socket not connected`);
     }
   }, []);
-    // Improved on with cleanup function return
+  // Improved on with cleanup function return
   const currentRooms = useCallback((): string[] => Array.from(joinedRoomsRef.current), []);
   const on = useCallback((event: string, handler: (data: any) => void): (() => void) => {
     if (socketRef.current) {
@@ -128,7 +153,7 @@ export function useWebSocket(): WebSocketHook {
         socketRef.current?.off(event, handler);
       };
     }
-    return () => {};
+    return () => { };
   }, []);
 
   const off = useCallback((event: string, handler?: (data: any) => void) => {

@@ -33,15 +33,41 @@ const authRoutes = [
   '/signup'
 ]
 
+/**
+ * Lightweight JWT expiry check (decode-only, no signature verification).
+ * The server still validates the full signature on API calls — this only
+ * prevents the middleware redirect loop when the token is expired/corrupt.
+ */
+function isTokenValid(token: string): boolean {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return false
+    const payload = JSON.parse(atob(parts[1]))
+    if (!payload.exp || typeof payload.exp !== 'number') return false
+    // exp is in seconds, Date.now() is in milliseconds
+    return payload.exp * 1000 > Date.now()
+  } catch {
+    return false
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const authToken = request.cookies.get('authToken')?.value || 
-                   request.headers.get('authorization')?.replace('Bearer ', '')
+  const rawToken = request.cookies.get('authToken')?.value ||
+    request.headers.get('authorization')?.replace('Bearer ', '')
+
+  // Check if the token was issued for a different API endpoint (dev ↔ staging switch)
+  const storedEndpoint = request.cookies.get('authEndpoint')?.value
+  const currentEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT || ''
+  const isEndpointMismatch = rawToken && storedEndpoint && storedEndpoint !== currentEndpoint
+
+  // Treat expired, malformed, or endpoint-mismatched tokens as unauthenticated
+  const authToken = rawToken && isTokenValid(rawToken) && !isEndpointMismatch ? rawToken : null
 
   // Allow all API routes and static files to pass through
-  if (pathname.startsWith('/api/') || 
-      pathname.startsWith('/_next/') || 
-      pathname.includes('.')) {
+  if (pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/') ||
+    pathname.includes('.')) {
     return NextResponse.next()
   }
 
@@ -50,6 +76,20 @@ export function middleware(request: NextRequest) {
   const isBrowsableRoute = browsableRoutes.some(route => pathname.startsWith(route))
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthRoute = authRoutes.includes(pathname)
+
+  // If we had a cookie but the token is invalid (expired, malformed, or wrong endpoint),
+  // clear it and continue with the unauthenticated flow for the current route type
+  if (rawToken && !authToken) {
+    let response: ReturnType<typeof NextResponse.next | typeof NextResponse.redirect>
+    if (isProtectedRoute) {
+      response = NextResponse.redirect(new URL('/login', request.url))
+    } else {
+      response = NextResponse.next()
+    }
+    response.cookies.delete('authToken')
+    response.cookies.delete('authEndpoint')
+    return response
+  }
 
   // If it's a protected route and user is not authenticated, redirect to login
   if (isProtectedRoute && !authToken) {
