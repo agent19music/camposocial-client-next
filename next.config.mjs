@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for Docker deployment (reduces image size by 80%)
+  output: 'standalone',
+
+  // Cloud Run optimizations
+  compress: true,
+  poweredByHeader: false,
+
   images: {
     remotePatterns: [
       {

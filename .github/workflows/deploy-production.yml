@@ -1,0 +1,94 @@
+name: Deploy to Cloud Run (Production)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: camposocial-464516
+  REGION: europe-west3
+  SERVICE_NAME: camposocial-client-production
+  ARTIFACT_REGISTRY_REPO: camposocial-repo
+  IMAGE_NAME: camposocial-client
+
+jobs:
+  deploy:
+    name: Build and Deploy to Production
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_ENDPOINT="${{ secrets.PRODUCTION_NEXT_PUBLIC_API_ENDPOINT }}" \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}" \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+            --build-arg NEXT_PUBLIC_GA_MEASUREMENT_ID="${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}" \
+            --build-arg NEXT_PUBLIC_SELLER_DASHBOARD_URL="${{ secrets.PRODUCTION_NEXT_PUBLIC_SELLER_DASHBOARD_URL }}" \
+            --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:production-${{ github.sha }} \
+            --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:production-latest \
+            .
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:production-${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:production-latest
+
+      - name: Deploy to Cloud Run (Production)
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:production-${{ github.sha }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --memory 4Gi \
+            --cpu 4 \
+            --min-instances 1 \
+            --max-instances 50 \
+            --timeout 300 \
+            --port 8080 \
+            --set-env-vars "NODE_ENV=production,DATABASE_URL=${{ secrets.PRODUCTION_DATABASE_URL }},TWITTER_CLIENT_ID=${{ secrets.TWITTER_CLIENT_ID }},GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},WS_ENDPOINT=${{ secrets.PRODUCTION_WS_ENDPOINT }}" \
+            --set-env-vars "NEXT_PUBLIC_API_ENDPOINT=${{ secrets.PRODUCTION_NEXT_PUBLIC_API_ENDPOINT }},NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }},NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }},NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }},NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }},NEXT_PUBLIC_SELLER_DASHBOARD_URL=${{ secrets.PRODUCTION_NEXT_PUBLIC_SELLER_DASHBOARD_URL }}"
+
+      - name: Show deployment URL
+        run: |
+          echo "Production URL: $(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format='value(status.url)')"
+
+      - name: Smoke test
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format='value(status.url)')
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
+          if [ $STATUS -ne 200 ]; then
+            echo "❌ Smoke test failed with status: $STATUS"
+            exit 1
+          fi
+          echo "✅ Smoke test passed: $STATUS"
+
+      - name: Deployment complete
+        run: |
+          echo "🎉 Production deployment successful!"
+          echo "Monitor logs: gcloud run services logs tail ${{ env.SERVICE_NAME }} --region=${{ env.REGION }}"
