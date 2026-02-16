@@ -6,12 +6,7 @@ import { motion } from 'framer-motion';
 import {  Calendar, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from '@/context/themecontext';
-
-interface AuthFadeWallProps {
-  children: React.ReactNode;
-  visibleItems?: number; // Number of items to show before fade
-  contentType?: 'yaps' | 'events' | 'products';
-}
+import { AuthFadeWallProps } from '@/types';
 
 export function AuthFadeWall({ children, visibleItems = 5, contentType = 'yaps' }: AuthFadeWallProps) {
   const { openAuthModal } = useAuthModal();

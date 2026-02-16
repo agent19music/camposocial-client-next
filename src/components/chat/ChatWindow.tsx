@@ -30,14 +30,10 @@ import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { secureDB } from '@/utils/secureStorage';
 import { toast } from 'react-hot-toast';
-import { ChatMessage, ChatMedia } from '@/utils/types';
-
-interface ChatWindowProps {
-  friendId: string;
-  onBack?: () => void;
-  onToggleProfile?: () => void;
-  showSidebar?: boolean;
-}
+import { extractUrls } from '@/lib/linkify';
+import { useLinkPreviews } from '@/hooks/useLinkPreviews';
+import { LinkPreviewCard } from '@/components/LinkPreviewCard';
+import type { ChatMessage, ChatMedia, ChatWindowProps } from '@/types';
 
 export default function ChatWindow({ friendId, onBack, onToggleProfile, showSidebar }: ChatWindowProps) {
   const {
@@ -66,6 +62,10 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Real-time link preview for message input
+  const inputUrls = useMemo(() => extractUrls(input, 1), [input]);
+  const inputLinkPreviews = useLinkPreviews(inputUrls, process.env.NEXT_PUBLIC_API_ENDPOINT);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -633,6 +633,29 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
                 <X size={12} />
               </button>
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Link Preview */}
+      {inputUrls.length > 0 && (
+        <div className="px-4 py-3 border-t border-border bg-card">
+          {inputUrls.map((url) => (
+            inputLinkPreviews[url] ? (
+              <LinkPreviewCard
+                key={url}
+                preview={inputLinkPreviews[url]!}
+                className="rounded-lg overflow-hidden"
+              />
+            ) : (
+              <div
+                key={url}
+                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm text-muted-foreground animate-pulse"
+              >
+                <div className="w-4 h-4 bg-muted rounded" />
+                <span className="truncate">{url}</span>
+              </div>
+            )
           ))}
         </div>
       )}

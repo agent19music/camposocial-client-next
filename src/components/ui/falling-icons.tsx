@@ -2,17 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-
-interface FallingIcon {
-  id: number;
-  src: string;
-  alt: string;
-  left: number;
-  duration: number;
-  delay: number;
-  size: number;
-  rotation: number;
-}
+import type { FallingIcon } from '@/types';
 
 // Skeuomorphic icons from your R2 storage
 const iconList = [

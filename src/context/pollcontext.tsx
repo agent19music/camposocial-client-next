@@ -3,63 +3,15 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
 import { AuthContext } from './authcontext'
 import toast from 'react-hot-toast'
+import type { Poll, PollOption, CreatePollPayload, PollContextType } from '@/types'
 
-interface PollOption {
-    id: number
-    option_text: string
-    vote_count?: number
-    percentage?: number
-    is_user_choice?: boolean
-    order_index: number
-}
-
-interface Poll {
-    id: string
-    title: string
-    description?: string
-    category: string
-    poll_type: 'single' | 'multiple'
-    is_anonymous: boolean
-    total_votes: number
-    has_voted: boolean
-    show_results?: boolean
-    ends_at: string | null
-    is_expired: boolean
-    options: PollOption[]
-    creator?: {
-        id: number
-        username: string
-        display_name: string
-        avatar?: string
-    }
-    created_at: string
-}
-
-interface CreatePollData {
-    title: string
-    description?: string
-    options: string[]
-    duration_hours?: number
-    group_id?: string
-    category?: string
-    is_anonymous?: boolean
-}
-
-interface PollContextProps {
-    createPoll: (data: CreatePollData) => Promise<{ success: boolean; poll?: Poll; error?: string }>
-    vote: (pollId: string, optionId: number) => Promise<{ success: boolean; results?: PollOption[]; error?: string }>
-    getPollDetails: (pollId: string) => Promise<Poll | null>
-    getPolls: (groupId?: string, activeOnly?: boolean) => Promise<Poll[]>
-    getTrendingPolls: () => Promise<Poll[]>
-}
-
-const PollContext = createContext<PollContextProps | undefined>(undefined)
+const PollContext = createContext<PollContextType | undefined>(undefined)
 
 export function PollProvider({ children }: { children: React.ReactNode }) {
     const { authToken } = useContext(AuthContext)
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
 
-    const createPoll = useCallback(async (data: CreatePollData) => {
+    const createPoll = useCallback(async (data: CreatePollPayload) => {
         try {
             const response = await fetch(`${apiEndpoint}/polls`, {
                 method: 'POST',
@@ -190,4 +142,4 @@ export function usePoll() {
 }
 
 export { PollContext }
-export type { Poll, PollOption, CreatePollData }
+// Types are now exported from @/types

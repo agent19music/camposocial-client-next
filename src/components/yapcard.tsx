@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Repeat2, Heart, Share2, MoreHorizontal, Trash2, VolumeX, Ban } from "lucide-react"
+import { MessageCircle, Repeat2, Heart, Share2, MoreHorizontal, Trash2, VolumeX, Ban, Users } from "lucide-react"
 import { YapContext } from '@/context/yapcontext'
 import { AuthContext } from '@/context/authcontext'
 import { cn } from '@/lib/utils'
@@ -37,62 +37,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Textarea } from "@/components/ui/textarea"
 import Image from 'next/image'
+import { formatRelativeTime } from '@/lib/formatRelativeTime'
+import { LinkifiedContent } from '@/components/LinkifiedContent'
+import { extractUrls } from '@/lib/linkify'
+import { useLinkPreviews } from '@/hooks/useLinkPreviews'
+import { LinkPreviewCard } from '@/components/LinkPreviewCard'
+import type { Yap, Reply, MediaItem, YapCommunity } from '@/types'
 
-interface Yap {
-  id: string;
-  content: string;
-  timestamp: string;
-  updated_at?: string;
-  location?: string;
-  user_id: string;
-  username: string;
-  display_name: string;
-  avatar: string;
-  original_yap_id?: string;
-  original_yap?: Yap; // The original yap data for retweets
-  is_retweet?: boolean;
-  is_quote?: boolean;
-  replies_count: number;
-  likes_count: number;
-  retweets_count: number;
-  bookmarks_count: number;
-  weighted_likes_count?: number;
-  weighted_replies_count?: number;
-  weighted_retweets_count?: number;
-  media: MediaItem[];
-  replies: Reply[];
-  hashtags: string[];
-  poll_id?: string; // Associated poll ID
-  badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>;
-  isOptimistic?: boolean;
-  optimisticLiked?: boolean;
-  optimisticLikesCount?: number;
-  optimisticWeightedLikesCount?: number;
-  optimisticRepliesCount?: number;
-  optimisticRetweetsCount?: number;
-}
-
-interface Reply {
-  id: number;
-  content: string;
-  created_at: string;
-  user?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar: string;
-  };
-  parent_reply_id?: number;
-  isOptimistic?: boolean;
-}
-
-interface MediaItem {
-  id: number;
-  url: string;
-  type: 'image' | 'video';
-}
-
-const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets_count, badges }: {
+const YapCard = ({ display_name, username, content, avatar, media, yap, likes_count, replies_count, retweets_count, badges, community }: {
   display_name: string,
   username: string,
   content: string,
@@ -101,6 +53,7 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   yap: Yap,
   likes_count: number | undefined,
   replies_count: number | undefined,
+  community?: YapCommunity | null,
   retweets_count: number | undefined,
   badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>
 }) => {
@@ -324,6 +277,28 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
     );
   };
 
+  const renderCommunityHeader = () => {
+    if (!targetYap.community) return null;
+
+    return (
+      <div className="flex items-center gap-2 px-4 pt-3 pb-0 text-sm text-muted-foreground">
+        <Users className="w-4 h-4" />
+        <span>
+          in{' '}
+          <span
+            className="font-medium hover:underline cursor-pointer text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/yaps/communities/${targetYap.community?.slug}`);
+            }}
+          >
+            {targetYap.community.name}
+          </span>
+        </span>
+      </div>
+    );
+  };
+
   // For pure retweets, use original yap data
   const displayContent = isPureRetweet ? (yap.original_yap?.content || '') : content;
   const displayUsername = isPureRetweet ? (yap.original_yap?.username || '') : username;
@@ -334,17 +309,21 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
   const displayHashtags = isPureRetweet ? (yap.original_yap?.hashtags || []) : yap.hashtags;
   const displayBadges = isPureRetweet ? (yap.original_yap?.badges || []) : badges;
 
+  const contentUrls = extractUrls(displayContent, 2);
+  const linkPreviews = useLinkPreviews(contentUrls, process.env.NEXT_PUBLIC_API_ENDPOINT);
+
   return (
     <>
-        <Card
-          className={cn(
-            "border-0 shadow-none rounded-none transition-colors duration-200 hover:cursor-pointer",
-            "hover:bg-gray-50 dark:hover:bg-foreground/5",
-            yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
-          )}
-          onClick={handleYapClick}
-        >
+      <Card
+        className={cn(
+          "border-0 shadow-none rounded-none transition-colors duration-200 hover:cursor-pointer",
+          "hover:bg-gray-50 dark:hover:bg-foreground/5",
+          yap.isOptimistic && "opacity-70 bg-blue-50 dark:bg-blue-950/20"
+        )}
+        onClick={handleYapClick}
+      >
         {renderRetweetHeader()}
+        {renderCommunityHeader()}
 
         <CardHeader className="flex flex-row items-start space-y-0 pb-2 px-4 pt-3">
           <Avatar
@@ -366,10 +345,12 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                 )}
               </h3>
               <p
-                className="text-[15px] text-muted-foreground truncate cursor-pointer hover:underline"
+                className="text-[15px] text-muted-foreground truncate cursor-pointer hover:underline flex items-center gap-1 flex-wrap"
                 onClick={(e) => handleUserClick(e, displayUsername)}
               >
-                @{displayUsername}
+                <span>@{displayUsername}</span>
+                <span className="text-muted-foreground/70">·</span>
+                <span className="text-muted-foreground/80">{formatRelativeTime(targetYap.timestamp)}</span>
                 {displayUsername === "ufwsean" && (
                   <Image
                     src="https://pub-c6a134c8e1fd4881a475bf80bc0717ba.r2.dev/twitter-verified-badge-gold-seeklogo.png"
@@ -428,7 +409,9 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
 
             {/* Quote tweet content (if this is a quote tweet) */}
             {isQuoteTweet && yap.content.trim() && (
-              <p className="text-[15px] break-words whitespace-pre-wrap mb-3">{yap.content}</p>
+              <p className="text-[15px] mb-3">
+                <LinkifiedContent content={yap.content} linkClassName="text-primary hover:underline" />
+              </p>
             )}
 
             {/* Main content */}
@@ -493,8 +476,8 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
                         <BadgeDisplay badges={yap.original_yap.badges} size="sm" />
                       )}
                     </div>
-                    <p className="text-[15px] break-words whitespace-pre-wrap">
-                      {yap.original_yap?.content}
+                    <p className="text-[15px]">
+                      <LinkifiedContent content={yap.original_yap?.content || ''} linkClassName="text-primary hover:underline" />
                     </p>
                     {yap.original_yap.media && yap.original_yap.media.length > 0 && (
                       <div className="mt-2">
@@ -522,7 +505,25 @@ const YapCard = ({ display_name, username, content, avatar, media, yap, likes_co
               )
             ) : (
               /* For regular yaps and pure retweets, show displayContent */
-              <p className="text-[15px] break-words whitespace-pre-wrap">{displayContent}</p>
+              <>
+                <p className="text-[15px]">
+                  <LinkifiedContent content={displayContent} linkClassName="text-primary hover:underline" />
+                </p>
+                {contentUrls.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {contentUrls.map(
+                      (url) =>
+                        linkPreviews[url] && (
+                          <LinkPreviewCard
+                            key={url}
+                            preview={linkPreviews[url]!}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        )
+                    )}
+                  </div>
+                )}
+              </>
             )}
 
             {/* Poll display */}

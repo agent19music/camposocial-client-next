@@ -34,39 +34,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from 'react-hot-toast'
 import Image from 'next/image'
-
-// Define interfaces locally to reduce dependencies, matching Yap structure
-interface MediaItem {
-    id: number;
-    url: string;
-    type: 'image' | 'video';
-}
-
-interface CommunityPostProps {
-    id: string
-    yap_id: string
-    content: string
-    created_at: string
-    user: {
-        id: string
-        username: string
-        display_name: string
-        avatar: string
-    }
-    media: MediaItem[]
-    likes_count: number
-    replies_count: number
-    isOptimistic?: boolean
-    optimisticLiked?: boolean
-    optimisticLikesCount?: number
-    badges?: any[] // Todo: type correctly if needed
-
-    // Actions
-    onLike?: (id: string) => Promise<void>
-    onReply?: (id: string, content: string) => Promise<void>
-    onDelete?: (id: string) => Promise<void>
-    currentUserId?: string
-}
+import { formatRelativeTime } from '@/lib/formatRelativeTime'
+import { LinkifiedContent } from '@/components/LinkifiedContent'
+import { extractUrls } from '@/lib/linkify'
+import { useLinkPreviews } from '@/hooks/useLinkPreviews'
+import { LinkPreviewCard } from '@/components/LinkPreviewCard'
+import type { MediaItem, CommunityPostProps } from '@/types'
 
 export default function CommunityPostCard({
     id,
@@ -96,6 +69,9 @@ export default function CommunityPostCard({
     const [isSubmittingReply, setIsSubmittingReply] = useState(false)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
+
+    const contentUrls = extractUrls(content, 2)
+    const linkPreviews = useLinkPreviews(contentUrls, process.env.NEXT_PUBLIC_API_ENDPOINT)
 
     // Determine if viewing user owns the post
     const isOwnPost = currentUserId === user.id || currentUserId === String(user.id)
@@ -214,14 +190,17 @@ export default function CommunityPostCard({
                                 >
                                     {user.display_name}
                                 </h3>
-                                {badges && <BadgeDisplay badges={badges} size="sm" />}
+                                {badges && badges.length > 0 && <BadgeDisplay badges={badges} size="sm" />}
                                 <span className="text-[15px] text-muted-foreground truncate">
                                     @{user.username}
                                 </span>
                                 <span className="text-xs text-muted-foreground mx-1">·</span>
                                 <span className="text-xs text-muted-foreground">
-                                    {new Date(created_at).toLocaleDateString()}
+                                    {formatRelativeTime(created_at)}
                                 </span>
+                                {isOptimistic && (
+                                    <span className="text-xs text-primary ml-1">Posting...</span>
+                                )}
                             </div>
 
                             {/* Options Menu */}
@@ -253,7 +232,23 @@ export default function CommunityPostCard({
                             </DropdownMenu>
                         </div>
 
-                        <p className="text-[15px] break-words whitespace-pre-wrap">{content}</p>
+                        <p className="text-[15px]">
+                            <LinkifiedContent content={content} linkClassName="text-primary hover:underline" />
+                        </p>
+                        {contentUrls.length > 0 && (
+                            <div className="space-y-2 mt-2">
+                                {contentUrls.map(
+                                    (url) =>
+                                        linkPreviews[url] && (
+                                            <LinkPreviewCard
+                                                key={url}
+                                                preview={linkPreviews[url]!}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        )
+                                )}
+                            </div>
+                        )}
                     </div>
                 </CardHeader>
 

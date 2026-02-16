@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Icons } from "@/components/icons"
+import type { FloatingIconProps, FloatingBackgroundProps } from "@/types"
 
 const floatingIcons = [
   { component: Icons.calendar, name: 'calendar' },
@@ -13,13 +14,6 @@ const floatingIcons = [
   { component: Icons.sparkles, name: 'sparkles' },
   { component: Icons.shoppingBag, name: 'shopping' }
 ]
-
-interface FloatingIconProps {
-  x: number
-  y: number
-  icon: any
-  delay: number
-}
 
 function FloatingIcon({ x, y, icon, delay }: FloatingIconProps) {
   const IconComponent = icon?.component
@@ -52,12 +46,6 @@ function FloatingIcon({ x, y, icon, delay }: FloatingIconProps) {
       <IconComponent className="text-[#D29DF6] opacity-30 filter blur-[0.5px]" />
     </motion.div>
   )
-}
-
-interface FloatingBackgroundProps {
-  iconCount?: number
-  opacity?: number
-  className?: string
 }
 
 export function FloatingBackground({ 

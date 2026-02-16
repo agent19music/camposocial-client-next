@@ -2,13 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
-
-interface CheckmarkProps {
-  size?: number
-  strokeWidth?: number
-  color?: string
-  className?: string
-}
+import { CheckmarkProps } from '@/types'
 
 const draw = {
   hidden: { pathLength: 0, opacity: 0 },

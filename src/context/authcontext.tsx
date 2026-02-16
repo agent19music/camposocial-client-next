@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, ReactNode, useState, useEffect, useContext, useRef, useCallback } from "react";
-import { AuthContextType, AuthProviderProps } from "../utils/types";
+import type { AuthContextType, AuthProviderProps } from "@/types";
 import { useRouter } from "next/navigation";
 import { MarketplaceContext } from "./marketplacecontext";
 import { toast } from 'react-hot-toast'

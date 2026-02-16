@@ -14,15 +14,7 @@ import { FixedCropper, ImageRestriction } from 'react-advanced-cropper'
 import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import { RotateCcw, RotateCw, ZoomIn, ZoomOut, Check, X, RefreshCw } from "lucide-react"
-
-interface CommunityCropModalProps {
-    isOpen: boolean
-    onClose: () => void
-    imageSrc: string
-    onCropComplete: (croppedImageBlob: Blob) => void
-    aspectRatio: number
-    title: string
-}
+import type { CommunityCropModalProps } from "@/types"
 
 export default function CommunityCropModal({
     isOpen,

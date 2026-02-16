@@ -9,6 +9,7 @@ import html2canvas from "html2canvas";
 import React, { useState, useContext, useEffect, useCallback } from "react";
 import { AuthContext } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
+import type { CartItemDisplay, CartResponseDisplay } from "@/types";
 
 const Stamp = () => (
   <div className="absolute top-2 right-2 sm:top-8 sm:right-8 rotate-12 select-none scale-75 sm:scale-100">
@@ -62,15 +63,6 @@ const DottedPattern = () => (
   </div>
 );
 
-interface CartItem {
-  product_title: string;
-  quantity: number;
-  price_per_item: number;
-  total_item_price: number;
-  images: string[];
-  id: string;
-}
-
 type CurrentUser = {
   id: string;
   first_name: string;
@@ -80,15 +72,11 @@ type CurrentUser = {
   email: string;
 } | null
 
-interface CartResponse {
-  cart_items: CartItem[];
-}
-
 export default function Receipt() {
   const orderNumber = "ORD-" + Math.floor(10000 + Math.random() * 90000);
   const orderDate = format(new Date(), "dd MMM yyyy");
   const { currentUser } = useContext(AuthContext);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
@@ -114,13 +102,13 @@ export default function Receipt() {
     }
   };
 
-  const getCartItems = useCallback(async (userId: string): Promise<CartItem[]> => {
+  const getCartItems = useCallback(async (userId: string): Promise<CartItemDisplay[]> => {
     try {
       const response = await fetch(`${apiEndpoint}/cart/${userId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch cart data");
       }
-      const data: CartResponse = await response.json();
+      const data: CartResponseDisplay = await response.json();
       return data.cart_items;
     } catch (error) {
       console.error(error);

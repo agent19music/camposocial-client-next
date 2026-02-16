@@ -4,102 +4,17 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import io from 'socket.io-client';
 import { AuthContext } from './authcontext';
 import { toast } from 'react-hot-toast';
+import type {
+  NotificationCounts,
+  YapCounts,
+  FriendRequestNotification,
+  YapNotification,
+  JoinableConversation,
+  PendingFriendRequest,
+  WebSocketContextType,
+} from '@/types';
 
-interface NotificationCounts {
-  friend_requests: number;
-  general_notifications: number;
-}
-
-interface YapCounts {
-  new_yaps_count: number;
-  recent_authors: Array<{
-    id: number;
-    username: string;
-    avatar: string;
-    display_name: string;
-  }>;
-}
-
-interface FriendRequestNotification {
-  sender: {
-    id: number;
-    username: string;
-    first_name: string;
-    last_name: string;
-    avatar: string;
-    display_name: string;
-  };
-  friendship_id: number;
-  friend_requests_count: number;
-  all_pending_requests: Array<{
-    id: number;
-    user: {
-      id: number;
-      username: string;
-      first_name: string;
-      last_name: string;
-      avatar: string;
-      display_name: string;
-    };
-    created_at: string;
-  }>;
-  timestamp: string;
-}
-
-interface YapNotification {
-  yap: {
-    id: string;
-    content: string;
-  };
-  author: {
-    id: number;
-    username: string;
-    avatar: string;
-    display_name: string;
-  };
-  new_yaps_count: number;
-  timestamp: string;
-}
-
-interface JoinableConversation {
-  id: string;
-  joined: boolean;
-}
-
-interface WebSocketContextProps {
-  socket: any;
-  isConnected: boolean;
-  notificationCounts: NotificationCounts;
-  yapCounts: YapCounts;
-  markYapsAsSeen: () => void;
-  markFriendRequestsAsSeen: () => void;
-  hasNewNotifications: boolean;
-  hasNewYaps: boolean;
-  latestFriendRequest: FriendRequestNotification | null;
-  latestYapNotification: YapNotification | null;
-  pendingRequests: Array<{
-    id: number;
-    user: {
-      id: number;
-      username: string;
-      first_name: string;
-      last_name: string;
-      avatar: string;
-      display_name: string;
-    };
-    created_at: string;
-  }>;
-  offlineMessages: Record<string, any[]>;
-  joinConversation: (conversationId: string) => void;
-  leaveConversation: (conversationId: string) => void;
-  joinedConversations: string[];
-  removePendingRequest: (requestId: string | number) => void;
-  appendFriend: (friend: any) => void;
-  updateFriendList: (payload: { friend?: any; action: 'add' | 'remove'; requesterId?: string | number }) => void;
-  consumeOfflineConversationMessages: (conversationId: string) => any[];
-}
-
-const defaultValue: WebSocketContextProps = {
+const defaultValue: WebSocketContextType = {
   socket: null,
   isConnected: false,
   notificationCounts: { friend_requests: 0, general_notifications: 0 },
@@ -121,7 +36,7 @@ const defaultValue: WebSocketContextProps = {
   consumeOfflineConversationMessages: () => [],
 };
 
-export const WebSocketContext = createContext<WebSocketContextProps>(defaultValue);
+export const WebSocketContext = createContext<WebSocketContextType>(defaultValue);
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const { authToken, isAuthenticated, currentUser } = useContext(AuthContext);
@@ -137,18 +52,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   });
   const [latestFriendRequest, setLatestFriendRequest] = useState<FriendRequestNotification | null>(null);
   const [latestYapNotification, setLatestYapNotification] = useState<YapNotification | null>(null);
-  const [pendingRequests, setPendingRequests] = useState<Array<{
-    id: number;
-    user: {
-      id: number;
-      username: string;
-      first_name: string;
-      last_name: string;
-      avatar: string;
-      display_name: string;
-    };
-    created_at: string;
-  }>>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingFriendRequest[]>([]);
   const [friends, setFriends] = useState<any[]>([]);
   const [joinedConversations, setJoinedConversations] = useState<JoinableConversation[]>([]);
   const [offlineMessages, setOfflineMessages] = useState<Record<string, any[]>>({});
@@ -496,7 +400,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     return queued;
   }, [offlineMessages]);
 
-  const value: WebSocketContextProps = {
+  const value: WebSocketContextType = {
     socket,
     isConnected,
     notificationCounts,

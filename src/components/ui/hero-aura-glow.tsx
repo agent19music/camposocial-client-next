@@ -3,10 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/context/themecontext";
-
-interface HeroAuraGlowProps {
-  className?: string;
-}
+import type { HeroAuraGlowProps } from "@/types";
 
 export function HeroAuraGlow({ className = "" }: HeroAuraGlowProps) {
   const { theme } = useTheme();

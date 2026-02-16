@@ -20,7 +20,7 @@ import SideNav from "@/components/sidenav"
 import { useRouter } from "next/navigation"
 import { toast } from "react-hot-toast"
 import CommentList from "@/components/comment"
-import type { EventComment, EventTicketGroup } from "@/lib/types"
+import type { EventComment, EventTicketGroup } from "@/types"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // interface EventCardProps {

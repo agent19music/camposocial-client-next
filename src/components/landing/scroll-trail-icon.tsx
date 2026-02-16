@@ -202,19 +202,14 @@ const iconComponents = {
   users: UsersIcon,
 };
 
-export type IconType = keyof typeof iconComponents;
+import type {
+  IconType,
+  ScrollTrailIconProps,
+  CurvedTrailProps,
+  SectionScrollConnectorProps,
+} from "@/types";
 
-interface ScrollTrailIconProps {
-  icon: IconType;
-  /** Start scroll position (0-1 relative to container) */
-  scrollStart?: number;
-  /** End scroll position (0-1 relative to container) */
-  scrollEnd?: number;
-  /** Direction of curve: left means icon curves left then right, right means right then left */
-  curveDirection?: "left" | "right";
-  /** Amplitude of the S-curve in pixels */
-  curveAmplitude?: number;
-}
+export type { IconType };
 
 export const ScrollTrailIcon: React.FC<ScrollTrailIconProps> = ({
   icon,
@@ -350,11 +345,6 @@ export const ScrollTrailIcon: React.FC<ScrollTrailIconProps> = ({
 };
 
 // Simplified curved path with SVG for the trail visual
-interface CurvedTrailProps {
-  direction?: "left" | "right";
-  className?: string;
-}
-
 export const CurvedTrail: React.FC<CurvedTrailProps> = ({
   direction = "right",
   className = "",
@@ -383,13 +373,6 @@ export const CurvedTrail: React.FC<CurvedTrailProps> = ({
 };
 
 // Full section scroll connector with fixed icon on side and animated curved line
-interface SectionScrollConnectorProps {
-  icon: IconType;
-  /** Position of the icon: 'right' means icon is on right side, 'left' means left side */
-  side?: "left" | "right";
-  height?: number;
-}
-
 export const SectionScrollConnector: React.FC<SectionScrollConnectorProps> = ({
   icon,
   side = "right",

@@ -3,13 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FC, useState } from "react";
 import { Heart, MessageCircle } from "lucide-react";
-import type { EventComment } from "@/lib/types";
+import type { EventComment, CommentListProps } from "@/types";
 import { useEventContext } from "@/context/eventcontext";
-
-interface CommentListProps {
-  eventId: string;
-  comments: EventComment[];
-}
 
 function timeDifference(current: Date, previous: Date): string {
   const msPerMinute = 60 * 1000;

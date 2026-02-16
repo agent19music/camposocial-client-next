@@ -13,11 +13,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import WhoToFollow from '@/components/whotofollow'
 import TrendingHashtags from '@/components/trending-hashtags'
-
-interface SingleYapClientProps {
-  initialYap?: any;
-  slug: string;
-}
+import { SingleYapClientProps, Reply } from '@/types'
 
 export default function SingleYapClient({ initialYap, slug }: SingleYapClientProps) {
   const { selectedYap, addReply, yapReplies, setYapReplies, fetchYapById } = useContext(YapContext)
@@ -56,22 +52,6 @@ export default function SingleYapClient({ initialYap, slug }: SingleYapClientPro
       });
     }
   }, [slug, currentYapId, fetchYapById, setYapReplies])
-
-  interface Reply {
-    id: number;
-    content: string;
-    created_at: string;
-    user?: {
-      id: string;
-      username: string;
-      display_name: string;
-      avatar: string;
-    };
-    parent_reply_id?: number;
-    isOptimistic?: boolean;
-    likes_count?: number;
-    child_replies_count?: number;
-  }
 
   const handleNewReply = async (content: string) => {
     if (!selectedYap || !currentUser) return;

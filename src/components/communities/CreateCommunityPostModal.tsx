@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -16,20 +16,10 @@ import { toast } from "react-hot-toast"
 import Image from "next/image"
 import { useAuthContext } from "@/context/authcontext"
 import { useCommunity } from "@/context/CommunityContext"
-
-interface CreateCommunityPostModalProps {
-    isOpen: boolean
-    onClose: () => void
-    groupSlug: string
-    onPostCreated?: () => void
-}
-
-interface MediaItem {
-    id: string
-    file: File
-    preview: string
-    type: "image" | "video"
-}
+import { extractUrls } from "@/lib/linkify"
+import { useLinkPreviews } from "@/hooks/useLinkPreviews"
+import { LinkPreviewCard } from "@/components/LinkPreviewCard"
+import { MediaUploadPreview, CreateCommunityPostModalProps } from "@/types"
 
 export default function CreateCommunityPostModal({
     isOpen,
@@ -40,17 +30,20 @@ export default function CreateCommunityPostModal({
     const { authToken, currentUser } = useAuthContext()
     const { createPostOptimistic } = useCommunity()
     const [content, setContent] = useState("")
-    const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
-    const [isLoading, setIsLoading] = useState(false)
+    const [mediaItems, setMediaItems] = useState<MediaUploadPreview[]>([])
 
     const imageInputRef = useRef<HTMLInputElement>(null)
     const videoInputRef = useRef<HTMLInputElement>(null)
+
+    // Real-time link preview
+    const contentUrls = useMemo(() => extractUrls(content, 2), [content])
+    const linkPreviews = useLinkPreviews(contentUrls, process.env.NEXT_PUBLIC_API_ENDPOINT)
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (!files) return
 
-        const newMedia: MediaItem[] = []
+        const newMedia: MediaUploadPreview[] = []
         for (let i = 0; i < files.length; i++) {
             const file = files[i]
             if (mediaItems.length + newMedia.length >= 4) {
@@ -73,7 +66,7 @@ export default function CreateCommunityPostModal({
         const files = e.target.files
         if (!files) return
 
-        const newMedia: MediaItem[] = []
+        const newMedia: MediaUploadPreview[] = []
         for (let i = 0; i < files.length; i++) {
             const file = files[i]
             if (mediaItems.length + newMedia.length >= 4) {
@@ -96,32 +89,28 @@ export default function CreateCommunityPostModal({
         setMediaItems(mediaItems.filter(item => item.id !== id))
     }
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (!content.trim() && mediaItems.length === 0) {
             toast.error("Please add some content or media")
             return
         }
 
-        setIsLoading(true)
-
-        const success = await createPostOptimistic(
+        // Fire and forget: close modal immediately; optimistic card shows until request completes
+        createPostOptimistic(
             groupSlug,
             {
                 content,
                 media: mediaItems.map(item => item.file),
             },
             currentUser
-        )
+        ).then((success) => {
+            if (success) toast.success("Post created!")
+        })
 
-        if (success) {
-            toast.success("Post created successfully!")
-            setContent("")
-            setMediaItems([])
-            onClose()
-            if (onPostCreated) onPostCreated()
-        }
-
-        setIsLoading(false)
+        setContent("")
+        setMediaItems([])
+        onClose()
+        if (onPostCreated) onPostCreated()
     }
 
     return (
@@ -172,6 +161,29 @@ export default function CreateCommunityPostModal({
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Real-time link preview */}
+                    {contentUrls.length > 0 && (
+                        <div className="space-y-2">
+                            {contentUrls.map((url) => (
+                                linkPreviews[url] ? (
+                                    <LinkPreviewCard
+                                        key={url}
+                                        preview={linkPreviews[url]!}
+                                        className="rounded-xl overflow-hidden"
+                                    />
+                                ) : (
+                                    <div
+                                        key={url}
+                                        className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl text-sm text-muted-foreground animate-pulse"
+                                    >
+                                        <div className="w-4 h-4 bg-muted rounded" />
+                                        <span className="truncate">{url}</span>
+                                    </div>
+                                )
                             ))}
                         </div>
                     )}
@@ -227,9 +239,9 @@ export default function CreateCommunityPostModal({
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={isLoading || (!content.trim() && mediaItems.length === 0)}
+                        disabled={!content.trim() && mediaItems.length === 0}
                     >
-                        {isLoading ? "Posting..." : "Post"}
+                        Post
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -27,10 +27,7 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/authcontext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Image from "next/image";
-
-interface EnhancedMobileSideNavProps {
-  className?: string;
-}
+import { EnhancedMobileSideNavProps } from '@/types';
 
 export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideNavProps) {
   const pathname = usePathname();

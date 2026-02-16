@@ -5,7 +5,18 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { CardOrbBackground, OrbColorScheme } from "@/components/ui/card-orb-background";
+import { CardOrbBackground } from "@/components/ui/card-orb-background";
+import type {
+  BentoCardProps,
+  PlaceholderImageProps,
+  ProductCardProps,
+  EventCardProps,
+  ChatPreviewProps,
+  StatCardProps,
+  UserAvatarGroupProps,
+  BentoGridProps,
+  BentoSectionProps,
+} from "@/types";
 
 // Animation variants for the container to stagger children
 const containerVariants = {
@@ -34,14 +45,6 @@ const itemVariants = {
 };
 
 // Bento Card Component - flat design, 4px lift on hover, optional dreamy orbs
-interface BentoCardProps {
-  children: React.ReactNode;
-  className?: string;
-  span?: "1" | "2" | "3" | "row-2" | "row-3";
-  withOrbs?: boolean;
-  orbColorScheme?: OrbColorScheme;
-}
-
 export const BentoCard: React.FC<BentoCardProps> = ({
   children,
   className,
@@ -78,14 +81,6 @@ export const BentoCard: React.FC<BentoCardProps> = ({
 };
 
 // Placeholder Image Card with detailed alt prompts
-interface PlaceholderImageProps {
-  alt: string;
-  aspectRatio?: "square" | "video" | "portrait" | "wide";
-  bgColor?: string;
-  icon?: React.ReactNode;
-  label?: string;
-}
-
 export const PlaceholderImage: React.FC<PlaceholderImageProps> = ({
   alt,
   aspectRatio = "square",
@@ -123,15 +118,6 @@ export const PlaceholderImage: React.FC<PlaceholderImageProps> = ({
 };
 
 // Product Card for Marketplace section
-interface ProductCardProps {
-  title: string;
-  price: string;
-  seller?: string;
-  image?: string;
-  imageAlt?: string;
-  tag?: string;
-}
-
 export const ProductCard: React.FC<ProductCardProps> = ({
   title,
   price,
@@ -186,16 +172,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 );
 
 // Event Card for Events section
-interface EventCardProps {
-  title: string;
-  date: string;
-  location: string;
-  image?: string;
-  imageAlt?: string;
-  attendees?: number;
-  featured?: boolean;
-}
-
 export const EventCard: React.FC<EventCardProps> = ({
   title,
   date,
@@ -264,15 +240,6 @@ export const EventCard: React.FC<EventCardProps> = ({
 );
 
 // Chat Preview Card - Single message row
-interface ChatPreviewProps {
-  avatar?: string;
-  avatarAlt?: string;
-  name: string;
-  message: string;
-  time: string;
-  unread?: number;
-}
-
 export const ChatPreview: React.FC<ChatPreviewProps> = ({
   avatar,
   avatarAlt,
@@ -306,12 +273,6 @@ export const ChatPreview: React.FC<ChatPreviewProps> = ({
 );
 
 // Stat Card
-interface StatCardProps {
-  value: string;
-  label: string;
-  icon?: React.ReactNode;
-}
-
 export const StatCard: React.FC<StatCardProps> = ({ value, label, icon }) => (
   <BentoCard className="p-6 flex flex-col items-center justify-center text-center">
     {icon && <div className="text-orange-500 mb-2">{icon}</div>}
@@ -325,10 +286,6 @@ export const StatCard: React.FC<StatCardProps> = ({ value, label, icon }) => (
 );
 
 // User Avatar Group
-interface UserAvatarGroupProps {
-  count?: number;
-}
-
 const avatarImages = [
  "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/chunli.png",
  "https://pub-0a313ba028f9423cba4b9803d081b5db.r2.dev/app%20ui/avatars/billie.png",
@@ -364,12 +321,6 @@ export const UserAvatarGroup: React.FC<UserAvatarGroupProps> = ({
 );
 
 // Main Bento Grid Container
-interface BentoGridProps {
-  children: React.ReactNode;
-  columns?: 2 | 3 | 4;
-  className?: string;
-}
-
 export const BentoGrid: React.FC<BentoGridProps> = ({
   children,
   columns = 3,
@@ -399,13 +350,6 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
 };
 
 // Section wrapper with title
-interface BentoSectionProps {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  className?: string;
-}
-
 export const BentoSection: React.FC<BentoSectionProps> = ({
   title,
   subtitle,

@@ -7,12 +7,11 @@ import { toast } from 'react-hot-toast';
 import { AuthContext } from "./authcontext";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocket as useWebSocketContext } from "./websocket-context";
-import { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, ChatProviderProps } from "../utils/types";
+import type { ChatContextType, ChatMedia, ChatMessage, ChatUser, ChatFriend, ChatConversation, ChatListUser, KeyStatus, KeyPair } from "@/types";
 import { secureDB } from "../utils/secureStorage";
 import {
     encryptMessage as naclEncrypt,
     decryptMessage as naclDecrypt,
-    KeyPair,
     isValidPublicKey
 } from "../lib/crypto";
 import {
@@ -69,7 +68,7 @@ export const ChatContext = createContext<ChatContextType>({
     currentConversationId: null,
 });
 
-export default function ChatProvider({ children }: ChatProviderProps) {
+export default function ChatProvider({ children }: { children: ReactNode }) {
     const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
     const { currentUser: rawCurrentUser, authToken, isAuthenticated } = useContext(AuthContext);
 
@@ -1342,8 +1341,13 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             const queued = consumeOfflineConversationMessages(conversationId);
             if (queued.length) {
-                for (const payload of queued) {
-                    const normalized = payload.message || payload;
+                type QueuedPayload = {message?: Record<string, unknown>; ciphertext?: string; content?: string; nonce?: string; sender_public_key?: string; id?: number; sender_id?: string; timestamp?: string; media?: unknown[]; is_read?: boolean; encrypted?: boolean; reactions?: unknown[]; reply_details?: {id: number; is_encrypted?: boolean; content?: string; sender_name?: string}; reply_to?: number};
+                for (const payload of queued as QueuedPayload[]) {
+                    const normalized = (payload.message || payload) as QueuedPayload;
+                    
+                    // Skip messages without required fields
+                    if (!normalized.id || !normalized.sender_id) continue;
+                    
                     const ciphertext = normalized.ciphertext || normalized.content;
                     const nonce = normalized.nonce;
                     const senderPublicKey = normalized.sender_public_key;
@@ -1356,20 +1360,24 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     const newMessage: ChatMessage = {
                         id: normalized.id,
                         senderId: normalized.sender_id,
-                        content: decrypted,
+                        content: decrypted || '',
                         ciphertext,
                         nonce,
-                        timestamp: new Date(normalized.timestamp),
-                        media: (normalized.media || []).map((item: any) => ({
-                            id: item.id,
-                            url: item.url,
-                            type: item.type,
-                            metadata: item.metadata || {},
-                        })),
-                        reactions: (normalized.reactions || []).map((reaction: any) => ({
-                            userId: reaction.user_id,
-                            reactionType: reaction.reaction_type,
-                        })),
+                        timestamp: new Date(normalized.timestamp || Date.now()),
+                        media: (normalized.media || []).map((item) => {
+                            const mediaItem = item as {url?: string; type?: string};
+                            return {
+                                url: mediaItem.url || '',
+                                type: mediaItem.type || 'file',
+                            };
+                        }),
+                        reactions: (normalized.reactions || []).map((reaction) => {
+                            const r = reaction as {user_id?: string; reaction_type?: string};
+                            return {
+                                userId: r.user_id || '',
+                                reactionType: r.reaction_type || '',
+                            };
+                        }),
                         // Process reply_details from server if available
                         replyTo: normalized.reply_details ? {
                             id: String(normalized.reply_details.id),
@@ -1380,7 +1388,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         } : (normalized.reply_to ? { id: String(normalized.reply_to), content: '', senderName: '' } : undefined),
                         isSent: normalized.sender_id === currentUser?.id,
                         isRead: Boolean(normalized.is_read),
-                        encrypted: normalized.encrypted,
+                        encrypted: Boolean(normalized.encrypted),
                     };
 
                     setMessages(prev => prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]);

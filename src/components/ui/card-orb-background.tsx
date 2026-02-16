@@ -3,34 +3,10 @@
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/context/themecontext";
+import type { OrbColorScheme, CardOrbConfig, CardOrbBackgroundProps } from "@/types";
+import { ORB_COLOR_SCHEMES } from "@/types";
 
-// Color schemes for different card moods
-const COLOR_SCHEMES = {
-  lavender: ["#C4A8C8", "#B8A0C8", "#D4B8C8"],
-  peach: ["#F5D4B8", "#E8C8A8", "#F8B888"],
-  pink: ["#F4A8B8", "#D4B8C8", "#F5D4B8"],
-  mixed: ["#C4A8C8", "#F4A8B8", "#F8B888", "#F4C878"],
-  coral: ["#F8B888", "#E8C8A8", "#F4A8B8"],
-  gold: ["#F4C878", "#F5E6D3", "#E8C8A8"],
-};
-
-export type OrbColorScheme = keyof typeof COLOR_SCHEMES;
-
-interface CardOrbConfig {
-  id: number;
-  color: string;
-  size: number;
-  x: number;
-  y: number;
-  delay: number;
-}
-
-interface CardOrbBackgroundProps {
-  colorScheme?: OrbColorScheme;
-  orbCount?: number;
-  className?: string;
-  animated?: boolean;
-}
+export type { OrbColorScheme };
 
 export function CardOrbBackground({
   colorScheme = "mixed",
@@ -41,7 +17,7 @@ export function CardOrbBackground({
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const colors = COLOR_SCHEMES[colorScheme];
+  const colors = ORB_COLOR_SCHEMES[colorScheme];
 
   // Generate stable orb configurations using a seed based on props
   const orbs = useMemo<CardOrbConfig[]>(() => {

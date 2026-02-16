@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { ReplyComponent } from './reply'
-import { Reply } from '@/utils/types'
+import { Reply } from '@/types'
 
 export const ReplyList = ({ replies }: { replies: Reply[] }) => {
   return (

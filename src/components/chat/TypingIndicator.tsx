@@ -4,11 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-interface TypingIndicatorProps {
-  userName?: string;
-  userAvatar?: string;
-}
+import type { TypingIndicatorProps } from '@/types';
 
 export default function TypingIndicator({ userName, userAvatar }: TypingIndicatorProps) {
   const dotVariants = {

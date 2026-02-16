@@ -31,10 +31,7 @@ const useDebouncedCallback = (callback: (...args: any[]) => void, delay: number)
   return Object.assign(debouncedCallback, { cancel: cancelCallback });
 };
 
-interface SearchableDiscoverProps {
-  onAddFriend?: (userId: string | number) => void;
-  onViewProfile?: (user: any) => void;
-}
+import type { SearchableDiscoverProps } from '@/types';
 
 export const SearchableDiscover: React.FC<SearchableDiscoverProps> = ({
   onAddFriend,

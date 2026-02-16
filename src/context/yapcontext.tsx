@@ -6,13 +6,11 @@ import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { useAuthModal } from "./AuthModalContext";
 import { toast } from 'react-hot-toast'
-import { Yap, MediaItem, Reply, HashtagSuggestion, LocationSuggestion, YapContextProps, YapPayload, WhoToFollowSuggestion } from "../utils/types";
+import type { Yap, MediaItem, Reply, HashtagSuggestion, LocationSuggestion, YapContextType, YapPayload, WhoToFollowSuggestion } from "@/types";
 
-
-// Types moved to src/utils/types.ts
 
 // Default values for the context
-const defaultValue: YapContextProps = {
+const defaultValue: YapContextType = {
   yaps: [],
   isLoading: false,
   onchange: false,
@@ -55,15 +53,10 @@ const defaultValue: YapContextProps = {
 };
 
 // Create the YapContext with default values
-export const YapContext = createContext<YapContextProps>(defaultValue);
-
-// YapProviderProps to define the children prop type
-interface YapProviderProps {
-  children: ReactNode;
-}
+export const YapContext = createContext<YapContextType>(defaultValue);
 
 // YapProvider component to wrap the application
-export default function YapProvider({ children }: YapProviderProps) {
+export default function YapProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // API endpoint from environment variables
   const { authToken, isAuthenticated, isLoading: authLoading, currentUser } = useContext(AuthContext);
   const { openAuthModal } = useAuthModal();

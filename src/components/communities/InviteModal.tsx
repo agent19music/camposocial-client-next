@@ -19,15 +19,10 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Loader2, Copy, Trash2, Clock, Check } from "lucide-react"
-import { CommunityContext, CommunityInvite } from "@/context/CommunityContext"
+import { CommunityContext } from "@/context/CommunityContext"
+import { CommunityInvite, InviteModalProps } from "@/types"
 import toast from "react-hot-toast"
 import { Colors } from "@/constants/Colors"
-
-interface InviteModalProps {
-    isOpen: boolean
-    onClose: () => void
-    communitySlug: string
-}
 
 export default function InviteModal({ isOpen, onClose, communitySlug }: InviteModalProps) {
     const { createInvite, getInvites, revokeInvite } = useContext(CommunityContext)!

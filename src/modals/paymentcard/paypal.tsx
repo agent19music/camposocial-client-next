@@ -11,11 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Icons } from "@/components/icons"
-
-interface PayPalModalProps {
-  isOpen: boolean
-  onClose: () => void
-}
+import { PayPalModalProps } from '@/types'
 
 export function PayPalModal({ isOpen, onClose }: PayPalModalProps) {
   const handlePayPal = () => {

@@ -37,11 +37,7 @@ import {
 import { toast } from "react-hot-toast"
 import { AuthContext } from "@/context/authcontext"
 import { Colors } from "@/constants/Colors"
-
-interface GroupSettingsProps {
-    group: any
-    onUpdate: () => void
-}
+import type { GroupSettingsProps } from "@/types"
 
 export default function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
     const { currentUser, authToken } = useContext(AuthContext)
@@ -146,7 +142,7 @@ export default function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
                             <Label>Privacy</Label>
                             <Select
                                 value={formData.privacy_type}
-                                onValueChange={(val) => setFormData({ ...formData, privacy_type: val })}
+                                onValueChange={(val) => setFormData({ ...formData, privacy_type: val as 'public' | 'private' | 'secret' })}
                             >
                                 <SelectTrigger>
                                     <SelectValue />

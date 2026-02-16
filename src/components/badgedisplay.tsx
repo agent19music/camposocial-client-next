@@ -2,19 +2,13 @@
 
 import React from 'react'
 import Image from 'next/image'
+import type { BadgeType, UserBadgeDisplay } from '@/types'
 
-// Badge types: 'uni' (university), 'free' (promotional), 'commercial' (paid)
-type BadgeType = 'uni' | 'free' | 'commercial'
-
-interface Badge {
-  id: number
-  name: string
-  image_url: string
-  is_animated: boolean
+type Badge = UserBadgeDisplay & {
   badge_type?: BadgeType
 }
 
-interface BadgeDisplayProps {
+type BadgeDisplayProps = {
   badges: Badge[]
   size?: 'sm' | 'md' | 'lg'
   className?: string

@@ -30,23 +30,7 @@ import CreateCommunityModal from "@/components/communities/CreateCommunityModal"
 import Header from "@/components/header"
 import { AuthContext } from "@/context/authcontext"
 import { useCommunity } from "@/context/CommunityContext"
-
-// Interface for Group
-interface Group {
-    id: string
-    slug: string
-    name: string
-    description: string
-    category: string
-    member_count: number
-    icon_image?: string
-    privacy_type: 'public' | 'private' | 'secret'
-    university_restriction?: string
-    is_verified?: boolean
-    is_member?: boolean
-    user_role?: string
-    cover_image?: string
-}
+import { Community } from '@/types'
 
 export default function GroupsPage() {
     const { authToken, isAuthenticated, isLoading } = useContext(AuthContext)
@@ -85,7 +69,7 @@ export default function GroupsPage() {
     }
 
     // Render function for group cards
-    const renderGroupCard = (group: Group, isMyGroup = false) => (
+    const renderGroupCard = (group: Community, isMyGroup = false) => (
         <Card key={group.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer" onClick={() => router.push(`/yaps/communities/${group.slug}`)}>
             <div className="relative w-full" style={{ aspectRatio: '851/315' }}>
                 {group.cover_image ? (
@@ -230,7 +214,7 @@ export default function GroupsPage() {
                                                     <h2 className="text-xl font-semibold">Trending Now</h2>
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                    {trendingCommunities.map((g: Group) => renderGroupCard(g))}
+                                                    {trendingCommunities.map((g: Community) => renderGroupCard(g))}
                                                 </div>
                                             </div>
                                         )}
@@ -247,7 +231,7 @@ export default function GroupsPage() {
                                                     </div>
                                                 ) : (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                        {recommendedCommunities.map((g: Group) => renderGroupCard(g))}
+                                                        {recommendedCommunities.map((g: Community) => renderGroupCard(g))}
                                                     </div>
                                                 )}
                                             </div>
@@ -278,7 +262,7 @@ export default function GroupsPage() {
                                     >
                                         {myCommunities.length > 0 ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                {myCommunities.map((g: Group) => renderGroupCard(g, true))}
+                                                {myCommunities.map((g: Community) => renderGroupCard(g, true))}
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center justify-center py-16 text-center">

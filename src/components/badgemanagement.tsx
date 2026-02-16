@@ -8,36 +8,14 @@ import { ChevronDown, ChevronRight, Eye, EyeOff, Star, Settings, RefreshCw } fro
 import { AuthContext } from "@/context/authcontext"
 import toast from "react-hot-toast"
 import Image from 'next/image'
-
-// Badge types: 'uni' (university), 'free' (promotional), 'commercial' (paid)
-type BadgeType = 'uni' | 'free' | 'commercial'
-// Badge source: how the badge was obtained
-type BadgeSource = 'purchase' | 'auto_award' | 'admin_grant' | 'promotion'
-
-interface UserBadge {
-  id: number
-  name: string
-  description: string
-  image_url: string
-  badge_type?: BadgeType
-  is_animated: boolean
-  is_displayed: boolean
-  display_order: number
-  purchased_at: string
-  source?: BadgeSource
-}
-
-interface BadgeManagementProps {
-  userId: number
-  onUpdate?: () => void
-}
+import { UserBadgeManagement, BadgeType, BadgeSource, BadgeManagementProps } from '@/types'
 
 export default function BadgeManagement({ userId, onUpdate }: BadgeManagementProps) {
   const { authToken } = useContext(AuthContext)
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT
   
-  const [allBadges, setAllBadges] = useState<UserBadge[]>([])
-  const [displayedBadges, setDisplayedBadges] = useState<UserBadge[]>([])
+  const [allBadges, setAllBadges] = useState<UserBadgeManagement[]>([])
+  const [displayedBadges, setDisplayedBadges] = useState<UserBadgeManagement[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)

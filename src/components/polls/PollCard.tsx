@@ -1,16 +1,11 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { usePoll, Poll, PollOption } from '@/context/pollcontext'
+import { usePoll } from '@/context/pollcontext'
+import { Poll, PollOption, PollCardProps } from '@/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Check, Clock, BarChart3 } from 'lucide-react'
-
-interface PollCardProps {
-    pollId: string
-    initialPoll?: Poll
-    compact?: boolean
-}
 
 export default function PollCard({ pollId, initialPoll, compact = false }: PollCardProps) {
     const { getPollDetails, vote } = usePoll()

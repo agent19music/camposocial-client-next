@@ -23,45 +23,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-
-interface Message {
-  id: number | string;
-  senderId: string;
-  content: string;
-  timestamp: Date;
-  isSent?: boolean;
-  isDelivered?: boolean;
-  isRead?: boolean;
-  isEdited?: boolean;
-  isDeleted?: boolean;
-  encrypted?: boolean;
-  reactions?: Array<{ userId: string; reactionType: string }>;
-  replyTo?: {
-    id: string | number;
-    content: string;
-    senderName: string;
-  };
-  media?: Array<{
-    url: string;
-    type: 'image' | 'video' | 'file';
-    name?: string;
-  }>;
-}
-
-interface MessageBubbleProps {
-  message: Message;
-  isOwn: boolean;
-  showAvatar?: boolean;
-  isFirstInGroup?: boolean;
-  isLastInGroup?: boolean;
-  onReply?: () => void;
-  onEdit?: (newContent: string) => void;
-  onDelete?: () => void;
-  onReact?: (emoji: string) => void;
-  onCopy?: () => void;
-  userName?: string;
-  userAvatar?: string;
-}
+import { LinkifiedContent } from '@/components/LinkifiedContent';
+import type { BubbleMessage, MessageBubbleProps } from '@/types';
 
 // 15 minutes in milliseconds
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
@@ -259,11 +222,17 @@ export default function MessageBubble({
                 <p className="text-sm italic text-muted-foreground/70">
                   This message was deleted
                 </p>
-              ) : (
+              ) : message.content ? (
+                <LinkifiedContent
+                  content={message.content}
+                  className="text-sm"
+                  linkClassName={isOwn ? "text-white/90 hover:text-white underline" : "text-primary hover:underline"}
+                />
+              ) : message.encrypted ? (
                 <p className="text-sm whitespace-pre-wrap break-words">
-                  {message.content ? message.content : (message.encrypted ? '🔒 Encrypted message' : '')}
+                  🔒 Encrypted message
                 </p>
-              )}
+              ) : null}
 
               {/* Media Attachments */}
               {message.media && message.media.length > 0 && (

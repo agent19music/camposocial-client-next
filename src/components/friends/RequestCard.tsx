@@ -13,24 +13,7 @@ import {
   Users
 } from '@phosphor-icons/react';
 
-import { MinimalFriend } from '@/utils/types';
-
-interface Request extends MinimalFriend {
-  created_at?: string;
-  requestTime?: string;
-  bio?: string;
-  category?: string;
-  year?: string;
-  mutualFriends?: number;
-}
-
-interface RequestCardProps {
-  request: Request;
-  onAccept?: (requestId: string | number) => void;
-  onDecline?: (requestId: string | number) => void;
-  onViewProfile?: (request: Request) => void;
-  isLoading?: boolean;
-}
+import { FriendRequestExtended, RequestCardProps } from '@/types';
 
 export const RequestCard: React.FC<RequestCardProps> = ({
   request,

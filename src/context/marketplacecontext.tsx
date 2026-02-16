@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { get } from "http";
 import { set } from "date-fns";
-import { Variation, Product, Seller, MarketplaceContextProps } from "../utils/types";
+import type { ProductVariation, Product, Seller, MarketplaceContextType } from "@/types";
 
 
-
-// MarketplaceContextProps moved to src/utils/types
 
 // Default values for the context
-const defaultValue: MarketplaceContextProps = {
+const defaultValue: MarketplaceContextType = {
   products: [],
   isLoading: false,
   isPayed: false,
@@ -42,15 +40,10 @@ const defaultValue: MarketplaceContextProps = {
 };
 
 // Create the MarketplaceContext with default values
-export const MarketplaceContext = createContext<MarketplaceContextProps>(defaultValue);
-
-// MarketplaceProviderProps to define the children prop type
-interface MarketplaceProviderProps {
-  children: ReactNode;
-}
+export const MarketplaceContext = createContext<MarketplaceContextType>(defaultValue);
 
 // MarketplaceProvider component to wrap the application
-export default function MarketplaceProvider({ children }: MarketplaceProviderProps) {
+export default function MarketplaceProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT; // Get the API endpoint from environment variables
   const { authToken } = useContext(AuthContext); // Get the authToken from the AuthContext
 

@@ -6,16 +6,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface MobileHeaderProps {
-  searchPlaceholder?: string;
-  onSearch?: (query: string) => void;
-  showSearch?: boolean;
-  searchQuery?: string;
-  filters?: Array<{ id: string; label: string; active: boolean; }>;
-  onFilterSelect?: (filterId: string) => void;
-  showFilters?: boolean;
-}
+import { MobileHeaderProps } from '@/types';
 
 export default function MobileHeader({
   searchPlaceholder = "Search...",

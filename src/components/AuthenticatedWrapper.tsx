@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, ReactNode } from 'react';
+import { useContext } from 'react';
 import { AuthContext } from '@/context/authcontext';
 import { CommunityProvider } from '@/context/CommunityContext';
 import YapProvider from "@/context/yapcontext";
@@ -8,10 +8,7 @@ import EventProvider from "@/context/eventcontext";
 import MarketplaceProvider from "@/context/marketplacecontext";
 import UserProvider from "@/context/usercontext";
 import ChatProvider from "@/context/chatcontext";
-
-interface AuthenticatedWrapperProps {
-  children: ReactNode;
-}
+import { AuthenticatedWrapperProps } from '@/types';
 
 export default function AuthenticatedWrapper({ children }: AuthenticatedWrapperProps) {
   const { isAuthenticated } = useContext(AuthContext);
