@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: camposocial-464516
-  REGION: europe-west3
+  REGION: europe-west1
   SERVICE_NAME: camposocial-client-staging
   ARTIFACT_REGISTRY_REPO: camposocial-repo
   IMAGE_NAME: camposocial-client
