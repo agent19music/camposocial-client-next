@@ -95,7 +95,7 @@ export function SocialLoginButtons() {
     });
 
     const handleGithubLogin = async () => {
-        const githubClientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+        const githubClientId = process.env.NEXT_PUBLIC_GH_CLIENT_ID;
 
         if (!githubClientId) {
             toast.error('GitHub OAuth not configured');
