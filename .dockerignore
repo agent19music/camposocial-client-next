@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Next.js
+.next
+out
+.swc
+
+# Build
+dist
+build
+
+# Misc
+.DS_Store
+*.pem
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Testing
+coverage
+.nyc_output
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+
+# Continue AI
+.continue
+
+# Documentation
+README.md
+*.md
+!CHANGELOG.md
+
+# Clerk
+.clerk
+
+# CI/CD
+.github
