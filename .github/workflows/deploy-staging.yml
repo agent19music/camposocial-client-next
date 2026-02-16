@@ -42,10 +42,12 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_ENDPOINT="${{ secrets.STAGING_NEXT_PUBLIC_API_ENDPOINT }}" \
             --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}" \
+            --build-arg NEXT_PUBLIC_GH_CLIENT_ID="${{ secrets.NEXT_PUBLIC_GH_CLIENT_ID }}" \
             --build-arg NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
             --build-arg NEXT_PUBLIC_GA_MEASUREMENT_ID="${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}" \
             --build-arg NEXT_PUBLIC_SELLER_DASHBOARD_URL="${{ secrets.STAGING_NEXT_PUBLIC_SELLER_DASHBOARD_URL }}" \
+            --build-arg PAYSTACK_PUBLIC_KEY="${{ secrets.PAYSTACK_PUBLIC_KEY }}" \
             --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:staging-${{ github.sha }} \
             --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:staging-latest \
             .
@@ -67,9 +69,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --port 8080 \
-            --set-env-vars "NODE_ENV=production,DATABASE_URL=${{ secrets.STAGING_DATABASE_URL }},TWITTER_CLIENT_ID=${{ secrets.TWITTER_CLIENT_ID }},GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},WS_ENDPOINT=${{ secrets.STAGING_WS_ENDPOINT }}" \
-            --set-env-vars "NEXT_PUBLIC_API_ENDPOINT=${{ secrets.STAGING_NEXT_PUBLIC_API_ENDPOINT }},NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }},NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }},NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }},NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }},NEXT_PUBLIC_SELLER_DASHBOARD_URL=${{ secrets.STAGING_NEXT_PUBLIC_SELLER_DASHBOARD_URL }}"
+            --port 8080
 
       - name: Show deployment URL
         run: |
