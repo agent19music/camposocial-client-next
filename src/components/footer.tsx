@@ -1,11 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-
-interface FooterLinkProps {
-  title: string;
-  onClick: () => void;
-}
+import type { FooterLinkProps, FooterSectionProps } from '@/types';
 
 const FooterLink: React.FC<FooterLinkProps> = ({ title, onClick }) => {
   const router = useRouter();
@@ -17,14 +13,6 @@ const FooterLink: React.FC<FooterLinkProps> = ({ title, onClick }) => {
     </button>
   );
 };
-
-interface FooterSectionProps {
-  title: string;
-  links: Array<{
-    title: string;
-    onClick: () => void;
-  }>;
-}
 
 const FooterSection: React.FC<FooterSectionProps> = ({ title, links }) => {
   return (

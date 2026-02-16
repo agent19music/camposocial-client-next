@@ -155,12 +155,7 @@ function TweetList() {
   )
 }
 
-interface TweetCardProps {
-  name: string;
-  username: string;
-  content: string;
-  timestamp: string;
-}
+import type { TweetCardProps } from '@/types';
 
 function TweetCard({ name, username, content, timestamp }: TweetCardProps) {
   const [isMuted, setIsMuted] = useState(false)

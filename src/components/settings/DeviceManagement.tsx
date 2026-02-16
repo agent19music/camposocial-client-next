@@ -20,10 +20,7 @@ import {
     CheckCircle,
     AlertCircle
 } from "lucide-react";
-
-interface DeviceManagementProps {
-    onBackupClick?: () => void;
-}
+import type { DeviceManagementProps } from "@/types";
 
 export function DeviceManagement({ onBackupClick }: DeviceManagementProps) {
     const { authToken } = useContext(AuthContext);

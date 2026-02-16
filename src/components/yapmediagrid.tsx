@@ -5,18 +5,13 @@ import Image from "next/image"
 import { cn } from '@/lib/utils'
 import { X, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from './ui/button'
+import type { MediaItem } from '@/types'
 
-interface MediaItem {
-  id: number;
-  type: 'image' | 'video';
-  url: string;
-}
-
-interface MediaGridProps {
-  media: MediaItem[];
-  className?: string;
-  showInOriginalAspect?: boolean; // New prop to control aspect ratio behavior
-  enableFocusView?: boolean; // Enable focus view without navigation
+type MediaGridProps = {
+  media: MediaItem[]
+  className?: string
+  showInOriginalAspect?: boolean
+  enableFocusView?: boolean
 }
 
 export const MediaGrid = ({ 

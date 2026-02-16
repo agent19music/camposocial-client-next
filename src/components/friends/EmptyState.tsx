@@ -5,11 +5,7 @@ import { motion } from 'framer-motion';
 import { Users, UserPlus, MessageSquare, Activity, SearchXIcon,  } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Colors as Palette } from '@/constants/Colors';
-
-interface EmptyState {
-  type: 'friends' | 'discover' | 'requests' | 'messages' | 'activity' | 'discover_no_suggestions';
-  onAction?: () => void;
-}
+import type { EmptyStateProps } from '@/types';
 
 const emptyStates = {
   friends: {
@@ -51,7 +47,7 @@ const emptyStates = {
 
 };
 
-export const EmptyState: React.FC<EmptyState> = ({ type, onAction }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ type, onAction }) => {
   const state = emptyStates[type];
   const IconComponent = state.icon;
 

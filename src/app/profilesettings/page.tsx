@@ -19,26 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-
-interface Settings {
-  notifications: {
-    push: boolean
-    email: boolean
-    messages: boolean
-  }
-  privacy: {
-    who_can_tag: string
-    is_private: boolean
-  }
-}
-
-interface BlockedUser {
-  id: number
-  username: string
-  display_name: string
-  avatar: string | null
-  blocked_at: string
-}
+import type { UserSettings, BlockedUser } from "@/types"
 
 export default function ProfileSettings() {
   const { currentUser, logout,authToken } = useContext(AuthContext)
@@ -48,7 +29,7 @@ export default function ProfileSettings() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
-  const [settings, setSettings] = useState<Settings>({
+  const [settings, setSettings] = useState<UserSettings>({
     notifications: { push: true, email: true, messages: true },
     privacy: { who_can_tag: 'everyone', is_private: false }
   })
@@ -94,7 +75,7 @@ export default function ProfileSettings() {
   }, [apiEndpoint])
 
   // Save notification setting
-  const updateNotificationSetting = async (key: keyof Settings['notifications'], value: boolean) => {
+  const updateNotificationSetting = async (key: keyof UserSettings['notifications'], value: boolean) => {
     if (!apiEndpoint) return
 
     const newSettings = {
@@ -124,7 +105,7 @@ export default function ProfileSettings() {
   }
 
   // Save privacy setting
-  const updatePrivacySetting = async (key: keyof Settings['privacy'], value: string | boolean) => {
+  const updatePrivacySetting = async (key: keyof UserSettings['privacy'], value: string | boolean) => {
     if (!apiEndpoint) return
 
     const newSettings = {

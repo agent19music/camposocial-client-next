@@ -2,18 +2,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-
-interface NavLink {
-  label: string
-  icon: React.ReactNode
-  onClick: () => void
-  badgeCount?: number
-}
-
-interface SideNavProps {
-  links: NavLink[]
-  variant?: "default" | "compact"
-}
+import type { NavLink, SideNavProps } from "@/types"
 
 export default function SideNav({ links, variant = "default" }: SideNavProps) {
   return (

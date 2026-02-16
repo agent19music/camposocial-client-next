@@ -11,14 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Play, Pause, Check, X, Loader2, Scissors } from "lucide-react"
-
-interface VideoTrimmerModalProps {
-  isOpen: boolean
-  onClose: () => void
-  videoFile: File
-  onTrimComplete: (trimmedBlob: Blob) => void
-  maxDuration?: number // Max duration in seconds (default 60)
-}
+import { VideoTrimmerModalProps } from '@/types'
 
 export default function VideoTrimmerModal({
   isOpen,

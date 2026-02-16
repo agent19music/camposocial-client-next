@@ -36,11 +36,7 @@ import { useCommunity } from "@/context/CommunityContext"
 import { toast } from "react-hot-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-interface CommunitySettingsModalProps {
-    isOpen: boolean
-    onClose: () => void
-    community: any
-}
+import type { CommunitySettingsModalProps } from "@/types"
 
 export default function CommunitySettingsModal({ isOpen, onClose, community }: CommunitySettingsModalProps) {
     const { authToken, currentUser } = useContext(AuthContext)
@@ -221,7 +217,7 @@ export default function CommunitySettingsModal({ isOpen, onClose, community }: C
                                             <Label>Privacy</Label>
                                             <Select
                                                 value={formData.privacy_type}
-                                                onValueChange={(val) => setFormData({ ...formData, privacy_type: val })}
+                                                onValueChange={(val) => setFormData({ ...formData, privacy_type: val as 'public' | 'private' | 'secret' })}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />

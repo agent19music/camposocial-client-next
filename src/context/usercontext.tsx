@@ -5,11 +5,11 @@ import useSWR, { mutate } from "swr";
 import { AuthContext } from "./authcontext";
 import { useWebSocket } from "./websocket-context";
 import { toast } from "react-hot-toast";
-import { UserContextProps, ChatFriend, MinimalFriend } from "../utils/types";
+import type { UserContextType, ChatFriend, MinimalFriend } from "@/types";
 
 
 
-const defaultValue: UserContextProps = {
+const defaultValue: UserContextType = {
   user: [],
   users: [],
   sendFriendRequest: async () => { },
@@ -33,7 +33,7 @@ const defaultValue: UserContextProps = {
   sentRequestIds: new Set<string>(),
 };
 
-export const UserContext = createContext<UserContextProps>(defaultValue);
+export const UserContext = createContext<UserContextType>(defaultValue);
 
 export default function UserProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
@@ -440,7 +440,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const contextData: UserContextProps = {
+  const contextData: UserContextType = {
     user,
     users: usersState,
     sendFriendRequest,

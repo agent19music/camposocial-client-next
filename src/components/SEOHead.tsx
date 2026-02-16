@@ -2,21 +2,7 @@
 
 import Head from 'next/head';
 import StructuredData from './StructuredData';
-
-interface SEOHeadProps {
-  title?: string;
-  description?: string;
-  keywords?: string[];
-  image?: string;
-  url?: string;
-  type?: 'website' | 'article' | 'event' | 'product';
-  publishedTime?: string;
-  modifiedTime?: string;
-  author?: string;
-  structuredData?: any;
-  noindex?: boolean;
-  canonical?: string;
-}
+import { SEOHeadProps } from '@/types';
 
 export default function SEOHead({
   title = "CampoSocial - Your Campus Connected",

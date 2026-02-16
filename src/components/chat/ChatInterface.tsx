@@ -23,10 +23,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface ChatInterfaceProps {
-    onChatOpen?: (isOpen: boolean) => void;
-}
+import type { ChatInterfaceProps } from '@/types';
 
 export default function ChatInterface({ onChatOpen }: ChatInterfaceProps) {
     const router = useRouter();

@@ -13,14 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-interface MpesaModalProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (phoneNumber: string) => void;
-  amount: number;
-  currency: string;
-}
+import { MpesaModalProps } from '@/types';
 
 const MpesaModal: React.FC<MpesaModalProps> = ({
   isOpen,

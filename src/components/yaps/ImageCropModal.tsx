@@ -14,14 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { RotateCcw, RotateCw, ZoomIn, ZoomOut, Check, X } from "lucide-react"
-
-interface ImageCropModalProps {
-  isOpen: boolean
-  onClose: () => void
-  imageSrc: string
-  onCropComplete: (croppedBlob: Blob) => void
-  aspectRatio?: number // Optional fixed aspect ratio (width/height)
-}
+import { ImageCropModalProps } from '@/types'
 
 export default function ImageCropModal({
   isOpen,

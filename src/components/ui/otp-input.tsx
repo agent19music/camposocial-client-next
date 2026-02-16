@@ -2,14 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-
-interface OTPInputProps {
-    length?: number;
-    value: string;
-    onChange: (value: string) => void;
-    disabled?: boolean;
-    className?: string;
-}
+import type { OTPInputProps } from '@/types';
 
 export function OTPInput({
     length = 6,

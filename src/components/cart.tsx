@@ -8,24 +8,12 @@ import { AuthContext } from '@/context/authcontext';
 import { MarketplaceContext } from '@/context/marketplacecontext';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-
-interface CartItem {
-  product_title: string;
-  quantity: number;
-  price_per_item: number;
-  total_item_price: number;
-  images: string[];
-  id: string;
-}
-
-interface CartResponse {
-  cart_items: CartItem[];
-}
+import type { CartItemDisplay, CartResponseDisplay } from '@/types';
 
 export default function CartComponent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const cartRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +31,7 @@ export default function CartComponent() {
 
 
   useEffect(() => {
-    const getCartItems = async (userId: string): Promise<CartItem[]> => {
+    const getCartItems = async (userId: string): Promise<CartItemDisplay[]> => {
       // Guard against missing apiEndpoint
       if (!apiEndpoint) {
         console.warn('API endpoint not configured');
@@ -61,7 +49,7 @@ export default function CartComponent() {
           console.warn(`Cart fetch returned status ${response.status}`);
           return [];
         }
-        const data: CartResponse = await response.json();
+        const data: CartResponseDisplay = await response.json();
         return data.cart_items || [];
       } catch (error) {
         // Network errors, CORS issues, etc - log but return empty

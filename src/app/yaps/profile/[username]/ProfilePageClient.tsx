@@ -60,113 +60,7 @@ import Image from 'next/image'
 import BadgeDisplay from '@/components/badgedisplay'
 import BadgePurchaseModal from '@/components/badgepurchasemodal'
 import BadgeManagement from '@/components/badgemanagement'
-
-interface User {
-  id: number
-  username: string
-  display_name: string
-  first_name: string
-  last_name: string
-  email: string
-  bio: string
-  avatar: string
-  category: string
-  phone_no: string
-  followers_count?: number
-  following_count?: number
-  yaps_count?: number
-  join_date?: string
-  yap_header_img?: string
-  badges?: BadgeItem[]
-}
-
-interface BadgeItem {
-  id: number
-  name: string
-  image_url: string
-  is_animated: boolean
-}
-
-interface Yap {
-  id: string;
-  content: string;
-  timestamp: string;
-  updated_at?: string;
-  location?: string;
-  user_id: string;
-  username: string;
-  display_name: string;
-  avatar: string;
-  original_yap_id?: string;
-  original_yap?: Yap; // The original yap data for retweets
-  is_retweet?: boolean;
-  is_quote?: boolean;
-  replies_count: number;
-  likes_count: number;
-  retweets_count: number;
-  bookmarks_count: number;
-  media: MediaItem[];
-  hashtags: string[];
-  replies: Reply[];
-  badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>;
-  // Client-side optimistic state
-  isOptimistic?: boolean;
-  optimisticLiked?: boolean;
-  optimisticLikesCount?: number;
-  optimisticRepliesCount?: number;
-  optimisticRetweetsCount?: number;
-  // Community attribution (for posts from public communities)
-  community?: {
-    slug: string;
-    name: string;
-    icon_image: string;
-  } | null;
-}
-interface MediaItem {
-  id: number;
-  url: string;
-  type: 'image' | 'video';
-}
-interface Reply {
-  id: number;
-  content: string;
-  created_at: string;
-  user?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar: string;
-  };
-  parent_reply_id?: number;
-  isOptimistic?: boolean;
-}
-
-interface UserReply {
-  id: number;
-  content: string;
-  created_at: string;
-  parent_reply_id?: number;
-  user: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar: string;
-  };
-  parent_yap: {
-    id: string;
-    content: string;
-    timestamp: string;
-    user_id: string;
-    display_name: string;
-    username: string;
-    avatar: string;
-    replies_count: number;
-    likes_count: number;
-    retweets_count: number;
-    badges?: Array<{ id: number, name: string, image_url: string, is_animated: boolean }>;
-    media?: Array<{ id: number, url: string, type: string }>;
-  };
-}
+import type { ProfilePageUser, Yap, UserReply } from '@/types'
 
 function ProfilePageClient() {
   const params = useParams()
@@ -175,7 +69,7 @@ function ProfilePageClient() {
   const { currentUser, authToken } = useContext(AuthContext)
   // const { fetchYaps } = useContext(YapContext)  // Commented out as not used
 
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<ProfilePageUser | null>(null)
   const [yaps, setYaps] = useState<Yap[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
@@ -872,6 +766,7 @@ function ProfilePageClient() {
                     replies_count={yap.replies_count}
                     retweets_count={yap.retweets_count}
                     badges={yap.badges}
+                    community={yap.community}
                   />
                 ))}
               </div>

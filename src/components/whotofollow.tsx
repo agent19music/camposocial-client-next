@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { YapContext } from '@/context/yapcontext';
 import { AuthContext } from '@/context/authcontext';
-import { WhoToFollowSuggestion } from '@/utils/types';
+import { WhoToFollowSuggestion } from '@/types';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';

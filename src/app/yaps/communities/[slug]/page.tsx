@@ -44,32 +44,14 @@ import CommunityCropModal from "@/components/communities/CommunityCropModal"
 import CommunityPostCard from "@/components/communities/CommunityPostCard"
 import CommunitySettingsModal from "@/components/communities/CommunitySettingsModal"
 import { UsersIcon } from "lucide-react"
-
-interface GroupDetails {
-    id: string
-    slug: string
-    name: string
-    description: string
-    category: string
-    privacy_type: string
-    cover_image?: string
-    icon_image?: string
-    member_count: number
-    is_verified: boolean
-    is_member: boolean
-    user_role: string | null
-    created_at: string
-    creator: any
-    recent_members: any[]
-    rules?: string
-}
+import { Community } from '@/types'
 
 export default function GroupDetailsPage(props: { params: Promise<{ slug: string }> }) {
     const params = use(props.params)
     const groupSlug = params.slug
     const router = useRouter()
 
-    const [group, setGroup] = useState<GroupDetails | null>(null)
+    const [group, setGroup] = useState<Community | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [activeTab, setActiveTab] = useState("feed")
     const [isPostModalOpen, setIsPostModalOpen] = useState(false)
@@ -209,47 +191,49 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
     return (
         <div className="min-h-screen bg-background pb-20 md:pb-0 md:pl-64">
             <Header />
-            {/* Cover Image */}
-            <div className="relative w-full bg-muted aspect-[3/1] md:aspect-[5/1]">
-                {group.cover_image ? (
-                    <Image
-                        src={group.cover_image}
-                        alt="Cover"
-                        fill
-                        className="object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-r from-purple-500/20 to-blue-500/20" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-
-                {/* Admin: Edit cover button */}
-                {isAdmin && (
-                    <>
-                        <Button
-                            size="icon"
-                            variant="secondary"
-                            className="absolute top-4 right-4 rounded-full bg-black/50 hover:bg-black/70 text-white border-0"
-                            onClick={() => coverInputRef.current?.click()}
-                        >
-                            <Camera className="h-5 w-5" weight="regular" />
-                        </Button>
-                        <input
-                            ref={coverInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleCoverImageSelect}
+            {/* Centered layout: content center, info right on desktop */}
+            <div className="max-w-5xl mx-auto">
+                {/* Cover Image — centered, no stretch (profile-style) */}
+                <div className="relative h-32 md:h-40 bg-muted overflow-hidden">
+                    {group.cover_image ? (
+                        <Image
+                            src={group.cover_image}
+                            alt="Cover"
+                            fill
+                            className="object-cover object-center"
                         />
-                    </>
-                )}
-            </div>
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-purple-500/20 to-blue-500/20" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent pointer-events-none" />
 
-            <div className="px-4 md:px-8 relative -mt-20">
+                    {/* Admin: Edit cover button */}
+                    {isAdmin && (
+                        <>
+                            <Button
+                                size="icon"
+                                variant="secondary"
+                                className="absolute top-4 right-4 rounded-full bg-black/50 hover:bg-black/70 text-white border-0"
+                                onClick={() => coverInputRef.current?.click()}
+                            >
+                                <Camera className="h-5 w-5" weight="regular" />
+                            </Button>
+                            <input
+                                ref={coverInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleCoverImageSelect}
+                            />
+                        </>
+                    )}
+                </div>
+
+                <div className="px-4 md:px-6 relative -mt-16 md:-mt-20">
                 {/* Header Content */}
                 <div className="flex flex-col md:flex-row items-start md:items-end gap-6 mb-6">
                     {/* Icon */}
-                    <div className="w-20 h-20 md:w-32 md:h-32 rounded-2xl md:rounded-3xl border-4 border-background bg-card shadow-xl overflow-hidden flex-shrink-0 relative z-10">
+                    <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl md:rounded-3xl border-4 border-background bg-card shadow-xl overflow-hidden flex-shrink-0 relative z-10">
                         {group.icon_image ? (
                             <Image src={group.icon_image} alt="Icon" fill className="object-cover" />
                         ) : (
@@ -344,8 +328,9 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                     </TabsList>
 
                     <TabsContent value="feed">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2 space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                            {/* Main content — center focus */}
+                            <div className="lg:col-span-8 space-y-4 min-w-0">
                                 {/* Post Composer */}
                                 {group.is_member && (
                                     <Card className="p-4 border-none shadow-sm bg-card/50">
@@ -389,6 +374,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                                                     display_name: post.user.display_name,
                                                     avatar: post.user.avatar
                                                 }}
+                                                badges={post.user?.badges ?? (post as { badges?: Array<{ id: number; name: string; image_url: string; is_animated: boolean }> }).badges}
                                                 media={post.media?.map(m => ({
                                                     id: m.id,
                                                     url: m.media_url,
@@ -408,14 +394,13 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                                 )}
                             </div>
 
-                            <div className="space-y-6">
-                                {/* Sidebar: About */}
+                            {/* Info sidebar — right on desktop, hidden on mobile */}
+                            <aside className="hidden lg:block lg:col-span-4 space-y-6">
                                 <Card className="p-4 border-none bg-card/50">
                                     <h3 className="font-semibold mb-2">About</h3>
                                     <p className="text-sm text-muted-foreground">{group.description}</p>
                                 </Card>
 
-                                {/* Sidebar: Admins */}
                                 <Card className="p-4 border-none bg-card/50">
                                     <h3 className="font-semibold mb-4">Admins & Moderators</h3>
                                     <div className="space-y-3">
@@ -433,7 +418,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                                         )}
                                     </div>
                                 </Card>
-                            </div>
+                            </aside>
                         </div>
                     </TabsContent>
 
@@ -492,6 +477,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
                         </Card>
                     </TabsContent>
                 </Tabs>
+                </div>
             </div>
 
             {/* Create Post Modal */}

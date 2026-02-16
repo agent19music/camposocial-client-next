@@ -10,10 +10,7 @@ import { toast } from 'react-hot-toast';
 import { Key, Lock, Unlock, Download, Upload, Shield, AlertTriangle } from 'lucide-react';
 import { useChat } from '@/context/chatcontext';
 import { exportEncryptedBackup, importEncryptedBackup, changeKeyPassword } from '@/lib/keyStorage';
-
-interface KeyManagementProps {
-  compact?: boolean;
-}
+import type { KeyManagementProps } from '@/types';
 
 export function KeyManagement({ compact = false }: KeyManagementProps) {
   const { keyStatus, generateKeys, unlockKeys, loadKeys } = useChat();

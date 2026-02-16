@@ -9,14 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { motion } from 'framer-motion'; ``
 import { Colors as Palette } from "@/constants/Colors";
-
-
-interface FeatureCard {
-  icon: React.ComponentType<any>;
-  title: string;
-  description: string;
-  colorClass: string;
-}
+import type { FeatureCard } from '@/types';
 
 const features: FeatureCard[] = [
   {

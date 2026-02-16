@@ -26,21 +26,7 @@ import {
 import { AuthContext } from "@/context/authcontext"
 import toast from "react-hot-toast"
 import Image from 'next/image'
-
-interface BadgeItem {
-  id: number
-  name: string
-  description: string
-  image_url: string
-  price_ksh: number
-  is_animated: boolean
-}
-
-interface BadgePurchaseModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess: () => void
-}
+import { BadgeItem, BadgePurchaseModalProps } from '@/types'
 
 type PaymentMethod = 'mpesa' | 'card'
 type PaymentStep = 'selection' | 'payment' | 'processing' | 'complete' | 'redirect'
@@ -102,7 +88,7 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
           setPaymentStep('complete')
           toast.success('Badge purchased successfully!')
           setTimeout(() => {
-            onSuccess()
+            onSuccess?.()
             onClose()
           }, 2000)
         } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
@@ -268,7 +254,9 @@ export default function BadgePurchaseModal({ isOpen, onClose, onSuccess }: Badge
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold truncate">{badge.name}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-2">{badge.description}</p>
+                {badge.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">{badge.description}</p>
+                )}
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-green-600">

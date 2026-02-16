@@ -35,15 +35,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { MarketplaceContext } from '@/context/marketplacecontext'
-
-interface CartItem {
-  product_title: string;
-  quantity: number;
-  price_per_item: number;
-  total_item_price: number;
-  images: string[];
-  id: string;
-}
+import type { CartItemDisplay, CartResponseDisplay, DiscountValidation } from '@/types'
 
 type CurrentUser = {
   id: string;
@@ -53,20 +45,6 @@ type CurrentUser = {
   phone_no: string;
   email: string;
 } | null
-
-interface CartResponse {
-  cart_items: CartItem[];
-}
-
-interface DiscountValidation {
-  valid: boolean;
-  code: string;
-  discount_type: 'percentage' | 'fixed';
-  value: number;
-  discount_amount: number;
-  final_total: number;
-  error?: string;
-}
 
 // Form validation schema
 const orderSchema = z.object({
@@ -80,7 +58,7 @@ const orderSchema = z.object({
 export default function CheckoutComponent() {
   const router = useRouter()
   const { currentUser, authToken } = useContext(AuthContext)
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [cartItems, setCartItems] = useState<CartItemDisplay[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState<boolean>(true)
   const [showPayNow, setShowPayNow] = useState(false);
@@ -110,13 +88,13 @@ export default function CheckoutComponent() {
     },
   })
 
-  const getCartItems = useCallback(async (userId: string): Promise<CartItem[]> => {
+  const getCartItems = useCallback(async (userId: string): Promise<CartItemDisplay[]> => {
     try {
       const response = await fetch(`${apiEndpoint}/cart/${userId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch cart data');
       }
-      const data: CartResponse = await response.json();
+      const data: CartResponseDisplay = await response.json();
       return data.cart_items;
     } catch (error) {
       console.error(error);

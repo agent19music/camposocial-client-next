@@ -14,7 +14,7 @@ import SideNav from '@/components/sidenav'
 import { Paintbrush, Cookie, Book, Shirt, Monitor } from "lucide-react"
 import { useContext } from 'react'
 import { MarketplaceContext } from '@/context/marketplacecontext'
-import { Seller, Product } from '@/utils/types'
+import { Seller, Product } from '@/types'
 import { toast } from 'react-hot-toast'
 import { useParams } from 'next/navigation'
 import { Skeleton } from "@/components/ui/skeleton"
@@ -253,7 +253,7 @@ export default function SellerProfile() {
                     ))
                   )}
 
-                  {!isLoading && sellerInfo?.reviews === 0 && (
+                  {!isLoading && (!Array.isArray(sellerInfo?.reviews) || sellerInfo?.reviews?.length === 0) && (
                     <p className="text-muted-foreground text-center">No reviews yet</p>
                   )}
                 </CardContent>

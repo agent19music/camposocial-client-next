@@ -1,13 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-
-interface AuthModalContextType {
-  isOpen: boolean;
-  message?: string;
-  openAuthModal: (message?: string) => void;
-  closeAuthModal: () => void;
-}
+import { AuthModalContextType } from '@/types';
 
 const AuthModalContext = createContext<AuthModalContextType>({
   isOpen: false,

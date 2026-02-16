@@ -5,12 +5,11 @@ import {nanoid} from 'nanoid';
 import { useRouter } from "next/navigation";
 import { AuthContext } from "./authcontext";
 import { toast } from "react-hot-toast";
-import { EventContextProps, AppEvent, EventProviderProps, AddEventPayload } from "../utils/types";
-import type { EventComment, EventTicketGroupInput, EventLikeResponse, EventCommentPayload } from "@/lib/types";
+import type { EventContextType, AppEvent, AddEventPayload, EventComment, EventTicketGroupInput, EventLikeResponse, EventCommentPayload } from "@/types";
 
  
 
-const defaultValue: EventContextProps = {
+const defaultValue: EventContextType = {
   events: [],
   setCategory: () => {},
   isLoading: false,
@@ -26,9 +25,9 @@ const defaultValue: EventContextProps = {
   refreshEvents: () => Promise.resolve(),
 };
 
-export const EventContext = createContext<EventContextProps>(defaultValue);
+export const EventContext = createContext<EventContextType>(defaultValue);
 
-export default function EventProvider({ children }: EventProviderProps) {
+export default function EventProvider({ children }: { children: ReactNode }) {
   const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT;
   const { authToken, isAuthenticated, isLoading: authLoading } = useContext(AuthContext);
 

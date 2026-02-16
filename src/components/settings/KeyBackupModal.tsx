@@ -25,12 +25,7 @@ import {
     RefreshCw
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-
-interface KeyBackupModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    mode?: 'backup' | 'restore';
-}
+import type { KeyBackupModalProps } from "@/types";
 
 export function KeyBackupModal({ isOpen, onClose, mode: initialMode = 'backup' }: KeyBackupModalProps) {
     const { authToken, currentUser } = useContext(AuthContext);

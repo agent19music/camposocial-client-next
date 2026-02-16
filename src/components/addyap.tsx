@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useContext, useRef } from "react"
+import { useState, useContext, useRef, useMemo } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,14 +42,10 @@ import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 import ImageCropModal from "@/components/yaps/ImageCropModal"
 import VideoTrimmerModal from "@/components/yaps/VideoTrimmerModal"
-
-interface YapPayload {
-  content: string;
-  location?: string;
-  originalYapId?: string;
-  mediaFiles?: File[];
-  pollId?: string;
-}
+import { extractUrls } from "@/lib/linkify"
+import { useLinkPreviews } from "@/hooks/useLinkPreviews"
+import { LinkPreviewCard } from "@/components/LinkPreviewCard"
+import type { YapPayload } from '@/types'
 
 export default function AddYap() {
   const [open, setOpen] = useState(false)
@@ -94,6 +90,10 @@ export default function AddYap() {
 
   // Extract hashtags from content for real-time processing
   const extractedHashtags = yapContent.match(/#[\w]+/g) || []
+
+  // Extract URLs for real-time link preview (memoized to avoid re-parsing on every render)
+  const contentUrls = useMemo(() => extractUrls(yapContent, 2), [yapContent])
+  const linkPreviews = useLinkPreviews(contentUrls, process.env.NEXT_PUBLIC_API_ENDPOINT)
 
   // Handle content change and detect hashtag typing
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -306,14 +306,13 @@ export default function AddYap() {
     setPollOptions(prev => prev.map((option, i) => i === index ? value : option))
   }
 
-  // Submit yap
+  // Submit yap: close modal immediately; optimistic card shows "Posting..." until done
   const handleSubmit = async () => {
     if (!yapContent.trim() || isSubmitting) return
 
     setIsSubmitting(true)
 
     try {
-      // If poll mode, create poll first
       let pollId: string | undefined
       if (isPollMode) {
         const validOptions = pollOptions.filter(opt => opt.trim())
@@ -323,7 +322,6 @@ export default function AddYap() {
           return
         }
 
-        // Map duration to hours
         const durationMap: Record<string, number> = {
           '5 minutes': 0.083,
           '1 hour': 1,
@@ -355,9 +353,9 @@ export default function AddYap() {
         pollId: pollId
       }
 
-      await postYap(payload)
+      // Fire and forget: optimistic card appears immediately; modal closes so user isn't blocked
+      postYap(payload)
 
-      // Reset form
       setYapContent("")
       setMediaFiles([])
       setLocation("")
@@ -365,7 +363,6 @@ export default function AddYap() {
       setPollOptions(["", ""])
       setIsPollMode(false)
       setOpen(false)
-
     } catch (error) {
       console.error('Failed to post yap:', error)
       toast.error('Failed to post yap')
@@ -557,6 +554,29 @@ export default function AddYap() {
                       <SelectItem value="7 days">7 days</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {/* Real-time link preview */}
+              {contentUrls.length > 0 && (
+                <div className="space-y-2">
+                  {contentUrls.map((url) => (
+                    linkPreviews[url] ? (
+                      <LinkPreviewCard
+                        key={url}
+                        preview={linkPreviews[url]!}
+                        className="rounded-xl overflow-hidden"
+                      />
+                    ) : (
+                      <div
+                        key={url}
+                        className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl text-sm text-muted-foreground animate-pulse"
+                      >
+                        <div className="w-4 h-4 bg-muted rounded" />
+                        <span className="truncate">{url}</span>
+                      </div>
+                    )
+                  ))}
                 </div>
               )}
             </div>

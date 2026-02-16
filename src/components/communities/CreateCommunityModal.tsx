@@ -27,12 +27,7 @@ import { AuthContext } from "@/context/authcontext"
 import { toast } from "react-hot-toast"
 import { Colors } from "@/constants/Colors"
 import CommunityCropModal from "./CommunityCropModal"
-
-interface CreateGroupModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onGroupCreated?: () => void
-}
+import type { CreateGroupModalProps } from "@/types"
 
 export default function CreateCommunityModal({ isOpen, onClose, onGroupCreated }: CreateGroupModalProps) {
     const { currentUser, authToken } = useContext(AuthContext)

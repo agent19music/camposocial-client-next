@@ -15,26 +15,7 @@ import {
   XCircle
 } from '@phosphor-icons/react';
 
-import { MinimalFriend } from '@/utils/types';
-
-interface Request extends MinimalFriend {
-  created_at?: string;
-  requestTime?: string;
-  mutualFriends?: number;
-  bio?: string;
-  category?: string;
-  year?: string;
-  requesterId?: string;
-  mutualFriendIds?: string[];
-}
-
-interface EnhancedRequestCardProps {
-  request: Request;
-  onAccept?: (requestId: string | number) => void;
-  onDecline?: (requestId: string | number) => void;
-  onViewProfile?: (request: Request) => void;
-  requestState?: 'accepting' | 'declining' | 'accepted' | 'declined';
-}
+import { FriendRequestExtended, EnhancedRequestCardProps } from '@/types';
 
 export const EnhancedRequestCard: React.FC<EnhancedRequestCardProps> = ({
   request,

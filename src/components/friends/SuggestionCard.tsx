@@ -13,28 +13,7 @@ import {
   User,
   Users
 } from '@phosphor-icons/react';
-
-interface Suggestion {
-  id: number | string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  display_name?: string;
-  avatar?: string;
-  bio?: string;
-  mutualFriends?: number;
-  category?: string;
-  reason?: string;
-  year?: string;
-  location?: string;
-}
-
-interface SuggestionCardProps {
-  suggestion: Suggestion;
-  onAddFriend?: (suggestionId: string | number) => void;
-  onViewProfile?: (suggestion: Suggestion) => void;
-  isLoading?: boolean;
-}
+import { FriendSuggestion, SuggestionCardProps } from '@/types';
 
 export const SuggestionCard: React.FC<SuggestionCardProps> = ({
   suggestion,

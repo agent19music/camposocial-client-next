@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-
-interface StructuredDataProps {
-  type: 'website' | 'organization' | 'event' | 'product' | 'article';
-  data: any;
-}
+import { StructuredDataProps } from '@/types';
 
 export default function StructuredData({ type, data }: StructuredDataProps) {
   useEffect(() => {

@@ -58,12 +58,7 @@ import EnhancedMobileSideNav from "@/components/enhanced-mobile-sidenav";
 import { AvatarImage } from "@/components/ui/avatar";
 import { AvatarFallback } from "@/components/ui/avatar";
 import { Avatar } from "@/components/ui/avatar";
-interface HeaderProps {
-  onSearch?: (query: string) => void;
-  onFilterSelect?: (filterId: string) => void;
-  searchQuery?: string;
-  activeFilter?: string;
-}
+import type { HeaderProps } from "@/types";
 
 const Header: FC<HeaderProps> = ({
   onSearch,

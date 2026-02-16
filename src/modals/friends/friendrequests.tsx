@@ -4,15 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserContext } from "@/context/usercontext";
+import { ModalFriendRequest } from '@/types';
 
-interface FriendRequest {
-  id: string;
-  username: string;
-  photoUrl: string;
-  timestamp: Date;
-}
-
-export function ReceivedRequestsModal({ requests }: { requests: FriendRequest[] }) {
+export function ReceivedRequestsModal({ requests }: { requests: ModalFriendRequest[] }) {
   const { addFriend, rejectFriendRequest} = useContext(UserContext);
 
   const handleAccept = async (id: string, name: string) => {

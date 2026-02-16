@@ -6,6 +6,7 @@
  */
 
 import { KeyPair, generateKeyPair, isValidSecretKey, isValidPublicKey } from './crypto';
+import { StoredKeyData, ServerBackupData } from '@/types';
 
 const DB_NAME = 'camposocial_keys';
 const DB_VERSION = 1;
@@ -44,14 +45,6 @@ export async function deriveKeyPassword(loginPassword: string, userId: string | 
   
   // Convert to base64 for use as the key password
   return btoa(String.fromCharCode(...new Uint8Array(derivedBits)));
-}
-
-interface StoredKeyData {
-  id: string;  // Always 'user_keys'
-  publicKey: string;
-  encryptedSecretKey: string;  // Base64 encoded
-  salt: string;  // Base64 encoded
-  iv: string;    // Base64 encoded
 }
 
 /**
@@ -406,18 +399,6 @@ export async function importEncryptedBackup(
 // ============================================================================
 // Server-Side Key Backup for Multi-Device E2EE
 // ============================================================================
-
-/**
- * Interface for server backup response
- */
-interface ServerBackupData {
-  encrypted_private_key: string;
-  key_salt: string;
-  key_iv: string;
-  has_backup: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
 
 /**
  * Encrypt the secret key with a recovery passphrase for server backup.

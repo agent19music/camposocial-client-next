@@ -8,17 +8,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea"
 import { MessageCircle, Repeat2, Heart, Share2, MoreHorizontal, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from '@/lib/utils'
-import { Reply } from '@/utils/types'
 import { AuthContext } from '@/context/authcontext'
 import { YapContext } from '@/context/yapcontext'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
-
-interface ReplyComponentProps {
-  reply: Reply
-  onReplyToReply?: (parentReplyId: number, content: string) => void
-  depth?: number
-}
+import { Reply, ReplyComponentProps } from '@/types'
 
 export const ReplyComponent = ({ reply, onReplyToReply, depth = 0 }: ReplyComponentProps) => {
   const [isLiked, setIsLiked] = useState(false)

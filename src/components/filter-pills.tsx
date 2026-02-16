@@ -5,25 +5,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon } from "lucide-react";
+import { FilterPill, FilterPillsProps } from '@/types';
 
-export interface FilterPill {
-  id: string;
-  label: string;
-  active?: boolean;
-  badge?: number; // For notification counts
-  isSearch?: boolean; // Special search pill
-}
-
-interface FilterPillsProps {
-  filters: FilterPill[];
-  onFilterSelect: (filterId: string) => void;
-  className?: string;
-  // Optional controlled search props
-  searchActive?: boolean;
-  onSearchToggle?: (active: boolean) => void;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
-}
+export type { FilterPill };
 
 export default function FilterPills({
   filters,

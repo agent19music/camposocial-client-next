@@ -3,14 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-
-interface NotificationDotProps {
-  show: boolean;
-  count?: number;
-  size?: 'sm' | 'md' | 'lg';
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
-  className?: string;
-}
+import { NotificationDotProps, NotificationCounterProps, YapNotificationBannerProps } from '@/types';
 
 export const NotificationDot: React.FC<NotificationDotProps> = ({
   show,
@@ -51,14 +44,6 @@ export const NotificationDot: React.FC<NotificationDotProps> = ({
   );
 };
 
-interface NotificationCounterProps {
-  count: number;
-  maxCount?: number;
-  size?: 'sm' | 'md' | 'lg';
-  variant?: 'purple' | 'red' | 'blue' | 'green';
-  className?: string;
-}
-
 export const NotificationCounter: React.FC<NotificationCounterProps> = ({
   count,
   maxCount = 99,
@@ -95,18 +80,6 @@ export const NotificationCounter: React.FC<NotificationCounterProps> = ({
     </div>
   );
 };
-
-interface YapNotificationBannerProps {
-  count: number;
-  authors: Array<{
-    id: number;
-    username: string;
-    avatar: string;
-    display_name: string;
-  }>;
-  onViewNew: () => void;
-  className?: string;
-}
 
 export const YapNotificationBanner: React.FC<YapNotificationBannerProps> = ({
   count,

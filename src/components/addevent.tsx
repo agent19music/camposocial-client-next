@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useEventContext } from "@/context/eventcontext"
 import { toast } from 'react-hot-toast'
 import { AuthContext } from "@/context/authcontext"
-import { EventTicketGroupInput } from '@/lib/types'
+import { EventTicketGroupInput } from '@/types'
 import { PlusCircle, Trash2 } from 'lucide-react'
 
 export default function AddEvent() {

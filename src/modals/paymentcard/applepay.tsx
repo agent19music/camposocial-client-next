@@ -11,11 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Icons } from "@/components/icons"
-
-interface ApplePayModalProps {
-  isOpen: boolean
-  onClose: () => void
-}
+import { ApplePayModalProps } from '@/types'
 
 export function ApplePayModal({ isOpen, onClose }: ApplePayModalProps) {
   const handleApplePay = () => {

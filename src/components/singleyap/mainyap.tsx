@@ -12,8 +12,12 @@ import { YapContext } from '@/context/yapcontext'
 import Image from 'next/image'
 import BadgeDisplay from '../badgedisplay'
 
+import { LinkifiedContent } from '@/components/LinkifiedContent'
+import { Users } from 'lucide-react'
+
 export const MainYap = () => {
   const { selectedYap } = useContext(YapContext)
+  console.log( "selectedYap", selectedYap);
   const router = useRouter()
 
   if (!selectedYap) {
@@ -46,6 +50,19 @@ export const MainYap = () => {
 
   return (
     <article className="px-4 pt-3 pb-3">
+      {selectedYap?.community && (
+        <div className="flex items-center gap-2 mb-3 text-muted-foreground text-sm">
+          <Users className="w-4 h-4" />
+          <span>
+            in <span
+              className="font-medium hover:underline cursor-pointer text-primary"
+              onClick={() => router.push(`/yaps/communities/${selectedYap.community?.slug}`)}
+            >
+              {selectedYap.community.name}
+            </span>
+          </span>
+        </div>
+      )}
       <div className="flex gap-3">
         <Avatar
           className="w-10 h-10 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
@@ -86,8 +103,8 @@ export const MainYap = () => {
         </div>
       </div>
 
-      <div className="mt-3 text-[17px] whitespace-pre-wrap break-words">
-        {selectedYap?.content}
+      <div className="mt-3 text-[17px]">
+        <LinkifiedContent content={selectedYap?.content ?? ''} linkClassName="text-primary hover:underline" />
       </div>
 
       {selectedYap?.media && selectedYap?.media.length > 0 && (

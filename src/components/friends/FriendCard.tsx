@@ -10,25 +10,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface Friend {
-    id: string | number;
-    username?: string;
-    displayName?: string;
-    firstName?: string;
-    lastName?: string;
-    avatar?: string;
-    bio?: string;
-    isOnline?: boolean;
-    mutualFriends?: number;
-}
-
-interface FriendCardProps {
-    friend: Friend;
-    onMessage: (friend: Friend) => void;
-    onRemoveFriend: (friendId: string | number) => void;
-    onViewProfile?: (friend: Friend) => void;
-}
+import { Friend, FriendCardProps } from '@/types';
 
 export function FriendCard({ friend, onMessage, onRemoveFriend, onViewProfile }: FriendCardProps) {
     const router = useRouter();

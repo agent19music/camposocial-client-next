@@ -3,11 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TrendingUp, Hash } from "lucide-react";
-
-interface TrendingHashtag {
-    name: string;
-    count: number;
-}
+import type { TrendingHashtag } from '@/types';
 
 export default function TrendingHashtags() {
     const [hashtags, setHashtags] = useState<TrendingHashtag[]>([]);
