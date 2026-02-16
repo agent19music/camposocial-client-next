@@ -10,9 +10,9 @@ on:
 
 env:
   PROJECT_ID: camposocial-464516
-  REGION: europe-west3
+  REGION: europe-west1
   SERVICE_NAME: camposocial-client-production
-  ARTIFACT_REGISTRY_REPO: camposocial-repo
+  ARTIFACT_REGISTRY_REPO: camposocial-europe-west1
   IMAGE_NAME: camposocial-client
 
 jobs:
