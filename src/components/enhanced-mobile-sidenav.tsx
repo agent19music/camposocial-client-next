@@ -54,7 +54,8 @@ export default function EnhancedMobileSideNav({ className }: EnhancedMobileSideN
       ];
     } else if (pathname?.includes('/friends')) {
       return [
-        { icon: MessageSquare, label: "Messages", href: "/friends?tab=messages" },
+        // Messages temporarily disabled during refactor
+        // { icon: MessageSquare, label: "Messages", href: "/friends?tab=messages" },
         { icon: Users, label: "Friend Requests", href: "/friends?tab=requests" },
         { icon: UserPlus, label: "Discover People", href: "/friends?tab=discover" },
       ];

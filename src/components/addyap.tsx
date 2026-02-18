@@ -343,7 +343,6 @@ export default function AddYap() {
         }
 
         pollId = pollResult.poll?.id
-        toast.success('Poll created!')
       }
 
       const payload: YapPayload = {
@@ -602,7 +601,7 @@ export default function AddYap() {
                 size="icon"
                 onClick={() => setIsPollMode(!isPollMode)}
                 className={cn(
-                  "text-primary hover:bg-accent rounded-xl h-10 w-10",
+                  " hover:bg-accent rounded-xl h-10 w-10",
                   isPollMode && "bg-accent"
                 )}
               >

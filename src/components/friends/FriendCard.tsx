@@ -92,13 +92,14 @@ export function FriendCard({ friend, onMessage, onRemoveFriend, onViewProfile }:
                 </div>
             )}
 
-            {/* Message Button - Always Blue */}
+            {/* Message Button - Temporarily disabled during refactor */}
             <button
-                onClick={() => onMessage(friend)}
-                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm bg-[#4A90E2] shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-[#4A90E2]/90 text-white"
+                disabled
+                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                title="Messaging coming soon"
             >
                 <ChatCircleIcon size={16} weight="fill" />
-                Message
+                Coming Soon
             </button>
         </div>
     );

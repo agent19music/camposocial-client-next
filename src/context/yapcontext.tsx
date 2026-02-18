@@ -206,6 +206,7 @@ export default function YapProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       setYaps(data.yaps || []);
+      console.log('Fetched yaps:', data.yaps); // Debug log
       setFilteredYaps(data.yaps || []);
 
     } catch (error: any) {
@@ -869,6 +870,7 @@ export default function YapProvider({ children }: { children: ReactNode }) {
       display_name: `${currentUser.first_name} ${currentUser.last_name}`,
       avatar: currentUser.avatar,
       original_yap_id: yapPayload.originalYapId,
+      poll_id: yapPayload.pollId,
       replies_count: 0,
       likes_count: 0,
       retweets_count: 0,
@@ -883,7 +885,7 @@ export default function YapProvider({ children }: { children: ReactNode }) {
     setYaps(prevYaps => [optimisticYap, ...prevYaps]);
     setFilteredYaps(prevYaps => [optimisticYap, ...prevYaps]);
 
-    const { content, location, originalYapId, mediaFiles } = yapPayload;
+    const { content, location, originalYapId, mediaFiles, pollId } = yapPayload;
 
     // Create FormData for submission
     const formData = new FormData();
@@ -895,6 +897,10 @@ export default function YapProvider({ children }: { children: ReactNode }) {
 
     if (originalYapId) {
       formData.append('original_yap_id', originalYapId);
+    }
+
+    if (pollId) {
+      formData.append('poll_id', pollId);
     }
 
     if (mediaFiles && mediaFiles.length > 0) {

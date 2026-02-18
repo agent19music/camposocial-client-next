@@ -34,7 +34,6 @@ export default function BadgeManagement({ userId, onUpdate }: BadgeManagementPro
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Fetched badges:', data) // Debug log
         setAllBadges(data.all_badges || [])
         setDisplayedBadges(data.displayed_badges || [])
         if (showToast) {

@@ -68,28 +68,67 @@ export default function PollCard({ pollId, initialPoll, compact = false }: PollC
     const handleVote = async () => {
         if (!selectedOption || !poll || hasVoted || poll.is_expired) return
 
+        // Store previous state for rollback on error
+        const previousPoll = poll
+        const previousHasVoted = hasVoted
+
+        // Calculate optimistic percentages immediately
+        const newTotalVotes = poll.total_votes + 1
+        const optimisticOptions = poll.options.map(opt => {
+            const newVoteCount = opt.id === selectedOption 
+                ? (opt.vote_count || 0) + 1 
+                : (opt.vote_count || 0)
+            const newPercentage = newTotalVotes > 0 
+                ? (newVoteCount / newTotalVotes) * 100 
+                : 0
+            return {
+                ...opt,
+                vote_count: newVoteCount,
+                percentage: newPercentage,
+                is_user_choice: opt.id === selectedOption
+            }
+        })
+
+        // Optimistic update - show results immediately
+        setPoll({
+            ...poll,
+            has_voted: true,
+            show_results: true,
+            total_votes: newTotalVotes,
+            options: optimisticOptions
+        })
+        setHasVoted(true)
         setIsVoting(true)
+
         try {
             const result = await vote(poll.id, selectedOption)
             if (result.success && result.results) {
-                // Update poll with new results
+                // Update with server data (mainly for accurate vote counts)
                 setPoll(prev => prev ? {
                     ...prev,
-                    has_voted: true,
-                    show_results: true,
-                    total_votes: (result as any).totalVotes || prev.total_votes + 1,
+                    total_votes: (result as any).totalVotes || prev.total_votes,
                     options: prev.options.map(opt => {
                         const updatedOpt = result.results?.find(r => r.id === opt.id)
-                        return updatedOpt ? {
-                            ...opt,
-                            vote_count: updatedOpt.vote_count,
-                            percentage: updatedOpt.percentage,
-                            is_user_choice: opt.id === selectedOption
-                        } : opt
+                        if (updatedOpt) {
+                            return {
+                                ...opt,
+                                vote_count: updatedOpt.vote_count,
+                                percentage: updatedOpt.percentage
+                            }
+                        }
+                        return opt
                     })
                 } : null)
-                setHasVoted(true)
+            } else {
+                // Revert on failure
+                setPoll(previousPoll)
+                setHasVoted(previousHasVoted)
             }
+        } catch (error) {
+            // Revert optimistic update on error
+            setPoll(previousPoll)
+            setHasVoted(previousHasVoted)
+            console.error('Vote failed:', error)
         } finally {
             setIsVoting(false)
         }
@@ -109,16 +148,38 @@ export default function PollCard({ pollId, initialPoll, compact = false }: PollC
 
     if (!poll) return null
 
+    // Defensive check: ensure options is an array
+    const pollOptions = poll.options || []
     const showResults = hasVoted || poll.is_expired || poll.show_results
 
+    // If no options, show a message
+    if (pollOptions.length === 0) {
+        return (
+            <div className={cn(
+                "mt-3 p-4 border rounded-xl bg-muted/20",
+                compact && "p-3"
+            )}>
+                <p className="text-sm text-muted-foreground">
+                    {poll.title}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                    No poll options available
+                </p>
+            </div>
+        )
+    }
+
     return (
-        <div className={cn(
-            "mt-3 p-4 border rounded-xl bg-muted/20",
-            compact && "p-3"
-        )}>
+        <div 
+            className={cn(
+                "mt-3 p-4 border rounded-xl bg-muted/20",
+                compact && "p-3"
+            )}
+            onClick={(e) => e.stopPropagation()}
+        >
             {/* Poll options */}
             <div className="space-y-2">
-                {poll.options.map((option) => (
+                {pollOptions.map((option) => (
                     <div
                         key={option.id}
                         onClick={() => !showResults && !isVoting && setSelectedOption(option.id)}

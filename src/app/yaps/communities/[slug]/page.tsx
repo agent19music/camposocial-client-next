@@ -84,9 +84,7 @@ export default function GroupDetailsPage(props: { params: Promise<{ slug: string
         }
     }, [groupSlug, authToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => {
-        console.log("[CommunityPage] communityPosts state updated:", communityPosts)
-    }, [communityPosts])
+
 
     const loadGroupDetails = async () => {
         setIsLoading(true)

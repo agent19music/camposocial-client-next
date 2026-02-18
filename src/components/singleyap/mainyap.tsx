@@ -14,6 +14,7 @@ import BadgeDisplay from '../badgedisplay'
 
 import { LinkifiedContent } from '@/components/LinkifiedContent'
 import { Users } from 'lucide-react'
+import PollCard from '@/components/polls/PollCard'
 
 export const MainYap = () => {
   const { selectedYap } = useContext(YapContext)
@@ -117,6 +118,11 @@ export const MainYap = () => {
         </div>
       )}
 
+      {/* Render poll if this yap has one */}
+      {selectedYap?.poll_id && (
+        <PollCard pollId={selectedYap.poll_id} />
+      )}
+
       {/* Render quoted/original yap if this is a quote tweet */}
       {selectedYap?.is_quote && selectedYap?.original_yap && (
         <div
@@ -157,9 +163,9 @@ export const MainYap = () => {
 
       {!(selectedYap?.replies_count === 0 && selectedYap?.retweets_count === 0 && selectedYap?.likes_count === 0 && selectedYap?.bookmarks_count === 0) && (
         <YapStats
-          replies={(selectedYap?.optimisticRepliesCount ?? selectedYap?.replies_count) || 0}
-          retweets={(selectedYap?.optimisticRetweetsCount ?? selectedYap?.retweets_count) || 0}
-          likes={(selectedYap?.optimisticLikesCount ?? selectedYap?.likes_count) || 0}
+          replies={(selectedYap?.optimisticRepliesCount ?? selectedYap?.weighted_replies_count ?? selectedYap?.replies_count) || 0}
+          retweets={(selectedYap?.optimisticRetweetsCount ?? selectedYap?.weighted_retweets_count ?? selectedYap?.retweets_count) || 0}
+          likes={(selectedYap?.optimisticLikesCount ?? selectedYap?.weighted_likes_count ?? selectedYap?.likes_count) || 0}
           bookmarks={selectedYap?.bookmarks_count || 0}
         />
       )}

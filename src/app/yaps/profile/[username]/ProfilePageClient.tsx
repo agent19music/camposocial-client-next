@@ -524,11 +524,7 @@ function ProfilePageClient() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Message
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                 <DropdownMenuSeparator />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -592,13 +588,13 @@ function ProfilePageClient() {
                 </Button>
               ) : (
                 <div className="flex gap-2">
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className="rounded-full"
                   >
                     <MessageCircle className="h-4 w-4" />
-                  </Button>
+                  </Button> */}
                   <Button
                     variant={isFollowing ? "outline" : "default"}
                     onClick={handleFollow}
@@ -607,12 +603,10 @@ function ProfilePageClient() {
                   >
                     {isFollowing ? (
                       <>
-                        <UserCheck className="h-4 w-4 mr-2" />
                         Following
                       </>
                     ) : (
                       <>
-                        <UserPlus className="h-4 w-4 mr-2" />
                         Follow
                       </>
                     )}

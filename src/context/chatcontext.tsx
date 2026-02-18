@@ -951,7 +951,7 @@ export default function ChatProvider({ children }: { children: ReactNode }) {
         const handleFriendRequestAccepted = (data: any) => {
             // Refresh conversations immediately when a friend request is accepted
             fetchConversations();
-            toast.success("Friend request accepted! You can now chat.");
+            // Toast removed to prevent duplicate - usercontext.tsx already shows toast on accept action
         };
         socket.on('friend_request_accepted', handleFriendRequestAccepted);
         socket.on('friend_request_response', (data: any) => {
@@ -1262,7 +1262,6 @@ export default function ChatProvider({ children }: { children: ReactNode }) {
 
             // If no devices registered, fall back to legacy single-key encryption
             if (allDevices.length === 0) {
-                console.log("[E2EE Multi-Device] No devices found, using legacy encryption");
                 const result = await encryptMessage(content, recipientId, overrideSecretKey);
                 return {
                     encrypted_payloads: {},
@@ -2195,7 +2194,6 @@ export default function ChatProvider({ children }: { children: ReactNode }) {
                     if (deviceInfo) {
                         currentDeviceIdRef.current = deviceInfo.id;
                         setDeviceRegistered(true);
-                        console.log('[E2EE Multi-Device] Device registered:', deviceInfo.name);
                     }
                 } catch (err) {
                     console.warn('[E2EE Multi-Device] Device registration failed (non-critical):', err);
@@ -2267,7 +2265,6 @@ export default function ChatProvider({ children }: { children: ReactNode }) {
                             if (deviceInfo) {
                                 currentDeviceIdRef.current = deviceInfo.id;
                                 setDeviceRegistered(true);
-                                console.log('[E2EE Multi-Device] Device registered on key load:', deviceInfo.name);
                             }
                         } catch (err) {
                             console.warn('[E2EE Multi-Device] Device registration failed (non-critical):', err);
@@ -2307,7 +2304,6 @@ export default function ChatProvider({ children }: { children: ReactNode }) {
                         if (deviceInfo) {
                             currentDeviceIdRef.current = deviceInfo.id;
                             setDeviceRegistered(true);
-                            console.log('[E2EE Multi-Device] Device registered on unlock:', deviceInfo.name);
                         }
                     } catch (err) {
                         console.warn('[E2EE Multi-Device] Device registration failed (non-critical):', err);

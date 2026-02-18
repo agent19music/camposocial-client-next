@@ -16,7 +16,8 @@ import { EnhancedRequestCard } from "@/components/friends/EnhancedRequestCard";
 import { SearchableDiscover } from "@/components/friends/SearchableDiscover";
 import { EmptyState } from "@/components/friends/EmptyState";
 import { FriendCardSkeleton } from "@/components/friends/LoadingSkeletons";
-import ChatInterface from '@/components/chat/ChatInterface';
+// ChatInterface temporarily disabled during refactor
+// import ChatInterface from '@/components/chat/ChatInterface';
 
 // Contexts
 import { AuthContext } from "@/context/authcontext";
@@ -26,7 +27,7 @@ import { useWebSocket } from "@/context/websocket-context";
 function FriendsPageInner() {
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false); // Temporarily unused during chat refactor
   const searchParams = useSearchParams();
 
   // State for managing request status updates
@@ -63,7 +64,8 @@ function FriendsPageInner() {
   // Handle tab switching via URL hash or query param
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const validTabs = ['friends', 'messages', 'discover', 'requests', 'activity'];
+    // Messages tab temporarily disabled during refactor
+    const validTabs = ['friends', 'discover', 'requests', 'activity'];
     
     // Check query param first
     if (tabParam && validTabs.includes(tabParam)) {
@@ -84,7 +86,8 @@ function FriendsPageInner() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      const validTabs = ['friends', 'messages', 'discover', 'requests', 'activity'];
+      // Messages tab temporarily disabled during refactor
+      const validTabs = ['friends', 'discover', 'requests', 'activity'];
       if (hash && validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -95,9 +98,10 @@ function FriendsPageInner() {
   }, []);
 
   // Filter pills with notification counts
+  // Messages tab temporarily hidden during refactor
   const filterPills: FilterPill[] = [
     { id: "friends", label: "Friends", active: activeTab === "friends" },
-    { id: "messages", label: "Messages", active: activeTab === "messages" },
+    // { id: "messages", label: "Messages", active: activeTab === "messages" },
     { id: "discover", label: "Discover", active: activeTab === "discover" },
     {
       id: "requests",
@@ -118,11 +122,8 @@ function FriendsPageInner() {
 
   // Friend actions
   const handleMessageFriend = (friend: any) => {
-    // Switch to messages tab and select user
-    // We can push to URL to let the effect handle it, or just set state
-    // Navigate to dedicated chat page with clean URL (like X's /i/chat/[id])
-    router.push(`/friends/chat/${friend.id}`);
-    setActiveTab('messages');
+    // Messaging temporarily disabled during refactor
+    // Previously: router.push(`/friends/chat/${friend.id}`);
   };
 
   const handleAddFriend = async (userId: string | number) => {
@@ -337,6 +338,7 @@ function FriendsPageInner() {
                   </motion.div>
                 )}
 
+                {/* Messages tab temporarily disabled during refactor
                 {activeTab === "messages" && (
                   <motion.div
                     key="messages"
@@ -348,6 +350,7 @@ function FriendsPageInner() {
                     <ChatInterface onChatOpen={setIsChatOpen} />
                   </motion.div>
                 )}
+                */}
 
                 {activeTab === "activity" && (
                   <motion.div

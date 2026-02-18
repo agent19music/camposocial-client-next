@@ -200,7 +200,6 @@ export default function Component() {
 
   // Determine which yaps to display (search results or regular feed)
   const displayYaps = searchActive && searchQuery.trim() ? searchResults : yaps;
-  console.log( "displayYaps", displayYaps);
 
   // Force refresh yaps when authenticated user navigates back to an empty feed
   useEffect(() => {
