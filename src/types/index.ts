@@ -82,6 +82,21 @@ export type {
   CachedConversationPreview,
   OnlineStatusEvent,
   CustomMessageEvent,
+  // Signal Protocol types
+  SignalIdentityKeyPair,
+  SignalSignedPreKey,
+  SignalOneTimePreKey,
+  SignalPreKeyBundle,
+  SignalLocalKeys,
+  SignalSessionRecord,
+  SignalIdentityRecord,
+  SignalMessageType,
+  SignalEncryptedMessage,
+  SignalDevicePayloads,
+  PreKeyBundleResponse,
+  PreKeyUploadRequest,
+  SignalSessionStatus,
+  SignalKeyStatus,
 } from './chat.types'
 
 // ============================================================================

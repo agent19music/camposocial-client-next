@@ -53,6 +53,17 @@ const nextConfig = {
       'placehold.co'
     ],
   },
+
+  // WebAssembly support (for potential future use)
+  webpack: (config) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    };
+
+    return config;
+  },
 };
 
 export default nextConfig;

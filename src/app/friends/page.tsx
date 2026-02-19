@@ -122,8 +122,7 @@ function FriendsPageInner() {
 
   // Friend actions
   const handleMessageFriend = (friend: any) => {
-    // Messaging temporarily disabled during refactor
-    // Previously: router.push(`/friends/chat/${friend.id}`);
+    router.push(`/friends/chat/${friend.id}`);
   };
 
   const handleAddFriend = async (userId: string | number) => {

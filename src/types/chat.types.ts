@@ -42,10 +42,13 @@ export type ChatMessage = {
   id: number
   senderId: string
   content: string
-  // E2EE fields
+  // E2EE fields (legacy NaCl)
   ciphertext?: string | null
   nonce?: string
   senderPublicKey?: string | null
+  // Signal Protocol E2EE fields
+  signalPayload?: SignalEncryptedMessage
+  senderDeviceId?: string
   // Timestamps
   timestamp: Date
   // Attachments
@@ -344,3 +347,163 @@ export type OnlineStatusEvent = {
 export type CustomMessageEvent = {
   message: Message
 }
+
+// ============================================================================
+// Signal Protocol Types
+// ============================================================================
+
+/**
+ * Signal Protocol identity key pair
+ * Long-lived key used for identity verification
+ */
+export type SignalIdentityKeyPair = {
+  publicKey: string    // Base64 encoded Curve25519 public key
+  privateKey: string   // Base64 encoded Curve25519 private key
+}
+
+/**
+ * Signal Protocol signed pre-key
+ * Medium-lived key signed by identity key, rotated periodically
+ */
+export type SignalSignedPreKey = {
+  keyId: number
+  publicKey: string    // Base64 encoded
+  privateKey: string   // Base64 encoded
+  signature: string    // Base64 encoded signature by identity key
+  timestamp: number    // When this key was generated
+}
+
+/**
+ * Signal Protocol one-time pre-key
+ * Single-use key consumed during session establishment
+ */
+export type SignalOneTimePreKey = {
+  keyId: number
+  publicKey: string    // Base64 encoded
+  privateKey: string   // Base64 encoded
+}
+
+/**
+ * Pre-key bundle uploaded to server for others to fetch
+ * Contains all public keys needed to establish a session
+ */
+export type SignalPreKeyBundle = {
+  registrationId: number
+  deviceId: string
+  identityKey: string           // Public only
+  signedPreKeyId: number
+  signedPreKey: string          // Public only
+  signedPreKeySignature: string
+  oneTimePreKeyId?: number      // Optional - may be exhausted
+  oneTimePreKey?: string        // Public only
+}
+
+/**
+ * Local key storage structure for Signal keys
+ */
+export type SignalLocalKeys = {
+  identityKeyPair: SignalIdentityKeyPair
+  registrationId: number
+  signedPreKey: SignalSignedPreKey
+  oneTimePreKeys: SignalOneTimePreKey[]
+}
+
+/**
+ * Signal session state stored in IndexedDB
+ */
+export type SignalSessionRecord = {
+  id: string           // `${recipientId}:${deviceId}`
+  recipientId: string
+  deviceId: string
+  sessionData: string  // Serialized session state (base64)
+  updatedAt: number
+}
+
+/**
+ * Signal identity record for trusted identities
+ */
+export type SignalIdentityRecord = {
+  id: string           // `${userId}:${deviceId}`
+  userId: string
+  deviceId: string
+  identityKey: string  // Base64 public key
+  trusted: boolean
+  firstSeen: number
+  verified: boolean
+}
+
+/**
+ * Signal message types
+ */
+export type SignalMessageType = 'prekey' | 'whisper'
+
+/**
+ * Encrypted Signal message payload
+ */
+export type SignalEncryptedMessage = {
+  type: SignalMessageType
+  senderDeviceId: string
+  senderRegistrationId: number
+  ciphertext: string   // Base64 encoded
+}
+
+/**
+ * Multi-device encrypted payloads using Signal
+ */
+export type SignalDevicePayloads = {
+  [deviceId: string]: SignalEncryptedMessage
+}
+
+/**
+ * Server response for fetching pre-key bundle
+ */
+export type PreKeyBundleResponse = {
+  userId: string
+  deviceId: string
+  registrationId: number
+  identityKey: string
+  signedPreKeyId: number
+  signedPreKey: string
+  signedPreKeySignature: string
+  oneTimePreKeyId?: number
+  oneTimePreKey?: string
+}
+
+/**
+ * Request body for uploading pre-keys
+ */
+export type PreKeyUploadRequest = {
+  registrationId: number
+  deviceId: string
+  identityKey: string
+  signedPreKey: {
+    keyId: number
+    publicKey: string
+    signature: string
+  }
+  oneTimePreKeys: Array<{
+    keyId: number
+    publicKey: string
+  }>
+}
+
+/**
+ * Signal session establishment status
+ */
+export type SignalSessionStatus = 
+  | 'none'           // No session exists
+  | 'establishing'   // Fetching prekey bundle
+  | 'active'         // Session established
+  | 'stale'          // Session needs refresh
+
+/**
+ * Signal key status (extends existing KeyStatus)
+ */
+export type SignalKeyStatus = 
+  | 'generating'     // Generating identity/prekeys  
+  | 'available'      // Keys ready for use
+  | 'unavailable'    // No keys found
+  | 'locked'         // Keys exist but need password
+  | 'uploading'      // Uploading prekey bundle to server
+  | 'error'          // Key operation failed
+
