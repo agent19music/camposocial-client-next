@@ -42,10 +42,13 @@ export type ChatMessage = {
   id: number
   senderId: string
   content: string
-  // E2EE fields
+  // E2EE fields (legacy NaCl)
   ciphertext?: string | null
   nonce?: string
   senderPublicKey?: string | null
+  // Signal Protocol E2EE fields
+  signalPayload?: SignalEncryptedMessage
+  senderDeviceId?: string
   // Timestamps
   timestamp: Date
   // Attachments

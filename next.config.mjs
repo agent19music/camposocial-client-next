@@ -54,26 +54,13 @@ const nextConfig = {
     ],
   },
 
-  // WebAssembly support for @signalapp/libsignal-client
-  webpack: (config, { isServer }) => {
-    // Enable async WebAssembly
+  // WebAssembly support (for potential future use)
+  webpack: (config) => {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
       layers: true,
     };
-
-    // Fix for WASM modules in Next.js
-    config.module.rules.push({
-      test: /\.wasm$/,
-      type: 'webassembly/async',
-    });
-
-    // Exclude libsignal from server-side bundling (client-only)
-    if (isServer) {
-      config.externals = config.externals || [];
-      config.externals.push('@signalapp/libsignal-client');
-    }
 
     return config;
   },

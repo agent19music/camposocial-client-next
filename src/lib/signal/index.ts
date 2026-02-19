@@ -12,17 +12,20 @@ export {
   generateRegistrationId,
   generateSignedPreKey,
   generateOneTimePreKeys,
+  generateKyberPreKey,
   generateAllKeys,
   createPreKeyBundle,
   verifySignedPreKey,
   getKeyFingerprint,
   serializePrivateKey,
   deserializePrivateKey,
+  type SignalLocalKeysExtended,
 } from './signalCrypto';
 
 // Signal stores for key/session persistence
 export {
   SignalKeyStore,
+  signalKeyStore,
   type StoredIdentityKey,
   type StoredSignedPreKey,
   type StoredOneTimePreKey,
@@ -31,6 +34,9 @@ export {
 // Session management and message encryption
 export {
   SignalSessionManager,
+  getSignalSessionManager,
+  clearSignalSessionManager,
   type EncryptResult,
   type DecryptResult,
+  type ExtendedPreKeyBundleResponse,
 } from './signalSession';

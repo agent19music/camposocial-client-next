@@ -47,7 +47,8 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
     currentUser,
     setMessages,
     chatList,
-    ensureConversation
+    ensureConversation,
+    setFriendId
   } = useChat();
 
   const { socket, emit, on, isConnected } = useWebSocket();
@@ -118,6 +119,13 @@ export default function ChatWindow({ friendId, onBack, onToggleProfile, showSide
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   }, []);
+
+  // Set friendId in context when prop changes - required for sendMessage to work
+  useEffect(() => {
+    if (friendId) {
+      setFriendId(friendId);
+    }
+  }, [friendId, setFriendId]);
 
   // Track if we've initialized for this friendId to prevent duplicate fetches
   const initializedFriendIdRef = useRef<string | null>(null);

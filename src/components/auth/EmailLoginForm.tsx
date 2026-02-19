@@ -221,8 +221,7 @@ export function EmailLoginForm() {
                     className="w-full h-14 bg-white dark:bg-[#1A1A19] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 group"
                 >
                     <div className="flex items-center justify-center space-x-3">
-                        <Mail className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" style={{ color: 'var(--color-fun)' }} />
-                        <div className="flex flex-col items-start">
+                        <div className="flex flex-col items-center">
                             <span className="font-semibold text-sm">Continue with Email or Username</span>
                             <span className="text-xs opacity-70">Sign in to your account</span>
                         </div>

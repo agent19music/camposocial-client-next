@@ -11,22 +11,19 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { getOrCreateDeviceId } from '@/lib/deviceManager';
 import type {
-  SignalLocalKeys,
   SignalEncryptedMessage,
   SignalKeyStatus,
   PreKeyBundleResponse,
 } from '@/types';
+import type { SignalLocalKeysExtended } from '@/lib/signal';
 
 // Lazy load Signal modules to avoid SSR issues
 let signalModules: Awaited<ReturnType<typeof loadSignalModules>> | null = null;
 
 async function loadSignalModules() {
-  const [crypto, stores, session] = await Promise.all([
-    import('@/lib/signal/signalCrypto'),
-    import('@/lib/signal/signalStores'),
-    import('@/lib/signal/signalSession'),
-  ]);
-  return { crypto, stores, session };
+  // Import from the main barrel file for proper module resolution
+  const signal = await import('@/lib/signal');
+  return { crypto: signal, stores: signal, session: signal };
 }
 
 export interface SignalE2EEState {
@@ -70,7 +67,7 @@ export function useSignalE2EE(options: UseSignalE2EEOptions): UseSignalE2EERetur
   // Refs for stable access in callbacks
   const sessionManagerRef = useRef<any>(null);
   const keyStoreRef = useRef<any>(null);
-  const localKeysRef = useRef<SignalLocalKeys | null>(null);
+  const localKeysRef = useRef<SignalLocalKeysExtended | null>(null);
   const isInitializingRef = useRef(false);
   
   // Get device ID on mount
@@ -153,6 +150,9 @@ export function useSignalE2EE(options: UseSignalE2EEOptions): UseSignalE2EERetur
         // Get remaining one-time prekey count
         const otkCount = await keyStoreRef.current.getOneTimePreKeyCount();
         
+        // Generate Kyber key for post-quantum support (always fresh for each session)
+        const kyberPreKey = await crypto.generateKyberPreKey(localIdentity.keyPair, Date.now() + 1);
+        
         // Construct local keys object
         const storedSignedPreKey = await keyStoreRef.current.getCurrentSignedPreKey();
         localKeysRef.current = {
@@ -160,6 +160,7 @@ export function useSignalE2EE(options: UseSignalE2EEOptions): UseSignalE2EERetur
           registrationId: localIdentity.registrationId,
           signedPreKey: storedSignedPreKey!,
           oneTimePreKeys: [], // We don't need private keys for existing prekeys
+          kyberPreKey: kyberPreKey,
         };
 
         setState(s => ({

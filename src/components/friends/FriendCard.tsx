@@ -92,14 +92,13 @@ export function FriendCard({ friend, onMessage, onRemoveFriend, onViewProfile }:
                 </div>
             )}
 
-            {/* Message Button - Temporarily disabled during refactor */}
+            {/* Message Button */}
             <button
-                disabled
-                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm bg-muted text-muted-foreground cursor-not-allowed opacity-60"
-                title="Messaging coming soon"
+                onClick={() => onMessage(friend)}
+                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg font-medium text-xs sm:text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
                 <ChatCircleIcon size={16} weight="fill" />
-                Coming Soon
+                Message
             </button>
         </div>
     );

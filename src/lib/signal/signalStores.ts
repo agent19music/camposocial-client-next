@@ -124,10 +124,13 @@ export class SignalKeyStore {
       ['deriveKey']
     );
 
+    // Create a new ArrayBuffer from the salt to ensure correct type for crypto.subtle
+    const saltBuffer = new Uint8Array(salt).buffer;
+
     this.encryptionKey = await crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
-        salt,
+        salt: saltBuffer,
         iterations: 100000,
         hash: 'SHA-256',
       },
